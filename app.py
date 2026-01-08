@@ -17,7 +17,7 @@ def init_connection():
 
 supabase = init_connection()
 
-# --- 2. AUTH FUNCTIONS (New!) ---
+# --- 2. AUTH FUNCTIONS ---
 def sign_up(email, password):
     try:
         response = supabase.auth.sign_up({"email": email, "password": password})
@@ -32,10 +32,23 @@ def sign_in(email, password):
     except Exception as e:
         return None, str(e)
 
+def send_reset_email(email):
+    try:
+        supabase.auth.reset_password_email(email)
+        return True, None
+    except Exception as e:
+        return False, str(e)
+
+def update_password(new_password):
+    try:
+        supabase.auth.update_user({"password": new_password})
+        return True, None
+    except Exception as e:
+        return False, str(e)
+
 # --- 3. DATABASE FUNCTIONS ---
 def add_to_db(user_email, title, poster):
     if supabase:
-        # We use email now instead of username
         data = {"user_name": user_email, "movie_title": title, "poster_url": poster}
         supabase.table("watchlist").insert(data).execute()
 
@@ -81,7 +94,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 6. LANDING PAGE (AUTH) ---
+# --- 6. LANDING PAGE (NOT LOGGED IN) ---
 if not st.session_state.user:
     col1, col2 = st.columns([3, 2], gap="large")
     
@@ -92,19 +105,43 @@ if not st.session_state.user:
 
     with col2:
         with st.container(border=True):
-            auth_mode = st.radio("Access", ["Log In", "Sign Up"], horizontal=True)
-            email = st.text_input("Email")
-            password = st.text_input("Password", type="password")
+            # Auth Selector
+            auth_mode = st.radio("Select Option:", ["Log In", "Sign Up", "Forgot Password?"], horizontal=True)
+            st.divider()
 
-            if auth_mode == "Sign Up":
-                if st.button("Create Account", use_container_width=True):
+            # --- OPTION A: FORGOT PASSWORD ---
+            if auth_mode == "Forgot Password?":
+                st.subheader("Reset Password")
+                st.caption("We will send you a temporary login link.")
+                reset_email = st.text_input("Enter your email")
+                
+                if st.button("Send Magic Link ✨", use_container_width=True):
+                    if reset_email:
+                        success, err = send_reset_email(reset_email)
+                        if success:
+                            st.success("Sent! Check your email (and spam). Click the link to log in.")
+                        else:
+                            st.error(f"Error: {err}")
+                    else:
+                        st.warning("Please enter an email.")
+
+            # --- OPTION B: SIGN UP ---
+            elif auth_mode == "Sign Up":
+                st.subheader("Create Account")
+                email = st.text_input("Email")
+                password = st.text_input("Password", type="password")
+                if st.button("Sign Up", use_container_width=True):
                     res, err = sign_up(email, password)
                     if res and res.user:
-                        st.success("Account created! You can now log in.")
+                        st.success("Account created! Go to 'Log In' now.")
                     elif err:
                         st.error(f"Error: {err}")
             
-            else: # Log In
+            # --- OPTION C: LOG IN ---
+            else: 
+                st.subheader("Welcome Back")
+                email = st.text_input("Email")
+                password = st.text_input("Password", type="password")
                 if st.button("Log In", use_container_width=True):
                     res, err = sign_in(email, password)
                     if res and res.user:
@@ -114,23 +151,53 @@ if not st.session_state.user:
                         st.error(f"Login failed: {err}")
     st.stop()
 
-# --- 7. MAIN APP (Logged In) ---
+# --- 7. MAIN APP (LOGGED IN) ---
 user_email = st.session_state.user.email
 
 with st.sidebar:
     st.title("🧠 NeuroStream")
     st.write(f"👤 {user_email}")
-    menu = st.radio("Menu", ["🍿 Movies", "📚 Education", "❤️ My Watchlist"])
+    
+    # NAVIGATION MENU
+    # "Change Password" is now always visible here
+    menu = st.radio("Menu", ["🍿 Movies", "📚 Education", "❤️ My Watchlist", "🔐 Change Password"])
+    
+    st.divider()
     if st.button("Log Out"):
         st.session_state.user = None
         supabase.auth.sign_out()
         st.rerun()
 
-if menu == "📚 Education":
+# --- PAGE: CHANGE PASSWORD ---
+if menu == "🔐 Change Password":
+    st.header("Security Settings")
+    st.write("Logged in via Magic Link? Set a new password here.")
+    
+    with st.form("password_reset"):
+        new_pass = st.text_input("New Password", type="password")
+        confirm_pass = st.text_input("Confirm New Password", type="password")
+        btn = st.form_submit_button("Update Password")
+        
+        if btn:
+            if new_pass == confirm_pass:
+                if len(new_pass) < 6:
+                    st.error("Password must be at least 6 characters.")
+                else:
+                    success, err = update_password(new_pass)
+                    if success:
+                        st.success("Password updated! You can now use this password to log in.")
+                    else:
+                        st.error(f"Error: {err}")
+            else:
+                st.error("Passwords do not match.")
+
+# --- PAGE: EDUCATION ---
+elif menu == "📚 Education":
     st.header("Neuro-Support Hub 🌿")
     st.video("https://www.youtube.com/watch?v=JhzxqLxY5xM")
     st.caption("How to Focus with ADHD")
 
+# --- PAGE: WATCHLIST ---
 elif menu == "❤️ My Watchlist":
     st.header("Your Safe List")
     my_list = get_user_watchlist(user_email)
@@ -145,7 +212,8 @@ elif menu == "❤️ My Watchlist":
     else:
         st.info("List is empty.")
 
-else: # Movies
+# --- PAGE: MOVIES (HOME) ---
+else: 
     if not df.empty:
         hero = df.iloc[0]
         st.markdown(f"""
