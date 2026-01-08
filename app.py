@@ -47,6 +47,29 @@ def update_password(new_password):
     except Exception as e:
         return False, str(e)
 
+def login_with_url(url_string):
+    # This manually grabs the token from the URL you paste
+    try:
+        # Extract the fragment after #
+        if "#" in url_string:
+            fragment = url_string.split("#")[1]
+            # Parse parameters
+            params = dict(item.split("=") for item in fragment.split("&") if "=" in item)
+            
+            access_token = params.get("access_token")
+            refresh_token = params.get("refresh_token")
+            
+            if access_token and refresh_token:
+                # Force the session
+                response = supabase.auth.set_session(access_token, refresh_token)
+                return response, None
+            else:
+                return None, "No tokens found in URL."
+        else:
+            return None, "URL does not contain a hash (#)."
+    except Exception as e:
+        return None, str(e)
+
 # --- 3. DATABASE FUNCTIONS ---
 def add_to_db(user_email, title, poster):
     if supabase:
@@ -111,18 +134,31 @@ if not st.session_state.user:
 
             if auth_mode == "Forgot Password?":
                 st.subheader("Reset Password")
-                st.caption("We will send you a temporary login link.")
-                reset_email = st.text_input("Enter your email")
                 
-                if st.button("Send Magic Link ✨", use_container_width=True):
-                    if reset_email:
-                        success, err = send_reset_email(reset_email)
-                        if success:
-                            st.success("Sent! Check your email. The link will log you in temporarily.")
+                tab1, tab2 = st.tabs(["📧 Step 1: Send Email", "🔗 Step 2: Paste Link"])
+                
+                with tab1:
+                    reset_email = st.text_input("Enter your email")
+                    if st.button("Send Magic Link ✨", use_container_width=True):
+                        if reset_email:
+                            success, err = send_reset_email(reset_email)
+                            if success:
+                                st.success("Check your email!")
+                            else:
+                                st.error(f"Error: {err}")
+                
+                with tab2:
+                    st.caption("If clicking the email link didn't log you in, copy that full URL from your browser bar and paste it here:")
+                    pasted_url = st.text_input("Paste URL here")
+                    if st.button("Verify & Login 🔓", use_container_width=True):
+                        res, err = login_with_url(pasted_url)
+                        if res and res.user:
+                            st.session_state.user = res.user
+                            st.success("Success! Redirecting...")
+                            time.sleep(1)
+                            st.rerun()
                         else:
-                            st.error(f"Error: {err}")
-                    else:
-                        st.warning("Please enter an email.")
+                            st.error(f"Failed: {err}")
 
             elif auth_mode == "Sign Up":
                 st.subheader("Create Account")
@@ -154,8 +190,6 @@ user_email = st.session_state.user.email
 with st.sidebar:
     st.title("🧠 NeuroStream")
     st.write(f"👤 {user_email}")
-    
-    # NAVIGATION MENU
     menu = st.radio("Menu", ["🍿 Movies", "📚 Education", "❤️ My Watchlist", "🔐 Change Password"])
     
     st.divider()
@@ -164,7 +198,7 @@ with st.sidebar:
         supabase.auth.sign_out()
         st.rerun()
 
-# --- PAGE: CHANGE PASSWORD (The "Redirect" Logic) ---
+# --- PAGE: CHANGE PASSWORD ---
 if menu == "🔐 Change Password":
     st.header("Security Settings")
     st.write("Set your new password below.")
@@ -182,8 +216,7 @@ if menu == "🔐 Change Password":
                     success, err = update_password(new_pass)
                     if success:
                         st.success("Password Updated! Redirecting to login...")
-                        time.sleep(2) # Show success message for 2 seconds
-                        # Log them out and restart app
+                        time.sleep(2)
                         st.session_state.user = None
                         supabase.auth.sign_out()
                         st.rerun()
@@ -194,8 +227,8 @@ if menu == "🔐 Change Password":
 
 # --- PAGE: MOVIES (HOME) ---
 elif menu == "🍿 Movies":
-    # 🚨 NOTIFICATION BAR for Reset Users
-    st.info("💡 **Just used a 'Magic Link'?** If you are here to reset your password, go to **🔐 Change Password** in the sidebar!")
+    # Banner for reset users
+    st.info("💡 **Resetting Password?** Go to **🔐 Change Password** in the sidebar!")
 
     if not df.empty:
         hero = df.iloc[0]
