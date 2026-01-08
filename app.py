@@ -1,25 +1,56 @@
 import streamlit as st
 import pandas as pd
+from supabase import create_client
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="NeuroStream", page_icon="🍿", layout="wide")
 
-# --- SESSION STATE (The Brain of the App) ---
-# This remembers who you are and what you saved, even if you click buttons.
+# --- 1. CONNECT TO DATABASE ---
+# This uses the secrets you just saved
+@st.cache_resource
+def init_connection():
+    url = st.secrets["supabase"]["url"]
+    key = st.secrets["supabase"]["key"]
+    return create_client(url, key)
+
+supabase = init_connection()
+
+# --- 2. DATABASE FUNCTIONS ---
+
+def add_to_db(user, title, poster):
+    # Saves to the cloud
+    data = {"user_name": user, "movie_title": title, "poster_url": poster}
+    supabase.table("watchlist").insert(data).execute()
+
+def remove_from_db(movie_id):
+    # Deletes from the cloud
+    supabase.table("watchlist").delete().eq("id", movie_id).execute()
+
+def get_user_watchlist(user):
+    # Downloads the user's list
+    response = supabase.table("watchlist").select("*").eq("user_name", user).execute()
+    return response.data
+
+# --- 3. LOAD MOVIE DATA ---
+@st.cache_data
+def load_movie_data():
+    try:
+        return pd.read_csv("movies.csv", sep="|", keep_default_na=False)
+    except:
+        return pd.DataFrame()
+
+df = load_movie_data()
+
+# --- 4. SESSION STATE (Login) ---
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'user_name' not in st.session_state:
     st.session_state.user_name = "Guest"
-if 'watchlist' not in st.session_state:
-    st.session_state.watchlist = []
 
-# --- CUSTOM CSS (The "Netflix" Look) ---
+# --- 5. STYLING ---
 st.markdown("""
 <style>
-    /* Dark Mode Polish */
     .stApp {background-color: #0e0e0e;}
-    
-    /* Hero Banner */
     .hero-container {
         padding: 3rem;
         border-radius: 20px;
@@ -30,122 +61,90 @@ st.markdown("""
         box-shadow: inset 0 0 0 2000px rgba(0,0,0,0.7);
         border: 1px solid #333;
     }
-    
-    /* Login Box */
-    .login-container {
-        max-width: 400px;
-        margin: auto;
-        padding: 50px;
-        background-color: #1a1a1a;
-        border-radius: 15px;
-        border: 1px solid #333;
-        text-align: center;
-    }
 </style>
 """, unsafe_allow_html=True)
 
-# --- HELPER FUNCTIONS ---
-@st.cache_data
-def load_data():
-    try:
-        return pd.read_csv("movies.csv", sep="|", keep_default_na=False)
-    except:
-        return pd.DataFrame()
-
-df = load_data()
-
-# --- PAGE 1: LOGIN SCREEN ---
+# --- 6. PAGE: LOGIN ---
 if not st.session_state.logged_in:
     c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
         st.write("")
-        st.write("") # Spacers to push content down
         st.write("")
-        
-        # A nice "Card" for login
         with st.container():
             st.title("🧠 NeuroStream")
-            st.write("Stream smarter. Regulate better.")
-            
             username = st.text_input("Username", placeholder="e.g. Johan")
             password = st.text_input("Password", type="password", placeholder="Try '1234'")
             
             if st.button("Log In", use_container_width=True):
-                if password == "1234":  # Simple "fake" password for the demo
+                if password == "1234": 
                     st.session_state.logged_in = True
                     st.session_state.user_name = username
                     st.rerun()
                 else:
-                    st.error("Incorrect password (Hint: 1234)")
-    
-    st.stop() # Stop here if not logged in
+                    st.error("Incorrect password")
+    st.stop()
 
-# --- PAGE 2: THE DASHBOARD (Logged In) ---
-
-# Sidebar Navigation
+# --- 7. PAGE: DASHBOARD ---
 with st.sidebar:
     st.title("🧠 NeuroStream")
-    st.write(f"Welcome back, **{st.session_state.user_name}**!")
-    
+    st.write(f"User: **{st.session_state.user_name}**")
     view_mode = st.radio("Navigate:", ["🏠 Home", "❤️ My Watchlist"])
-    
-    st.divider()
-    st.caption(f"Watchlist: {len(st.session_state.watchlist)} items")
     if st.button("Log Out"):
         st.session_state.logged_in = False
         st.rerun()
 
-# --- VIEW: WATCHLIST ---
+# --- VIEW: WATCHLIST (CLOUD) ---
 if view_mode == "❤️ My Watchlist":
-    st.header(f"{st.session_state.user_name}'s Safe List")
+    st.header(f"{st.session_state.user_name}'s Cloud Watchlist ☁️")
     
-    if not st.session_state.watchlist:
-        st.info("Your list is empty! Go to Home and click 'Add' on a movie.")
+    # Get real data from cloud
+    my_list = get_user_watchlist(st.session_state.user_name)
+    
+    if not my_list:
+        st.info("Your list is empty! Go add some movies.")
     else:
-        # Show saved movies
-        saved_df = df[df['Title'].isin(st.session_state.watchlist)]
         cols = st.columns(4)
-        for index, row in saved_df.iterrows():
+        for index, item in enumerate(my_list):
             with cols[index % 4]:
-                st.image(row['Poster'], use_container_width=True)
-                st.write(f"**{row['Title']}**")
-                if st.button(f"Remove ❌", key=f"remove_{index}"):
-                    st.session_state.watchlist.remove(row['Title'])
+                st.image(item['poster_url'], use_container_width=True)
+                st.write(f"**{item['movie_title']}**")
+                if st.button(f"Remove ❌", key=f"del_{item['id']}"):
+                    remove_from_db(item['id'])
                     st.rerun()
 
-# --- VIEW: HOME (Trending) ---
+# --- VIEW: HOME (TRENDING) ---
 else:
-    # Hero Section (Top Movie)
+    # Hero Section
     if not df.empty:
         hero = df.iloc[0]
         st.markdown(f"""
         <div class="hero-container" style="background-image: url('{hero['Backdrop']}');">
             <h1>{hero['Title']}</h1>
-            <p style="font-size: 1.1rem; opacity: 0.9;">{hero['Overview'][:150]}...</p>
             <p><strong>{hero['Emoji']} {hero['Sensory Load']}</strong></p>
         </div>
         """, unsafe_allow_html=True)
 
     st.subheader("Trending Now")
     
-    # Grid Logic
+    # Get current watchlist so we know what is already added
+    current_watchlist = get_user_watchlist(st.session_state.user_name)
+    saved_titles = [item['movie_title'] for item in current_watchlist]
+    
     cols = st.columns(4)
     for index, row in df.iterrows():
-        col = cols[index % 4]
-        with col:
+        with cols[index % 4]:
             st.image(row['Poster'], use_container_width=True)
             st.caption(f"{row['Emoji']} {row['Sensory Load']}")
             
-            # Action Buttons
             c1, c2 = st.columns([1, 1])
             with c1:
                 st.link_button("▶ Watch", row['Link'])
             with c2:
-                # The "Add to List" Logic
-                if row['Title'] in st.session_state.watchlist:
+                # Add to Cloud Logic
+                if row['Title'] in saved_titles:
                     st.button("✅ Added", key=f"btn_{index}", disabled=True)
                 else:
                     if st.button("➕ Add", key=f"btn_{index}"):
-                        st.session_state.watchlist.append(row['Title'])
+                        add_to_db(st.session_state.user_name, row['Title'], row['Poster'])
+                        st.toast(f"Saved {row['Title']}!")
                         st.rerun()
-            st.write("") # Spacer
