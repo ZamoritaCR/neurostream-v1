@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import time
 from supabase import create_client, Client
 
 # --- PAGE CONFIG ---
@@ -105,11 +106,9 @@ if not st.session_state.user:
 
     with col2:
         with st.container(border=True):
-            # Auth Selector
             auth_mode = st.radio("Select Option:", ["Log In", "Sign Up", "Forgot Password?"], horizontal=True)
             st.divider()
 
-            # --- OPTION A: FORGOT PASSWORD ---
             if auth_mode == "Forgot Password?":
                 st.subheader("Reset Password")
                 st.caption("We will send you a temporary login link.")
@@ -119,13 +118,12 @@ if not st.session_state.user:
                     if reset_email:
                         success, err = send_reset_email(reset_email)
                         if success:
-                            st.success("Sent! Check your email (and spam). Click the link to log in.")
+                            st.success("Sent! Check your email. The link will log you in temporarily.")
                         else:
                             st.error(f"Error: {err}")
                     else:
                         st.warning("Please enter an email.")
 
-            # --- OPTION B: SIGN UP ---
             elif auth_mode == "Sign Up":
                 st.subheader("Create Account")
                 email = st.text_input("Email")
@@ -137,8 +135,7 @@ if not st.session_state.user:
                     elif err:
                         st.error(f"Error: {err}")
             
-            # --- OPTION C: LOG IN ---
-            else: 
+            else: # Log In
                 st.subheader("Welcome Back")
                 email = st.text_input("Email")
                 password = st.text_input("Password", type="password")
@@ -159,7 +156,6 @@ with st.sidebar:
     st.write(f"👤 {user_email}")
     
     # NAVIGATION MENU
-    # "Change Password" is now always visible here
     menu = st.radio("Menu", ["🍿 Movies", "📚 Education", "❤️ My Watchlist", "🔐 Change Password"])
     
     st.divider()
@@ -168,15 +164,15 @@ with st.sidebar:
         supabase.auth.sign_out()
         st.rerun()
 
-# --- PAGE: CHANGE PASSWORD ---
+# --- PAGE: CHANGE PASSWORD (The "Redirect" Logic) ---
 if menu == "🔐 Change Password":
     st.header("Security Settings")
-    st.write("Logged in via Magic Link? Set a new password here.")
+    st.write("Set your new password below.")
     
     with st.form("password_reset"):
         new_pass = st.text_input("New Password", type="password")
         confirm_pass = st.text_input("Confirm New Password", type="password")
-        btn = st.form_submit_button("Update Password")
+        btn = st.form_submit_button("Update & Log Out")
         
         if btn:
             if new_pass == confirm_pass:
@@ -185,35 +181,22 @@ if menu == "🔐 Change Password":
                 else:
                     success, err = update_password(new_pass)
                     if success:
-                        st.success("Password updated! You can now use this password to log in.")
+                        st.success("Password Updated! Redirecting to login...")
+                        time.sleep(2) # Show success message for 2 seconds
+                        # Log them out and restart app
+                        st.session_state.user = None
+                        supabase.auth.sign_out()
+                        st.rerun()
                     else:
                         st.error(f"Error: {err}")
             else:
                 st.error("Passwords do not match.")
 
-# --- PAGE: EDUCATION ---
-elif menu == "📚 Education":
-    st.header("Neuro-Support Hub 🌿")
-    st.video("https://www.youtube.com/watch?v=JhzxqLxY5xM")
-    st.caption("How to Focus with ADHD")
-
-# --- PAGE: WATCHLIST ---
-elif menu == "❤️ My Watchlist":
-    st.header("Your Safe List")
-    my_list = get_user_watchlist(user_email)
-    if my_list:
-        cols = st.columns(4)
-        for index, item in enumerate(my_list):
-            with cols[index % 4]:
-                st.image(item['poster_url'])
-                if st.button("Remove", key=f"del_{item['id']}"):
-                    remove_from_db(item['id'])
-                    st.rerun()
-    else:
-        st.info("List is empty.")
-
 # --- PAGE: MOVIES (HOME) ---
-else: 
+elif menu == "🍿 Movies":
+    # 🚨 NOTIFICATION BAR for Reset Users
+    st.info("💡 **Just used a 'Magic Link'?** If you are here to reset your password, go to **🔐 Change Password** in the sidebar!")
+
     if not df.empty:
         hero = df.iloc[0]
         st.markdown(f"""
@@ -236,3 +219,22 @@ else:
                 if st.button("➕ Add", key=f"btn_{index}"):
                     add_to_db(user_email, row['Title'], row['Poster'])
                     st.rerun()
+
+# --- OTHER PAGES ---
+elif menu == "📚 Education":
+    st.header("Neuro-Support Hub 🌿")
+    st.video("https://www.youtube.com/watch?v=JhzxqLxY5xM")
+
+elif menu == "❤️ My Watchlist":
+    st.header("Your Safe List")
+    my_list = get_user_watchlist(user_email)
+    if my_list:
+        cols = st.columns(4)
+        for index, item in enumerate(my_list):
+            with cols[index % 4]:
+                st.image(item['poster_url'])
+                if st.button("Remove", key=f"del_{item['id']}"):
+                    remove_from_db(item['id'])
+                    st.rerun()
+    else:
+        st.info("List is empty.")
