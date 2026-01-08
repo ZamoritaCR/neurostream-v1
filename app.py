@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from supabase import create_client
+from supabase import create_client, Client
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="NeuroStream", page_icon="🧠", layout="wide")
@@ -17,6 +17,38 @@ def init_connection():
 
 supabase = init_connection()
 
+# --- 2. AUTH FUNCTIONS (New!) ---
+def sign_up(email, password):
+    try:
+        response = supabase.auth.sign_up({"email": email, "password": password})
+        return response, None
+    except Exception as e:
+        return None, str(e)
+
+def sign_in(email, password):
+    try:
+        response = supabase.auth.sign_in_with_password({"email": email, "password": password})
+        return response, None
+    except Exception as e:
+        return None, str(e)
+
+# --- 3. DATABASE FUNCTIONS ---
+def add_to_db(user_email, title, poster):
+    if supabase:
+        # We use email now instead of username
+        data = {"user_name": user_email, "movie_title": title, "poster_url": poster}
+        supabase.table("watchlist").insert(data).execute()
+
+def remove_from_db(movie_id):
+    if supabase:
+        supabase.table("watchlist").delete().eq("id", movie_id).execute()
+
+def get_user_watchlist(user_email):
+    if supabase:
+        response = supabase.table("watchlist").select("*").eq("user_name", user_email).execute()
+        return response.data
+    return []
+
 @st.cache_data
 def load_movie_data():
     try:
@@ -26,39 +58,16 @@ def load_movie_data():
 
 df = load_movie_data()
 
-# --- 2. DATABASE FUNCTIONS ---
-def add_to_db(user, title, poster):
-    if supabase:
-        data = {"user_name": user, "movie_title": title, "poster_url": poster}
-        supabase.table("watchlist").insert(data).execute()
+# --- 4. SESSION STATE ---
+if 'user' not in st.session_state:
+    st.session_state.user = None
 
-def remove_from_db(movie_id):
-    if supabase:
-        supabase.table("watchlist").delete().eq("id", movie_id).execute()
-
-def get_user_watchlist(user):
-    if supabase:
-        response = supabase.table("watchlist").select("*").eq("user_name", user).execute()
-        return response.data
-    return []
-
-# --- 3. SESSION STATE ---
-if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False
-if 'user_name' not in st.session_state:
-    st.session_state.user_name = "Guest"
-
-# --- 4. CUSTOM STYLING (The "Pretty" Part) ---
+# --- 5. STYLING ---
 st.markdown("""
 <style>
     .stApp {background-color: #0e0e0e;}
-    
-    /* Login Page Styling */
     .landing-header {font-size: 3rem; font-weight: 800; color: #fff;}
     .landing-sub {font-size: 1.2rem; color: #bbb; line-height: 1.6;}
-    .feature-box {background: #1a1a1a; padding: 20px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #333;}
-    
-    /* Hero Banner */
     .hero-container {
         padding: 4rem;
         border-radius: 20px;
@@ -72,145 +81,90 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 5. THE LANDING PAGE (Pre-Login) ---
-if not st.session_state.logged_in:
-    
-    # Create two columns: Left (Info) | Right (Login)
+# --- 6. LANDING PAGE (AUTH) ---
+if not st.session_state.user:
     col1, col2 = st.columns([3, 2], gap="large")
     
     with col1:
         st.markdown('<p class="landing-header">Stream Smarter.<br>Regulate Better.</p>', unsafe_allow_html=True)
-        st.markdown('<p class="landing-sub">The world is loud. Your entertainment shouldn\'t be. NeuroStream is the first streaming guide designed for <b>Neurodivergent Minds</b>.</p>', unsafe_allow_html=True)
-        
-        st.divider()
-        
-        # Value Props (The "Why")
-        c1, c2 = st.columns(2)
-        with c1:
-            st.markdown("""
-            <div class="feature-box">
-                <b>🎯 Sensory Filters</b><br>
-                Find movies based on "Spoon Theory" and sensory load, not just genre.
-            </div>
-            """, unsafe_allow_html=True)
-        with c2:
-            st.markdown("""
-            <div class="feature-box">
-                <b>🚫 Trigger Warning</b><br>
-                AI-detected audio spikes and visual flash warnings before you watch.
-            </div>
-            """, unsafe_allow_html=True)
-            
+        st.markdown('<p class="landing-sub">The first streaming guide for <b>Neurodivergent Minds</b>. Filter by sensory load, not just genre.</p>', unsafe_allow_html=True)
+        st.info("💡 **Demo:** Create any account to test it!")
+
     with col2:
-        st.write("") 
-        st.write("") # Spacers
         with st.container(border=True):
-            st.subheader("Member Login")
-            username = st.text_input("Username", placeholder="e.g. Johan")
+            auth_mode = st.radio("Access", ["Log In", "Sign Up"], horizontal=True)
+            email = st.text_input("Email")
             password = st.text_input("Password", type="password")
+
+            if auth_mode == "Sign Up":
+                if st.button("Create Account", use_container_width=True):
+                    res, err = sign_up(email, password)
+                    if res and res.user:
+                        st.success("Account created! You can now log in.")
+                    elif err:
+                        st.error(f"Error: {err}")
             
-            if st.button("Enter NeuroStream ▶", use_container_width=True):
-                if password == "1234": 
-                    st.session_state.logged_in = True
-                    st.session_state.user_name = username
-                    st.rerun()
-                else:
-                    st.error("Wrong password. (Hint: 1234)")
-            
-            st.caption("New here? Use '1234' to demo the Beta.")
+            else: # Log In
+                if st.button("Log In", use_container_width=True):
+                    res, err = sign_in(email, password)
+                    if res and res.user:
+                        st.session_state.user = res.user
+                        st.rerun()
+                    elif err:
+                        st.error(f"Login failed: {err}")
+    st.stop()
 
-    st.stop() # Stop the app here if not logged in
+# --- 7. MAIN APP (Logged In) ---
+user_email = st.session_state.user.email
 
-# --- 6. MAIN APP (Logged In) ---
-
-# Sidebar Navigation
 with st.sidebar:
     st.title("🧠 NeuroStream")
-    st.caption(f"Logged in as: {st.session_state.user_name}")
-    
-    menu = st.radio("Menu", ["🍿 Movies & Shows", "📚 Education & Tips", "❤️ My Watchlist"])
-    
-    st.divider()
+    st.write(f"👤 {user_email}")
+    menu = st.radio("Menu", ["🍿 Movies", "📚 Education", "❤️ My Watchlist"])
     if st.button("Log Out"):
-        st.session_state.logged_in = False
+        st.session_state.user = None
+        supabase.auth.sign_out()
         st.rerun()
 
-# --- TAB: EDUCATION & TIPS (New Feature!) ---
-if menu == "📚 Education & Tips":
+if menu == "📚 Education":
     st.header("Neuro-Support Hub 🌿")
-    st.write("Verified strategies for regulation, focus, and sleep.")
-    
-    tab1, tab2, tab3 = st.tabs(["🧠 ADHD Hacks", "🧘 Sensory Regulation", "💤 Sleep Aid"])
-    
-    with tab1:
-        st.subheader("How to ADHD")
-        c1, c2 = st.columns(2)
-        with c1:
-            st.video("https://www.youtube.com/watch?v=JhzxqLxY5xM") # ADHD Focus
-            st.caption("How to Focus with ADHD")
-        with c2:
-            st.video("https://www.youtube.com/watch?v=hZnUbq8IkkQ") # Dopamine
-            st.caption("The Dopamine Menu")
-            
-    with tab2:
-        st.subheader("Calming the Nervous System")
-        st.video("https://www.youtube.com/watch?v=tEmt1Znux58") # Box Breathing
-        st.caption("Box Breathing Guide (Visual)")
-        
-    with tab3:
-        st.subheader("Brown Noise & Visuals")
-        st.video("https://www.youtube.com/watch?v=RqzGzwTY-6w") # Brown Noise
-        st.caption("Deep Brown Noise for Sleep (Black Screen)")
+    st.video("https://www.youtube.com/watch?v=JhzxqLxY5xM")
+    st.caption("How to Focus with ADHD")
 
-# --- TAB: WATCHLIST ---
 elif menu == "❤️ My Watchlist":
-    st.header(f"❤️ {st.session_state.user_name}'s Safe List")
-    my_list = get_user_watchlist(st.session_state.user_name)
-    
-    if not my_list:
-        st.info("Your list is empty! Go to 'Movies & Shows' to add some.")
-    else:
+    st.header("Your Safe List")
+    my_list = get_user_watchlist(user_email)
+    if my_list:
         cols = st.columns(4)
         for index, item in enumerate(my_list):
             with cols[index % 4]:
-                st.image(item['poster_url'], use_container_width=True)
-                st.write(f"**{item['movie_title']}**")
-                if st.button(f"Remove ❌", key=f"del_{item['id']}"):
+                st.image(item['poster_url'])
+                if st.button("Remove", key=f"del_{item['id']}"):
                     remove_from_db(item['id'])
                     st.rerun()
+    else:
+        st.info("List is empty.")
 
-# --- TAB: MOVIES (Home) ---
-else:
-    # Hero Section
+else: # Movies
     if not df.empty:
         hero = df.iloc[0]
         st.markdown(f"""
         <div class="hero-container" style="background-image: url('{hero['Backdrop']}');">
             <h1>{hero['Title']}</h1>
-            <p><strong>{hero['Emoji']} {hero['Sensory Load']}</strong></p>
         </div>
         """, unsafe_allow_html=True)
 
-    st.subheader("Trending Now")
-    
-    # Get current watchlist
-    current_watchlist = get_user_watchlist(st.session_state.user_name)
+    st.subheader("Trending")
+    current_watchlist = get_user_watchlist(user_email)
     saved_titles = [item['movie_title'] for item in current_watchlist] if current_watchlist else []
     
     cols = st.columns(4)
     for index, row in df.iterrows():
         with cols[index % 4]:
-            st.image(row['Poster'], use_container_width=True)
-            st.caption(f"{row['Emoji']} {row['Sensory Load']}")
-            
-            c1, c2 = st.columns([1, 1])
-            with c1:
-                st.link_button("▶ Watch", row['Link'])
-            with c2:
-                if row['Title'] in saved_titles:
-                    st.button("✅ Added", key=f"btn_{index}", disabled=True)
-                else:
-                    if st.button("➕ Add", key=f"btn_{index}"):
-                        add_to_db(st.session_state.user_name, row['Title'], row['Poster'])
-                        st.toast(f"Saved {row['Title']}!")
-                        st.rerun()
+            st.image(row['Poster'])
+            if row['Title'] in saved_titles:
+                st.button("✅ Added", key=f"btn_{index}", disabled=True)
+            else:
+                if st.button("➕ Add", key=f"btn_{index}"):
+                    add_to_db(user_email, row['Title'], row['Poster'])
+                    st.rerun()
