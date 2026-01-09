@@ -1,31 +1,33 @@
 # FILE: app.py
 # --------------------------------------------------
-# Dopamine.watch v18.1 — SAFE AI REORDER
+# DOPAMINE.WATCH v21.0
+# MOVIES TAB = MAGNET (STABLE BASE)
 # --------------------------------------------------
 
 import streamlit as st
 import streamlit.components.v1 as components
 import requests
+import random
 import os
-import json
 from urllib.parse import quote_plus
 from supabase import create_client
-from openai import OpenAI
 
 # --------------------------------------------------
 # CONFIG
 # --------------------------------------------------
-st.set_page_config(page_title="Dopamine.watch", page_icon="🧠", layout="wide")
+st.set_page_config(
+    page_title="Dopamine.watch",
+    page_icon="🧠",
+    layout="wide"
+)
 
 APP_NAME = "Dopamine.watch"
-TAGLINE = "Regulate Your Vibe"
+TAGLINE = "Regulate Your Vibe."
 TMDB_REGION = "US"
-
-VIDEO_URL = "https://youtu.be/-6WCkTeG3Cs"
-AUTH_IMG = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop"
+LOGO_PATH = "logo.png"
 
 # --------------------------------------------------
-# CONNECTIONS
+# SUPABASE
 # --------------------------------------------------
 @st.cache_resource
 def init_supabase():
@@ -39,112 +41,130 @@ def init_supabase():
 
 supabase = init_supabase()
 
-try:
-    openai_client = OpenAI(api_key=st.secrets["openai"]["key"])
-    AI_ENABLED = True
-except:
-    AI_ENABLED = False
+# --------------------------------------------------
+# SESSION
+# --------------------------------------------------
+if "user" not in st.session_state:
+    st.session_state.user = None
+
+if "hit_me_movie" not in st.session_state:
+    st.session_state.hit_me_movie = None
 
 # --------------------------------------------------
-# ASSETS
+# STYLES (ADHD SAFE)
+# --------------------------------------------------
+st.markdown("""
+<style>
+.stApp { background:#0e0e0e; color:white; }
+
+.section-title {
+    font-size:1.6rem;
+    font-weight:800;
+    margin:30px 0 10px 0;
+}
+
+.movie-card {
+    background:#161616;
+    border-radius:14px;
+    padding:8px;
+    border:1px solid #333;
+}
+
+.provider {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:6px;
+    background:#222;
+    padding:5px 8px;
+    border-radius:8px;
+    text-decoration:none !important;
+    color:white !important;
+    font-size:0.85rem;
+}
+
+.provider:hover { background:#333; }
+
+.provider img {
+    width:20px;
+    height:20px;
+    object-fit:contain;
+}
+
+.badge {
+    font-size:0.7rem;
+    color:#00E5FF;
+    margin-top:4px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# --------------------------------------------------
+# LOGOS & PROVIDERS
 # --------------------------------------------------
 LOGOS = {
     "Netflix": "https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg",
-    "Amazon Prime Video": "https://upload.wikimedia.org/wikipedia/commons/f/f1/Prime_Video.png",
     "Disney Plus": "https://upload.wikimedia.org/wikipedia/commons/3/3e/Disney%2B_logo.svg",
+    "Amazon Prime Video": "https://upload.wikimedia.org/wikipedia/commons/f/f1/Prime_Video.png",
     "Hulu": "https://upload.wikimedia.org/wikipedia/commons/e/e4/Hulu_Logo.svg",
-    "YouTube": "https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg",
-    "Spotify": "https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg",
-    "Audible": "https://upload.wikimedia.org/wikipedia/commons/0/05/Audible_logo.svg",
     "Max": "https://upload.wikimedia.org/wikipedia/commons/c/ce/Max_logo.svg",
+    "Apple TV Plus": "https://upload.wikimedia.org/wikipedia/commons/2/28/Apple_TV_Plus_Logo.svg",
+    "Paramount Plus": "https://upload.wikimedia.org/wikipedia/commons/a/a5/Paramount_Plus.svg",
+    "Peacock": "https://upload.wikimedia.org/wikipedia/commons/d/d3/NBCUniversal_Peacock_Logo.svg",
+    "Crunchyroll": "https://upload.wikimedia.org/wikipedia/commons/0/08/Crunchyroll_Logo.svg",
+    "Tubi TV": "https://upload.wikimedia.org/wikipedia/commons/1/1e/Tubi_logo.svg",
+    "Pluto TV": "https://upload.wikimedia.org/wikipedia/commons/3/3e/Pluto_TV_logo.svg",
+    "Freevee": "https://upload.wikimedia.org/wikipedia/commons/3/3b/Amazon_Freevee_logo.svg",
+    "Plex": "https://upload.wikimedia.org/wikipedia/commons/7/7b/Plex_logo.svg",
 }
 
 SERVICE_MAP = {
     "Netflix": "https://www.netflix.com/search?q={title}",
-    "Amazon Prime Video": "https://www.amazon.com/s?k={title}&i=instant-video",
     "Disney Plus": "https://www.disneyplus.com/search",
+    "Amazon Prime Video": "https://www.amazon.com/s?k={title}&i=instant-video",
     "Hulu": "https://www.hulu.com/search?q={title}",
-    "YouTube": "https://www.youtube.com/results?search_query=watch+{title}",
-    "Audible": "https://www.audible.com/search?keywords={title}",
     "Max": "https://play.max.com/search",
+    "Apple TV Plus": "https://tv.apple.com/search?term={title}",
+    "Paramount Plus": "https://www.paramountplus.com/search",
+    "Peacock": "https://www.peacocktv.com/search?q={title}",
+    "Crunchyroll": "https://www.crunchyroll.com/search?q={title}",
+    "Tubi TV": "https://tubitv.com/search/{title}",
+    "Pluto TV": "https://pluto.tv/search/details?query={title}",
+    "Freevee": "https://www.amazon.com/freevee/search?q={title}",
+    "Plex": "https://watch.plex.tv/search?q={title}"
 }
 
 # --------------------------------------------------
 # HELPERS
 # --------------------------------------------------
 def render_logo():
-    if os.path.exists("logo.png"):
-        st.image("logo.png", width=180)
+    if os.path.exists(LOGO_PATH):
+        st.image(LOGO_PATH, width=180)
     else:
-        st.markdown(f"<h1 style='color:#00E5FF;'>🧠 {APP_NAME}</h1>", unsafe_allow_html=True)
+        st.markdown(f"## 🧠 {APP_NAME}")
 
-def get_image_url(path):
+def poster(path):
     if not path:
         return "https://via.placeholder.com/500x750?text=No+Image"
-    if path.startswith("http"):
-        return path
     return f"https://image.tmdb.org/t/p/w500{path}"
 
-def get_deep_link(provider, title):
-    template = SERVICE_MAP.get(provider)
-    if not template:
-        return f"https://www.google.com/search?q=watch+{quote_plus(title)}"
-    return template.format(title=quote_plus(title))
+def provider_link(name, title):
+    tpl = SERVICE_MAP.get(name)
+    if tpl:
+        return tpl.format(title=quote_plus(title))
+    return None  # hard stop – no Google by default
+
+def provider_icon(name):
+    src = LOGOS.get(name)
+    if src:
+        return f"<img src='{src}'>"
+    return "📺"
 
 # --------------------------------------------------
-# AI — SAFE REORDER (NEVER REMOVES ITEMS)
-# --------------------------------------------------
-def ai_reorder_movies(movies, mood):
-    if not AI_ENABLED or not movies:
-        return movies
-
-    try:
-        titles = [m["title"] for m in movies]
-
-        prompt = f"""
-You are curating media for a neurodivergent user.
-
-Mood rules:
-- Focus = calm, slow, documentary, animation
-- Regulate = familiar, comforting, mainstream
-- Stimulate = action, fast-paced, anime, superhero
-
-Reorder these titles for mood: {mood}
-
-Return ONLY a JSON array of titles.
-Do not add or remove titles.
-
-Titles:
-{json.dumps(titles)}
-"""
-
-        response = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.2
-        )
-
-        raw = response.choices[0].message.content.strip()
-        raw = raw.replace("```json", "").replace("```", "")
-        ordered_titles = json.loads(raw)
-
-        ordered = []
-        for t in ordered_titles:
-            for m in movies:
-                if m["title"] == t:
-                    ordered.append(m)
-                    break
-
-        return ordered if ordered else movies
-
-    except:
-        return movies
-
-# --------------------------------------------------
-# DATA
+# TMDB FETCHING
 # --------------------------------------------------
 @st.cache_data(ttl=1800)
-def fetch_movies():
+def discover_movies(extra_params=""):
     try:
         url = (
             "https://api.themoviedb.org/3/discover/movie"
@@ -152,7 +172,8 @@ def fetch_movies():
             "&include_adult=false"
             "&sort_by=popularity.desc"
             f"&watch_region={TMDB_REGION}"
-            "&with_watch_monetization_types=flatrate|rent"
+            "&with_watch_monetization_types=flatrate|free|ads|rent"
+            f"{extra_params}"
         )
         return requests.get(url, timeout=6).json().get("results", [])
     except:
@@ -170,86 +191,126 @@ def fetch_providers(movie_id):
 # AUTH
 # --------------------------------------------------
 def auth_page():
-    col1, col2 = st.columns([2,1])
+    col1, col2 = st.columns([1.5,1])
     with col1:
         render_logo()
-        st.markdown(f"<h2>{TAGLINE}</h2>", unsafe_allow_html=True)
-        st.image(AUTH_IMG, use_container_width=True)
+        st.markdown(f"### {TAGLINE}")
     with col2:
-        with st.form("login"):
-            email = st.text_input("Email")
-            pwd = st.text_input("Password", type="password")
-            if st.form_submit_button("Log In"):
-                try:
-                    res = supabase.auth.sign_in_with_password({"email": email, "password": pwd})
-                    st.session_state.user = res.user
-                    st.rerun()
-                except:
-                    st.error("Login failed")
+        email = st.text_input("Email")
+        pwd = st.text_input("Password", type="password")
+        if st.button("Log In"):
+            try:
+                res = supabase.auth.sign_in_with_password({"email": email, "password": pwd})
+                st.session_state.user = res.user
+                st.rerun()
+            except:
+                st.error("Login failed")
         if st.button("Guest Mode"):
             st.session_state.user = "guest"
             st.rerun()
 
 # --------------------------------------------------
-# MAIN
+# MAIN ENTRY
 # --------------------------------------------------
-if "user" not in st.session_state:
-    st.session_state.user = None
-
 if not st.session_state.user:
     auth_page()
     st.stop()
 
 with st.sidebar:
     render_logo()
-    mood = st.radio("How do you want to feel?", ["Focus", "Regulate", "Stimulate"])
+    if st.button("🎲 Hit Me"):
+        all_movies = (
+            discover_movies("&with_genres=16") +
+            discover_movies("&with_genres=16&with_original_language=ja") +
+            discover_movies("")
+        )
+        if all_movies:
+            st.session_state.hit_me_movie = random.choice(all_movies)
+            st.toast("Dopamine injected 🎬")
     if st.button("Log out"):
         st.session_state.user = None
         st.rerun()
 
-tab_movies, tab_shot, tab_music = st.tabs(["🎬 Movies", "⚡ Dopamine Shot", "🎵 Music"])
+# --------------------------------------------------
+# TABS
+# --------------------------------------------------
+tab_movies, tab_stub = st.tabs(["🎬 Movies", "⚙️ Coming Next"])
 
 # --------------------------------------------------
-# MOVIES
+# MOVIES TAB (MAGNET)
 # --------------------------------------------------
 with tab_movies:
-    movies = ai_reorder_movies(fetch_movies(), mood)
-    cols = st.columns(6)
 
-    for i, movie in enumerate(movies[:18]):
-        with cols[i % 6]:
-            st.image(get_image_url(movie.get("poster_path")), use_container_width=True)
-
-            provs = fetch_providers(movie["id"])
-            for p in provs.get("flatrate", [])[:1]:
-                link = get_deep_link(p["provider_name"], movie["title"])
+    # HIT ME FEATURE
+    if st.session_state.hit_me_movie:
+        m = st.session_state.hit_me_movie
+        st.markdown("## 🎲 Hit Me")
+        st.image(poster(m["poster_path"]), width=220)
+        st.markdown(f"**{m['title']}**")
+        provs = fetch_providers(m["id"])
+        for p in provs.get("flatrate", [])[:3]:
+            link = provider_link(p["provider_name"], m["title"])
+            if link:
                 st.markdown(
-                    f"<a href='{link}' target='_blank'>▶ {p['provider_name']}</a>",
+                    f"<a href='{link}' target='_blank' class='provider'>"
+                    f"{provider_icon(p['provider_name'])} {p['provider_name']}</a>",
                     unsafe_allow_html=True
                 )
+        st.divider()
 
-            st.markdown(
-                f"<a href='{get_deep_link('YouTube', movie['title'])}' target='_blank'>🎬 Trailer</a>",
-                unsafe_allow_html=True
-            )
+    # CARTOONS & ANIMATION
+    st.markdown("<div class='section-title'>🎨 Cartoons & Animation</div>", unsafe_allow_html=True)
+    cartoons = discover_movies("&with_genres=16")
+    cols = st.columns(4)
+    for i, m in enumerate(cartoons[:12]):
+        with cols[i % 4]:
+            st.image(poster(m["poster_path"]), use_container_width=True)
+            provs = fetch_providers(m["id"])
+            for p in provs.get("flatrate", [])[:2]:
+                link = provider_link(p["provider_name"], m["title"])
+                if link:
+                    st.markdown(
+                        f"<a href='{link}' target='_blank' class='provider'>"
+                        f"{provider_icon(p['provider_name'])}</a>",
+                        unsafe_allow_html=True
+                    )
+
+    # ANIME
+    st.markdown("<div class='section-title'>🍣 Anime</div>", unsafe_allow_html=True)
+    anime = discover_movies("&with_genres=16&with_original_language=ja")
+    cols = st.columns(4)
+    for i, m in enumerate(anime[:12]):
+        with cols[i % 4]:
+            st.image(poster(m["poster_path"]), use_container_width=True)
+            provs = fetch_providers(m["id"])
+            for p in provs.get("flatrate", [])[:2]:
+                link = provider_link(p["provider_name"], m["title"])
+                if link:
+                    st.markdown(
+                        f"<a href='{link}' target='_blank' class='provider'>"
+                        f"{provider_icon(p['provider_name'])}</a>",
+                        unsafe_allow_html=True
+                    )
+
+    # TRENDING LIVE ACTION
+    st.markdown("<div class='section-title'>🎬 Trending Now</div>", unsafe_allow_html=True)
+    trending = discover_movies("")
+    cols = st.columns(4)
+    for i, m in enumerate(trending[:12]):
+        with cols[i % 4]:
+            st.image(poster(m["poster_path"]), use_container_width=True)
+            provs = fetch_providers(m["id"])
+            for p in provs.get("flatrate", [])[:2]:
+                link = provider_link(p["provider_name"], m["title"])
+                if link:
+                    st.markdown(
+                        f"<a href='{link}' target='_blank' class='provider'>"
+                        f"{provider_icon(p['provider_name'])}</a>",
+                        unsafe_allow_html=True
+                    )
 
 # --------------------------------------------------
-# DOPAMINE SHOT
+# STUB TAB (INTENTIONAL)
 # --------------------------------------------------
-with tab_shot:
-    st.subheader("Today’s Dopamine Shot")
-    st.video(VIDEO_URL)
-
-# --------------------------------------------------
-# MUSIC
-# --------------------------------------------------
-with tab_music:
-    playlist_map = {
-        "Focus": "37i9dQZF1DX4sWSpwq3LiO",
-        "Regulate": "37i9dQZF1DWZd79rJ6a7lp",
-        "Stimulate": "37i9dQZF1DX7HOk71GPfSw"
-    }
-    components.iframe(
-        f"https://open.spotify.com/embed/playlist/{playlist_map[mood]}",
-        height=380
-    )
+with tab_stub:
+    st.info("Spotify, Education, AI curation, and Watchlists come next — now that Movies are stable.")
