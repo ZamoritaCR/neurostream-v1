@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import time
+from urllib.parse import urlparse, parse_qs
 from supabase import create_client, Client
 
 # --- PAGE CONFIG ---
@@ -35,6 +36,9 @@ def sign_in(email, password):
 
 def send_reset_email(email):
     try:
+        # Standard redirect URL back to the app
+        redirect_url = st.secrets["supabase"]["url"] # Fallback
+        # Try to construct the actual app URL if possible, otherwise Supabase uses Site URL
         supabase.auth.reset_password_email(email)
         return True, None
     except Exception as e:
@@ -48,25 +52,40 @@ def update_password(new_password):
         return False, str(e)
 
 def login_with_url(url_string):
-    # This manually grabs the token from the URL you paste
+    """
+    Handles two types of URLs:
+    1. The Email Link: ...?token_hash=xyz&type=recovery
+    2. The Redirect Link: ...#access_token=xyz&refresh_token=abc
+    """
     try:
-        # Extract the fragment after #
+        # CASE A: It has a fragment (#) -> It's a redirect link
         if "#" in url_string:
             fragment = url_string.split("#")[1]
-            # Parse parameters
             params = dict(item.split("=") for item in fragment.split("&") if "=" in item)
-            
             access_token = params.get("access_token")
             refresh_token = params.get("refresh_token")
             
             if access_token and refresh_token:
-                # Force the session
                 response = supabase.auth.set_session(access_token, refresh_token)
                 return response, None
-            else:
-                return None, "No tokens found in URL."
-        else:
-            return None, "URL does not contain a hash (#)."
+        
+        # CASE B: It has query params (?) -> It's the raw email link
+        parsed_url = urlparse(url_string)
+        query_params = parse_qs(parsed_url.query)
+        
+        if 'token_hash' in query_params and 'type' in query_params:
+            token_hash = query_params['token_hash'][0]
+            email_type = query_params['type'][0] # usually 'recovery' or 'signup'
+            
+            # Exchange the token hash for a session
+            response = supabase.auth.verify_otp({
+                "token_hash": token_hash,
+                "type": email_type
+            })
+            return response, None
+
+        return None, "Could not find a valid token or hash in that URL."
+
     except Exception as e:
         return None, str(e)
 
@@ -148,7 +167,7 @@ if not st.session_state.user:
                                 st.error(f"Error: {err}")
                 
                 with tab2:
-                    st.caption("If clicking the email link didn't log you in, copy that full URL from your browser bar and paste it here:")
+                    st.caption("Paste the FULL link from your email here (starts with https://...):")
                     pasted_url = st.text_input("Paste URL here")
                     if st.button("Verify & Login 🔓", use_container_width=True):
                         res, err = login_with_url(pasted_url)
