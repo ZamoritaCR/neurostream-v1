@@ -2,4 +2,3 @@ streamlit
 pandas
 supabase
 requests
-duckduckgo-search
