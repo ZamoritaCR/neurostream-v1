@@ -3,7 +3,6 @@ import pandas as pd
 import requests
 import time
 from urllib.parse import quote_plus, urlparse, parse_qs
-from duckduckgo_search import DDGS
 from supabase import create_client, Client
 
 # --- PAGE CONFIG ---
@@ -21,21 +20,7 @@ def init_connection():
 
 supabase = init_connection()
 
-# --- 2. SEARCH ENGINE ( The "Embed" Workaround ) ---
-def search_web_for_movie(movie_title):
-    """
-    Fetches real search results so we can display them INSIDE the app
-    instead of kicking the user to a Google Tab.
-    """
-    try:
-        # We search specifically for "watch [title] online"
-        query = f"watch {movie_title} online streaming"
-        results = DDGS().text(query, max_results=3)
-        return results
-    except:
-        return []
-
-# --- 3. SERVICE MAP (Direct Links) ---
+# --- 2. SERVICE MAP ---
 SERVICE_MAP = {
     "Netflix": {"url": "https://www.netflix.com/search?q={title}", "label": "Search Netflix"},
     "Hulu": {"url": "https://www.hulu.com/search?q={title}", "label": "Search Hulu"},
@@ -57,7 +42,7 @@ def get_deep_link_info(provider_name, movie_title):
         return template, entry["label"]
     return f"https://www.google.com/search?q=watch+{quote_plus(movie_title)}", "Find Online"
 
-# --- 4. TMDB API ---
+# --- 3. TMDB API ---
 def fetch_streaming_movies():
     try:
         api_key = st.secrets["tmdb"]["key"]
@@ -90,27 +75,21 @@ def get_backdrop_url(path):
     if path: return f"https://image.tmdb.org/t/p/original{path}"
     return None
 
-# --- 5. AUTH & DB ---
+# --- 4. AUTH & DB ---
 def sign_up(email, password):
-    try:
-        return supabase.auth.sign_up({"email": email, "password": password}), None
+    try: return supabase.auth.sign_up({"email": email, "password": password}), None
     except Exception as e: return None, str(e)
 
 def sign_in(email, password):
-    try:
-        return supabase.auth.sign_in_with_password({"email": email, "password": password}), None
+    try: return supabase.auth.sign_in_with_password({"email": email, "password": password}), None
     except Exception as e: return None, str(e)
 
 def send_reset_email(email):
-    try:
-        supabase.auth.reset_password_email(email)
-        return True, None
+    try: supabase.auth.reset_password_email(email); return True, None
     except Exception as e: return False, str(e)
 
 def update_password(new_password):
-    try:
-        supabase.auth.update_user({"password": new_password})
-        return True, None
+    try: supabase.auth.update_user({"password": new_password}); return True, None
     except Exception as e: return False, str(e)
 
 def login_with_url(url_string):
@@ -120,8 +99,7 @@ def login_with_url(url_string):
             params = dict(item.split("=") for item in fragment.split("&") if "=" in item)
             access_token = params.get("access_token")
             refresh_token = params.get("refresh_token")
-            if access_token and refresh_token:
-                return supabase.auth.set_session(access_token, refresh_token), None
+            if access_token and refresh_token: return supabase.auth.set_session(access_token, refresh_token), None
         parsed_url = urlparse(url_string)
         query_params = parse_qs(parsed_url.query)
         if 'token_hash' in query_params and 'type' in query_params:
@@ -139,10 +117,10 @@ def get_user_watchlist(user_email):
     if supabase: return supabase.table("watchlist").select("*").eq("user_name", user_email).execute().data
     return []
 
-# --- 6. SESSION ---
+# --- 5. SESSION ---
 if 'user' not in st.session_state: st.session_state.user = None
 
-# --- 7. STYLING ---
+# --- 6. STYLING ---
 st.markdown("""
 <style>
     .stApp {background-color: #0e0e0e;}
@@ -156,25 +134,27 @@ st.markdown("""
         transition: transform 0.2s;
     }
     .movie-poster:hover { transform: scale(1.03); border: 2px solid #7D4CDB; }
+    
     .service-badge {
         position: absolute; top: 10px; right: 10px;
         background-color: rgba(0,0,0,0.9); color: white; padding: 5px 10px;
         border-radius: 6px; font-size: 0.75rem; font-weight: bold; pointer-events: none;
     }
-    .action-subtext { font-size: 0.8rem; color: #888; margin-top: 4px; text-align: center; }
-    a { text-decoration: none; }
     
-    /* Search Result Styling */
-    .search-result {
-        background: #1a1a1a; padding: 10px; border-radius: 8px;
-        margin-top: 5px; border: 1px solid #333; font-size: 0.9rem;
+    /* Research Button Styling */
+    .research-btn {
+        display: block; text-align: center; margin-top: 5px;
+        color: #888; font-size: 0.8rem; text-decoration: none;
+        padding: 5px; border-radius: 5px; border: 1px solid #333;
+        transition: all 0.2s;
     }
-    .search-result a { color: #4DA6FF; font-weight: bold; }
-    .search-result p { color: #ccc; font-size: 0.8rem; margin: 0; }
+    .research-btn:hover { background: #222; color: #fff; border-color: #555; }
+    
+    a { text-decoration: none; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 8. LANDING ---
+# --- 7. LANDING ---
 if not st.session_state.user:
     col1, col2 = st.columns([3, 2], gap="large")
     with col1:
@@ -212,7 +192,7 @@ if not st.session_state.user:
                         if res and res.user: st.session_state.user = res.user; st.rerun()
     st.stop()
 
-# --- 9. MAIN APP ---
+# --- 8. MAIN APP ---
 user_email = st.session_state.user.email
 
 with st.sidebar:
@@ -270,7 +250,8 @@ elif menu == "🍿 Live Feed":
             else:
                 deep_link = f"https://www.themoviedb.org/movie/{movie['id']}"
 
-            # --- RENDER CARD ---
+            # --- RENDER CARD (With Research Button) ---
+            # 1. Main Clickable Poster
             st.markdown(f"""
                 <div class="movie-card">
                     <a href="{deep_link}" target="_blank" title="{label}">
@@ -280,24 +261,16 @@ elif menu == "🍿 Live Feed":
                 </div>
             """, unsafe_allow_html=True)
 
-            # --- EMBEDDED SEARCH (The "Google Research" Feature) ---
-            # We use an Expander to hide the search until requested.
-            # This prevents the app from being messy or getting banned.
-            with st.expander(f"🔎 Find other links"):
-                # Unique key is essential so buttons don't mix up
-                if st.button("Search Web", key=f"search_{movie['id']}"):
-                    with st.spinner("Searching..."):
-                        results = search_web_for_movie(movie['title'])
-                        if results:
-                            for res in results:
-                                st.markdown(f"""
-                                <div class="search-result">
-                                    <a href="{res['href']}" target="_blank">{res['title']}</a>
-                                    <p>{res['body'][:80]}...</p>
-                                </div>
-                                """, unsafe_allow_html=True)
-                        else:
-                            st.warning("No results found.")
+            # 2. Research Link (The "Embedded" Compromise)
+            # This generates a Google Search Link below the poster
+            research_query = quote_plus(f"watch {movie['title']} online free")
+            research_url = f"https://www.google.com/search?q={research_query}"
+            
+            st.markdown(f"""
+                <a href="{research_url}" target="_blank" class="research-btn">
+                    🔎 Research
+                </a>
+            """, unsafe_allow_html=True)
 
             # Watchlist
             if movie['title'] in saved_titles:
