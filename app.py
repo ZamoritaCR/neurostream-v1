@@ -20,30 +20,34 @@ def init_connection():
 
 supabase = init_connection()
 
-# --- 2. TMDB API FUNCTIONS (The New Brain) ---
+# --- 2. TMDB API FUNCTIONS ---
 def fetch_trending_movies():
     """Fetches currently trending movies from TMDB."""
-    api_key = st.secrets["tmdb"]["key"]
-    url = f"https://api.themoviedb.org/3/trending/movie/week?api_key={api_key}"
-    response = requests.get(url)
-    if response.status_code == 200:
-        return response.json().get('results', [])
-    return []
+    try:
+        api_key = st.secrets["tmdb"]["key"]
+        url = f"https://api.themoviedb.org/3/trending/movie/week?api_key={api_key}"
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.json().get('results', [])
+        return []
+    except:
+        return []
 
 def fetch_watch_providers(movie_id):
     """Checks where a movie is streaming (US Region default)."""
-    api_key = st.secrets["tmdb"]["key"]
-    url = f"https://api.themoviedb.org/3/movie/{movie_id}/watch/providers?api_key={api_key}"
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
-        # "US" for United States. Change to "GB" for UK, "CA" for Canada, etc.
-        if 'results' in data and 'US' in data['results']:
-            return data['results']['US']
-    return None
+    try:
+        api_key = st.secrets["tmdb"]["key"]
+        url = f"https://api.themoviedb.org/3/movie/{movie_id}/watch/providers?api_key={api_key}"
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            if 'results' in data and 'US' in data['results']:
+                return data['results']['US']
+        return None
+    except:
+        return None
 
 def get_image_url(path):
-    """Converts TMDB image path to full URL."""
     if path:
         return f"https://image.tmdb.org/t/p/w500{path}"
     return "https://via.placeholder.com/500x750?text=No+Image"
@@ -104,10 +108,9 @@ def login_with_url(url_string):
     except Exception as e:
         return None, str(e)
 
-# --- 4. DATABASE FUNCTIONS (Watchlist) ---
+# --- 4. DATABASE FUNCTIONS ---
 def add_to_db(user_email, title, poster, tmdb_id):
     if supabase:
-        # We now store TMDB ID too for better linking later
         data = {"user_name": user_email, "movie_title": title, "poster_url": poster, "tmdb_id": tmdb_id}
         supabase.table("watchlist").insert(data).execute()
 
@@ -126,6 +129,7 @@ if 'user' not in st.session_state:
     st.session_state.user = None
 
 # --- 6. STYLING ---
+# Added CSS for hover effects on images
 st.markdown("""
 <style>
     .stApp {background-color: #0e0e0e;}
@@ -139,18 +143,22 @@ st.markdown("""
         box-shadow: inset 0 0 0 2000px rgba(0,0,0,0.7);
         border: 1px solid #333;
     }
-    .provider-tag {
-        background-color: #333;
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-size: 0.8rem;
-        margin-right: 5px;
-        color: white;
+    .movie-poster {
+        border-radius: 10px;
+        transition: transform 0.2s; 
+        width: 100%;
+        margin-bottom: 10px;
     }
+    .movie-poster:hover {
+        transform: scale(1.05);
+        cursor: pointer;
+        border: 2px solid #ff4b4b;
+    }
+    a { text-decoration: none; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 7. LANDING PAGE (AUTH) ---
+# --- 7. LANDING PAGE ---
 if not st.session_state.user:
     col1, col2 = st.columns([3, 2], gap="large")
     with col1:
@@ -239,10 +247,9 @@ elif menu == "❤️ Watchlist":
         st.info("List is empty.")
 
 elif menu == "🍿 Live Feed":
-    # 1. FETCH DATA FROM TMDB
     movies = fetch_trending_movies()
     
-    # 2. HERO SECTION (Top Movie)
+    # HERO SECTION
     if movies:
         hero = movies[0]
         backdrop = get_backdrop_url(hero.get('backdrop_path'))
@@ -254,34 +261,41 @@ elif menu == "🍿 Live Feed":
         """, unsafe_allow_html=True)
 
     st.subheader("Trending Now")
+    st.caption("Click a poster to watch or see details.")
     
     current_watchlist = get_user_watchlist(user_email)
     saved_titles = [item['movie_title'] for item in current_watchlist] if current_watchlist else []
 
-    # 3. DISPLAY GRID
     cols = st.columns(4)
     for index, movie in enumerate(movies):
         with cols[index % 4]:
-            # Movie Poster
+            # 1. Get Data
             poster_url = get_image_url(movie.get('poster_path'))
-            st.image(poster_url)
-            
-            # Streaming Info
             providers = fetch_watch_providers(movie['id'])
-            if providers and 'flatrate' in providers:
-                # Show top 2 providers (e.g. Netflix, Hulu)
-                streamers = [p['provider_name'] for p in providers['flatrate'][:2]]
-                st.caption(f"📺 {', '.join(streamers)}")
-                
-                # THE "WATCH" LINK
-                # TMDB provides a smart link that lists all providers
-                watch_link = providers.get('link')
-                if watch_link:
-                    st.link_button("▶️ Watch Now", watch_link)
+            
+            # 2. Determine Link (Streaming Link OR TMDB Page)
+            if providers and 'link' in providers:
+                click_link = providers['link']
+                label = "📺 Watch"
             else:
-                st.caption("Not streaming freely")
+                click_link = f"https://www.themoviedb.org/movie/{movie['id']}"
+                label = "ℹ️ Details"
 
-            # Watchlist Logic
+            # 3. Render Clickable Image (Using HTML for Clickability)
+            st.markdown(f"""
+                <a href="{click_link}" target="_blank">
+                    <img src="{poster_url}" class="movie-poster">
+                </a>
+            """, unsafe_allow_html=True)
+            
+            # 4. Show Providers Text
+            if providers and 'flatrate' in providers:
+                streamers = [p['provider_name'] for p in providers['flatrate'][:2]]
+                st.caption(f"On: {', '.join(streamers)}")
+            else:
+                st.caption("Not streaming")
+
+            # 5. Watchlist Button
             if movie['title'] in saved_titles:
                 st.button("✅ Saved", key=f"btn_{index}", disabled=True)
             else:
