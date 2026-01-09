@@ -250,8 +250,7 @@ elif menu == "🍿 Live Feed":
             else:
                 deep_link = f"https://www.themoviedb.org/movie/{movie['id']}"
 
-            # --- RENDER CARD (With Research Button) ---
-            # 1. Main Clickable Poster
+            # --- RENDER CARD ---
             st.markdown(f"""
                 <div class="movie-card">
                     <a href="{deep_link}" target="_blank" title="{label}">
@@ -261,14 +260,14 @@ elif menu == "🍿 Live Feed":
                 </div>
             """, unsafe_allow_html=True)
 
-            # 2. Research Link (The "Embedded" Compromise)
-            # This generates a Google Search Link below the poster
-            research_query = quote_plus(f"watch {movie['title']} online free")
-            research_url = f"https://www.google.com/search?q={research_query}"
+            # --- RESEARCH BUTTON ---
+            # Creates a clean Google link: "watch One Battle After Another"
+            clean_search = quote_plus(f"watch {movie['title']}")
+            research_url = f"https://www.google.com/search?q={clean_search}"
             
             st.markdown(f"""
                 <a href="{research_url}" target="_blank" class="research-btn">
-                    🔎 Research
+                    🔎 Find Links
                 </a>
             """, unsafe_allow_html=True)
 
