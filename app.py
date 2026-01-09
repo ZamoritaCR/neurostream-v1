@@ -3,6 +3,7 @@ import pandas as pd
 import requests
 import time
 from urllib.parse import quote_plus, urlparse, parse_qs
+from duckduckgo_search import DDGS
 from supabase import create_client, Client
 
 # --- PAGE CONFIG ---
@@ -20,80 +21,47 @@ def init_connection():
 
 supabase = init_connection()
 
-# --- 2. SMART LINK LOGIC (The "Walled Garden" Map) ---
-# This dictionary is the "Brain" that knows how to handle each specific service.
-# It distinguishes between services that allow Direct Search vs. those that don't.
+# --- 2. SEARCH ENGINE ( The "Embed" Workaround ) ---
+def search_web_for_movie(movie_title):
+    """
+    Fetches real search results so we can display them INSIDE the app
+    instead of kicking the user to a Google Tab.
+    """
+    try:
+        # We search specifically for "watch [title] online"
+        query = f"watch {movie_title} online streaming"
+        results = DDGS().text(query, max_results=3)
+        return results
+    except:
+        return []
 
+# --- 3. SERVICE MAP (Direct Links) ---
 SERVICE_MAP = {
-    # ✅ TIER A: DIRECT DEEP SEARCH (Best Experience)
-    # These links take the user directly to the search results inside the app.
-    "Netflix": {
-        "url": "https://www.netflix.com/search?q={title}",
-        "label": "Search Netflix"
-    },
-    "Hulu": {
-        "url": "https://www.hulu.com/search?q={title}",
-        "label": "Search Hulu"
-    },
-    "Peacock": {
-        "url": "https://www.peacocktv.com/watch/search?q={title}",
-        "label": "Search Peacock"
-    },
-    "Paramount Plus": {
-        "url": "https://www.paramountplus.com/search/?q={title}",
-        "label": "Search Paramount+"
-    },
-    "Apple TV Plus": {
-        "url": "https://tv.apple.com/search?term={title}",
-        "label": "Search AppleTV+"
-    },
-    "Amazon Prime Video": {
-        "url": "https://www.amazon.com/gp/video/search/ref=atv_nb_sr?phrase={title}&ie=UTF8",
-        "label": "Search Prime"
-    },
-    
-    # ⚠️ TIER B: SAFE LANDING (Blocked Search)
-    # Disney+ and Max block direct search links. To prevent 404 errors,
-    # we land the user safely on the Search Page so they can type the name.
-    "Disney Plus": {
-        "url": "https://www.disneyplus.com/search",
-        "label": "Open Disney+" # Distinct label so user expects to type
-    },
-    "Max": {
-        "url": "https://play.max.com/search",
-        "label": "Open Max"
-    }
+    "Netflix": {"url": "https://www.netflix.com/search?q={title}", "label": "Search Netflix"},
+    "Hulu": {"url": "https://www.hulu.com/search?q={title}", "label": "Search Hulu"},
+    "Peacock": {"url": "https://www.peacocktv.com/watch/search?q={title}", "label": "Search Peacock"},
+    "Paramount Plus": {"url": "https://www.paramountplus.com/search/?q={title}", "label": "Search Paramount+"},
+    "Apple TV Plus": {"url": "https://tv.apple.com/search?term={title}", "label": "Search AppleTV+"},
+    "Amazon Prime Video": {"url": "https://www.amazon.com/gp/video/search/ref=atv_nb_sr?phrase={title}&ie=UTF8", "label": "Search Prime"},
+    "Disney Plus": {"url": "https://www.disneyplus.com/search", "label": "Open Disney+"},
+    "Max": {"url": "https://play.max.com/search", "label": "Open Max"}
 }
 
 def get_deep_link_info(provider_name, movie_title):
-    """
-    Returns a tuple: (URL, Action_Label)
-    """
-    # 1. Check if we have a smart map for this provider
     if provider_name in SERVICE_MAP:
         entry = SERVICE_MAP[provider_name]
         template = entry["url"]
-        
-        # If the template supports {title}, fill it in
         if "{title}" in template:
             clean_title = quote_plus(movie_title)
-            final_url = template.format(title=clean_title)
-            return final_url, entry["label"]
-        
-        # Otherwise return the static URL (for Disney/Max)
+            return template.format(title=clean_title), entry["label"]
         return template, entry["label"]
-    
-    # 2. Fallback: If it's a service we don't know (e.g., Tubi, Pluto), use Google
     return f"https://www.google.com/search?q=watch+{quote_plus(movie_title)}", "Find Online"
 
-# --- 3. TMDB API FUNCTIONS ---
+# --- 4. TMDB API ---
 def fetch_streaming_movies():
-    """Fetches movies strictly on flatrate streaming (US)."""
     try:
         api_key = st.secrets["tmdb"]["key"]
-        # Filter: Streaming (Flatrate) + US Region
         url = f"https://api.themoviedb.org/3/discover/movie?api_key={api_key}&include_adult=false&include_video=false&language=en-US&page=1&sort_by=popularity.desc&watch_region=US&with_watch_monetization_types=flatrate"
-        
         response = requests.get(url, timeout=5)
         if response.status_code == 200:
             return response.json().get('results', [])
@@ -102,7 +70,6 @@ def fetch_streaming_movies():
         return []
 
 def fetch_watch_providers(movie_id):
-    """Gets the providers for a specific movie."""
     try:
         api_key = st.secrets["tmdb"]["key"]
         url = f"https://api.themoviedb.org/3/movie/{movie_id}/watch/providers?api_key={api_key}"
@@ -116,43 +83,35 @@ def fetch_watch_providers(movie_id):
         return None
 
 def get_image_url(path):
-    if path:
-        return f"https://image.tmdb.org/t/p/w500{path}"
+    if path: return f"https://image.tmdb.org/t/p/w500{path}"
     return "https://via.placeholder.com/500x750?text=No+Image"
 
 def get_backdrop_url(path):
-    if path:
-        return f"https://image.tmdb.org/t/p/original{path}"
+    if path: return f"https://image.tmdb.org/t/p/original{path}"
     return None
 
-# --- 4. AUTH & DB FUNCTIONS ---
+# --- 5. AUTH & DB ---
 def sign_up(email, password):
     try:
-        response = supabase.auth.sign_up({"email": email, "password": password})
-        return response, None
-    except Exception as e:
-        return None, str(e)
+        return supabase.auth.sign_up({"email": email, "password": password}), None
+    except Exception as e: return None, str(e)
 
 def sign_in(email, password):
     try:
-        response = supabase.auth.sign_in_with_password({"email": email, "password": password})
-        return response, None
-    except Exception as e:
-        return None, str(e)
+        return supabase.auth.sign_in_with_password({"email": email, "password": password}), None
+    except Exception as e: return None, str(e)
 
 def send_reset_email(email):
     try:
         supabase.auth.reset_password_email(email)
         return True, None
-    except Exception as e:
-        return False, str(e)
+    except Exception as e: return False, str(e)
 
 def update_password(new_password):
     try:
         supabase.auth.update_user({"password": new_password})
         return True, None
-    except Exception as e:
-        return False, str(e)
+    except Exception as e: return False, str(e)
 
 def login_with_url(url_string):
     try:
@@ -162,158 +121,98 @@ def login_with_url(url_string):
             access_token = params.get("access_token")
             refresh_token = params.get("refresh_token")
             if access_token and refresh_token:
-                response = supabase.auth.set_session(access_token, refresh_token)
-                return response, None
-        
+                return supabase.auth.set_session(access_token, refresh_token), None
         parsed_url = urlparse(url_string)
         query_params = parse_qs(parsed_url.query)
         if 'token_hash' in query_params and 'type' in query_params:
-            token_hash = query_params['token_hash'][0]
-            email_type = query_params['type'][0]
-            response = supabase.auth.verify_otp({"token_hash": token_hash, "type": email_type})
-            return response, None
+            return supabase.auth.verify_otp({"token_hash": query_params['token_hash'][0], "type": query_params['type'][0]}), None
         return None, "Invalid link."
-    except Exception as e:
-        return None, str(e)
+    except Exception as e: return None, str(e)
 
 def add_to_db(user_email, title, poster, tmdb_id):
-    if supabase:
-        data = {"user_name": user_email, "movie_title": title, "poster_url": poster, "tmdb_id": tmdb_id}
-        supabase.table("watchlist").insert(data).execute()
+    if supabase: supabase.table("watchlist").insert({"user_name": user_email, "movie_title": title, "poster_url": poster, "tmdb_id": tmdb_id}).execute()
 
 def remove_from_db(item_id):
-    if supabase:
-        supabase.table("watchlist").delete().eq("id", item_id).execute()
+    if supabase: supabase.table("watchlist").delete().eq("id", item_id).execute()
 
 def get_user_watchlist(user_email):
-    if supabase:
-        response = supabase.table("watchlist").select("*").eq("user_name", user_email).execute()
-        return response.data
+    if supabase: return supabase.table("watchlist").select("*").eq("user_name", user_email).execute().data
     return []
 
-# --- 5. SESSION STATE ---
-if 'user' not in st.session_state:
-    st.session_state.user = None
+# --- 6. SESSION ---
+if 'user' not in st.session_state: st.session_state.user = None
 
-# --- 6. STYLING (Neuro-Friendly) ---
+# --- 7. STYLING ---
 st.markdown("""
 <style>
     .stApp {background-color: #0e0e0e;}
     .hero-container {
-        padding: 4rem;
-        border-radius: 20px;
-        color: white;
-        margin-bottom: 2rem;
-        background-size: cover;
-        background-position: center;
-        box-shadow: inset 0 0 0 2000px rgba(0,0,0,0.7);
-        border: 1px solid #333;
+        padding: 4rem; border-radius: 20px; color: white; margin-bottom: 2rem;
+        background-size: cover; background-position: center;
+        box-shadow: inset 0 0 0 2000px rgba(0,0,0,0.7); border: 1px solid #333;
     }
-    
-    /* CARD DESIGN */
-    .movie-card {
-        position: relative;
-        margin-bottom: 10px;
-    }
-
     .movie-poster {
-        border-radius: 12px;
-        transition: transform 0.2s ease-in-out; 
-        width: 100%;
-        display: block;
-        border: 1px solid #333;
+        border-radius: 12px; width: 100%; border: 1px solid #333;
+        transition: transform 0.2s;
     }
-    
-    .movie-poster:hover {
-        transform: scale(1.03);
-        cursor: pointer;
-        border: 2px solid #7D4CDB; /* Neuro Purple */
-        box-shadow: 0 0 15px rgba(125, 76, 219, 0.4);
-    }
-
-    /* SERVICE BADGE (The "Neuro-Bridge") */
+    .movie-poster:hover { transform: scale(1.03); border: 2px solid #7D4CDB; }
     .service-badge {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background-color: rgba(0, 0, 0, 0.9); /* Darker for readability */
-        color: white;
-        padding: 5px 10px;
-        border-radius: 6px;
-        font-size: 0.75rem;
-        font-weight: bold;
-        backdrop-filter: blur(4px);
-        border: 1px solid #555;
-        pointer-events: none;
-        z-index: 10;
+        position: absolute; top: 10px; right: 10px;
+        background-color: rgba(0,0,0,0.9); color: white; padding: 5px 10px;
+        border-radius: 6px; font-size: 0.75rem; font-weight: bold; pointer-events: none;
     }
-
-    /* ACTION HINT (Small text below badge) */
-    .action-subtext {
-        font-size: 0.8rem;
-        color: #888;
-        margin-top: 4px;
-        text-align: center;
-    }
-    
+    .action-subtext { font-size: 0.8rem; color: #888; margin-top: 4px; text-align: center; }
     a { text-decoration: none; }
+    
+    /* Search Result Styling */
+    .search-result {
+        background: #1a1a1a; padding: 10px; border-radius: 8px;
+        margin-top: 5px; border: 1px solid #333; font-size: 0.9rem;
+    }
+    .search-result a { color: #4DA6FF; font-weight: bold; }
+    .search-result p { color: #ccc; font-size: 0.8rem; margin: 0; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 7. LANDING PAGE ---
+# --- 8. LANDING ---
 if not st.session_state.user:
     col1, col2 = st.columns([3, 2], gap="large")
     with col1:
         st.title("Stream Smarter.")
-        st.write("The streaming guide for Neurodivergent Minds.")
         st.info("💡 **Demo:** Create an account to see the live feed!")
     with col2:
         with st.container(border=True):
             auth_mode = st.radio("Option", ["Log In", "Sign Up", "Forgot Password?"], horizontal=True)
-            
             if auth_mode == "Forgot Password?":
                 st.subheader("Reset")
                 tab1, tab2 = st.tabs(["📧 Email", "🔗 Paste Link"])
                 with tab1:
-                    with st.form("reset_form"):
-                        reset_email = st.text_input("Email")
-                        if st.form_submit_button("Send Link"):
-                            send_reset_email(reset_email)
-                            st.success("Check email!")
+                    with st.form("reset"):
+                        email = st.text_input("Email")
+                        if st.form_submit_button("Send"): send_reset_email(email); st.success("Check email!")
                 with tab2:
-                    with st.form("verify_form"):
-                        url = st.text_input("Paste Link")
-                        if st.form_submit_button("Verify"):
+                    with st.form("verify"):
+                        url = st.text_input("Paste URL")
+                        if st.form_submit_button("Login"):
                             res, err = login_with_url(url)
-                            if res and res.user:
-                                st.session_state.user = res.user
-                                st.rerun()
-
+                            if res and res.user: st.session_state.user = res.user; st.rerun()
             elif auth_mode == "Sign Up":
-                with st.form("signup_form"):
+                with st.form("signup"):
                     email = st.text_input("Email")
-                    passw = st.text_input("Password", type="password")
+                    pwd = st.text_input("Password", type="password")
                     if st.form_submit_button("Sign Up"):
-                        res, err = sign_up(email, passw)
-                        if res: st.success("Created! Log in now.")
-                        elif err: st.error(err)
-
-            else: # Log In
-                with st.form("login_form"):
+                        res, err = sign_up(email, pwd)
+                        if res: st.success("Created!")
+            else:
+                with st.form("login"):
                     email = st.text_input("Email")
-                    passw = st.text_input("Password", type="password")
-                    submitted = st.form_submit_button("Log In")
-                    
-                    if submitted:
-                        res, err = sign_in(email, passw)
-                        if res and res.user:
-                            st.session_state.user = res.user
-                            st.rerun()
-                        elif err:
-                            st.error(f"Login failed: {err}")
+                    pwd = st.text_input("Password", type="password")
+                    if st.form_submit_button("Log In"):
+                        res, err = sign_in(email, pwd)
+                        if res and res.user: st.session_state.user = res.user; st.rerun()
     st.stop()
 
-# --- 8. MAIN APP ---
+# --- 9. MAIN APP ---
 user_email = st.session_state.user.email
 
 with st.sidebar:
@@ -321,26 +220,13 @@ with st.sidebar:
     st.write(f"👤 {user_email}")
     menu = st.radio("Menu", ["🍿 Live Feed", "📚 Education", "❤️ Watchlist", "🔐 Change Password"])
     st.divider()
-    if st.button("Log Out"):
-        st.session_state.user = None
-        supabase.auth.sign_out()
-        st.rerun()
+    if st.button("Log Out"): st.session_state.user = None; supabase.auth.sign_out(); st.rerun()
 
 if menu == "🔐 Change Password":
-    st.header("Change Password")
     with st.form("pwd"):
         p1 = st.text_input("New", type="password")
         p2 = st.text_input("Confirm", type="password")
-        if st.form_submit_button("Update"):
-            if p1 == p2:
-                update_password(p1)
-                st.success("Updated! Logging out...")
-                time.sleep(2)
-                st.session_state.user = None
-                supabase.auth.sign_out()
-                st.rerun()
-            else:
-                st.error("Mismatch.")
+        if st.form_submit_button("Update") and p1==p2: update_password(p1); st.success("Updated!"); st.session_state.user=None; supabase.auth.sign_out(); st.rerun()
 
 elif menu == "📚 Education":
     st.header("Neuro-Support Hub 🌿")
@@ -349,32 +235,20 @@ elif menu == "📚 Education":
 elif menu == "❤️ Watchlist":
     st.header("Your Safe List")
     my_list = get_user_watchlist(user_email)
+    cols = st.columns(4)
     if my_list:
-        cols = st.columns(4)
-        for index, item in enumerate(my_list):
-            with cols[index % 4]:
+        for i, item in enumerate(my_list):
+            with cols[i % 4]:
                 st.image(item['poster_url'])
-                if st.button("Remove", key=f"del_{item['id']}"):
-                    remove_from_db(item['id'])
-                    st.rerun()
-    else:
-        st.info("List is empty.")
+                if st.button("Remove", key=f"del_{item['id']}"): remove_from_db(item['id']); st.rerun()
 
 elif menu == "🍿 Live Feed":
     movies = fetch_streaming_movies()
-    
     if movies:
         hero = movies[0]
-        backdrop = get_backdrop_url(hero.get('backdrop_path'))
-        st.markdown(f"""
-        <div class="hero-container" style="background-image: url('{backdrop}');">
-            <h1>{hero['title']}</h1>
-            <p>{hero['overview'][:150]}...</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f"<div class='hero-container' style='background-image: url({get_backdrop_url(hero.get('backdrop_path'))});'><h1>{hero['title']}</h1><p>{hero['overview'][:150]}...</p></div>", unsafe_allow_html=True)
 
     st.subheader("Streaming Now")
-    st.caption("Click a poster to launch the service.")
     
     current_watchlist = get_user_watchlist(user_email)
     saved_titles = [item['movie_title'] for item in current_watchlist] if current_watchlist else []
@@ -382,42 +256,53 @@ elif menu == "🍿 Live Feed":
     cols = st.columns(4)
     for index, movie in enumerate(movies):
         with cols[index % 4]:
-            poster_url = get_image_url(movie.get('poster_path'))
+            poster = get_image_url(movie.get('poster_path'))
             providers = fetch_watch_providers(movie['id'])
             
-            # --- THE "IMMACULATE" LOGIC ---
-            deep_link = "#"
-            service_name = "Watch"
-            action_label = "Open"
+            # --- CARD LOGIC ---
+            deep_link, label = "#", "Info"
+            badge = "Details"
             
             if providers and 'flatrate' in providers:
-                # 1. Pick the primary provider
-                primary_provider = providers['flatrate'][0]['provider_name']
-                service_name = primary_provider
-                
-                # 2. Get the Smart Link and Label
-                deep_link, action_label = get_deep_link_info(primary_provider, movie['title'])
+                prov = providers['flatrate'][0]['provider_name']
+                deep_link, label = get_deep_link_info(prov, movie['title'])
+                badge = prov
             else:
-                service_name = "Details"
                 deep_link = f"https://www.themoviedb.org/movie/{movie['id']}"
-                action_label = "Info"
 
             # --- RENDER CARD ---
-            # Using Tooltip (title attribute) to explain what happens
             st.markdown(f"""
                 <div class="movie-card">
-                    <a href="{deep_link}" target="_blank" title="{action_label}">
-                        <div class="service-badge">{service_name}</div>
-                        <img src="{poster_url}" class="movie-poster">
+                    <a href="{deep_link}" target="_blank" title="{label}">
+                        <div class="service-badge">{badge}</div>
+                        <img src="{poster}" class="movie-poster">
                     </a>
-                    <div class="action-subtext">{action_label}</div>
                 </div>
             """, unsafe_allow_html=True)
-            
-            # Watchlist Button
+
+            # --- EMBEDDED SEARCH (The "Google Research" Feature) ---
+            # We use an Expander to hide the search until requested.
+            # This prevents the app from being messy or getting banned.
+            with st.expander(f"🔎 Find other links"):
+                # Unique key is essential so buttons don't mix up
+                if st.button("Search Web", key=f"search_{movie['id']}"):
+                    with st.spinner("Searching..."):
+                        results = search_web_for_movie(movie['title'])
+                        if results:
+                            for res in results:
+                                st.markdown(f"""
+                                <div class="search-result">
+                                    <a href="{res['href']}" target="_blank">{res['title']}</a>
+                                    <p>{res['body'][:80]}...</p>
+                                </div>
+                                """, unsafe_allow_html=True)
+                        else:
+                            st.warning("No results found.")
+
+            # Watchlist
             if movie['title'] in saved_titles:
                 st.button("✅ Saved", key=f"btn_{index}", disabled=True)
             else:
                 if st.button("➕ Add", key=f"btn_{index}"):
-                    add_to_db(user_email, movie['title'], poster_url, movie['id'])
+                    add_to_db(user_email, movie['title'], poster, movie['id'])
                     st.rerun()
