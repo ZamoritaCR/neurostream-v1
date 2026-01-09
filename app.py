@@ -1,412 +1,327 @@
+# FILE: app.py
+# --------------------------------------------------
+# "CLOUD READY" VERSION - No separate bouncer needed!
+# Run with: python3 -m streamlit run app.py
+# --------------------------------------------------
+
 import streamlit as st
+import streamlit.components.v1 as components
 import requests
-import time
-from urllib.parse import quote_plus, urlparse, parse_qs
-from supabase import create_client, Client
+from urllib.parse import quote_plus, urlparse
 
 # --------------------------------------------------
-# 1. PAGE CONFIGURATION
+# 1. CONFIGURATION & SAFETY
 # --------------------------------------------------
-st.set_page_config(
-    page_title="NeuroStream",
-    page_icon="🧠",
-    layout="wide"
-)
+st.set_page_config(page_title="NeuroStream", page_icon="🧠", layout="wide")
 
-# --------------------------------------------------
-# 2. DATABASE CONNECTION (Supabase)
-# --------------------------------------------------
-@st.cache_resource
-def init_connection():
+# Allowed Domains (The Internal Bouncer)
+ALLOWED_DOMAINS = {
+    "netflix.com", "disneyplus.com", "hulu.com", "max.com", "amazon.com",
+    "youtube.com", "crunchyroll.com", "spotify.com", "audible.com",
+    "khanacademy.org", "ted.com", "kanopy.com", "hoopladigital.com",
+    "apple.com", "google.com", "vudu.com", "tubitv.com"
+}
+
+def is_safe_url(url):
     try:
-        return create_client(
-            st.secrets["supabase"]["url"],
-            st.secrets["supabase"]["key"]
-        )
-    except Exception:
-        return None
+        parsed = urlparse(url)
+        domain = parsed.netloc.replace("www.", "")
+        # Check if the domain (or root domain) is in our allowed list
+        for allowed in ALLOWED_DOMAINS:
+            if allowed in domain:
+                return True
+        return False
+    except:
+        return False
 
-supabase = init_connection()
+# --- ASSETS (LOGOS) ---
+LOGOS = {
+    "Spotify": "https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg",
+    "Netflix": "https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg",
+    "Disney Plus": "https://upload.wikimedia.org/wikipedia/commons/3/3e/Disney%2B_logo.svg",
+    "Hulu": "https://upload.wikimedia.org/wikipedia/commons/e/e4/Hulu_Logo.svg",
+    "Max": "https://upload.wikimedia.org/wikipedia/commons/c/ce/Max_logo.svg",
+    "YouTube": "https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg",
+    "Audible": "https://upload.wikimedia.org/wikipedia/commons/0/05/Audible_logo.svg",
+    "Khan Academy": "https://upload.wikimedia.org/wikipedia/commons/1/15/Khan_Academy_Logo_2018.svg",
+    "Crunchyroll": "https://upload.wikimedia.org/wikipedia/commons/0/08/Crunchyroll_Logo.png",
+    "TED-Ed": "https://upload.wikimedia.org/wikipedia/commons/a/aa/TED_three_letter_logo.svg"
+}
 
-# --------------------------------------------------
-# 3. STREAMING SERVICE LINKS (The "Smart Map")
-# --------------------------------------------------
+# --- SERVICE MAP ---
 SERVICE_MAP = {
     "Netflix": "https://www.netflix.com/search?q={title}",
-    "Hulu": "https://www.hulu.com/search?q={title}",
-    "Peacock": "https://www.peacocktv.com/watch/search?q={title}",
-    "Paramount Plus": "https://www.paramountplus.com/search/?q={title}",
-    "Apple TV Plus": "https://tv.apple.com/search?term={title}",
-    "Amazon Prime Video": "https://www.amazon.com/gp/video/search/ref=atv_nb_sr?phrase={title}&ie=UTF8",
     "Disney Plus": "https://www.disneyplus.com/search",
+    "Hulu": "https://www.hulu.com/search?q={title}",
     "Max": "https://play.max.com/search",
-    "Tubi": "https://tubitv.com/search/{title}",
-    "The Roku Channel": "https://therokuchannel.roku.com/search/{title}",
+    "Amazon Prime Video": "https://www.amazon.com/s?k={title}&i=instant-video",
     "YouTube": "https://www.youtube.com/results?search_query=watch+{title}",
-    "Pluto TV": "https://pluto.tv/en/search/details?query={title}",
-    "Freevee": "https://www.amazon.com/gp/video/search/ref=atv_nb_sr?phrase={title}&ie=UTF8",
-    "Google Play Movies": "https://play.google.com/store/search?q={title}&c=movies",
-    "Vudu": "https://www.vudu.com/content/movies/search?searchString={title}",
-    "FandangoAtHome": "https://www.vudu.com/content/movies/search?searchString={title}",
-    "Apple TV": "https://tv.apple.com/search?term={title}",
+    "Crunchyroll": "https://www.crunchyroll.com/search?q={title}",
+    "Spotify": "http://open.spotify.com/search/{title}",
+    "Audible": "https://www.audible.com/search?keywords={title}",
+    "Khan Academy": "https://www.khanacademy.org/search?page_search_query={title}",
+    "TED-Ed": "https://www.ted.com/search?q={title}"
 }
 
 def get_deep_link(provider_name, title):
-    """Generates the direct search link for a provider."""
-    provider = provider_name.strip()
-    # Get the specific URL template or fallback to a Google Search
-    template = SERVICE_MAP.get(
-        provider,
-        f"https://www.google.com/search?q=watch+{quote_plus(title)}+on+{quote_plus(provider)}"
-    )
+    p_name = provider_name.strip()
+    template = SERVICE_MAP.get(p_name)
+    if not template:
+        template = "https://www.youtube.com/results?search_query=watch+{title}+on+" + quote_plus(p_name)
+    
     if "{title}" in template:
-        return template.format(title=quote_plus(title))
-    return template
+        raw_link = template.format(title=quote_plus(title))
+    else:
+        raw_link = template
 
-# --------------------------------------------------
-# 4. TMDB MOVIE DATA (The "Brain")
-# --------------------------------------------------
-@st.cache_data(ttl=1800) # Cache results for 30 minutes
+    # Safety Check inside the app
+    if is_safe_url(raw_link):
+        return raw_link
+    else:
+        # Fallback to a safe search if the link looks weird
+        return "https://www.google.com/search?q=" + quote_plus(title)
+
+# --- CSS STYLING (THE "LINES & ROUND" UPDATE) ---
+st.markdown("""
+<style>
+    .stApp {background-color: #0e0e0e;}
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] { gap: 20px; }
+    .stTabs [data-baseweb="tab"] {
+        height: 50px; white-space: pre-wrap; background-color: #1a1a1a;
+        border-radius: 10px; color: #fff; font-weight: 600;
+        border: 1px solid #333; /* Tab Lines */
+    }
+    .stTabs [aria-selected="true"] { 
+        background-color: #7D4CDB; color: white; border-color: #9D6CEB;
+    }
+
+    /* Cards */
+    .movie-card {
+        background-color: #1a1a1a; border-radius: 12px; padding: 10px; 
+        border: 1px solid #333; margin-bottom: 20px;
+        transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .movie-card:hover { 
+        transform: scale(1.03); 
+        border-color: #7D4CDB; 
+        box-shadow: 0 0 15px rgba(125, 76, 219, 0.3); /* Glow Effect */
+    }
+    
+    /* Badges */
+    .badge {padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; margin-right: 5px; display: inline-block;}
+    .badge-low { background-color: #2e7d32; color: #fff; }
+    .badge-med { background-color: #f57f17; color: #000; }
+    .badge-high { background-color: #c62828; color: #fff; }
+    
+    /* THE ENHANCED BUTTONS (Round with Lines) */
+    .provider-card {
+        display: flex; align-items: center; justify-content: space-between;
+        background-color: #1E1E1E; 
+        border: 1px solid #444; /* The Line */
+        border-radius: 50px; /* Fully Round */
+        padding: 8px 15px; margin-bottom: 8px;
+        text-decoration: none !important; 
+        transition: all 0.2s ease-in-out;
+    }
+    .provider-card:hover { 
+        background-color: #333; 
+        border-color: #7D4CDB; /* Purple Line on Hover */
+        box-shadow: 0 0 10px rgba(125, 76, 219, 0.4); /* Glow */
+        transform: translateY(-2px);
+    }
+    .provider-logo { width: 25px; height: 25px; object-fit: contain; margin-right: 10px; }
+    .provider-info { display: flex; flex-direction: column; line-height: 1.2; }
+    .provider-name { color: #fff; font-weight: 600; font-size: 0.85rem; }
+    .provider-type { color: #aaa; font-size: 0.7rem; }
+    .provider-btn-arrow { color: #fff; font-size: 1.2rem; }
+</style>
+""", unsafe_allow_html=True)
+
+# --- MOCK DATA ---
+def get_educational_content():
+    return [
+        {"title": "The Body Keeps the Score", "type": "Audiobook", "sensory": "Medium", "poster": "https://m.media-amazon.com/images/I/81fljC+KkUL._SL1500_.jpg", "embed": None},
+        {"title": "Cosmos: Possible Worlds", "type": "Docu-Series", "sensory": "Low (Calming)", "poster": "https://image.tmdb.org/t/p/w500/u3N2i8c62prX2j4Wq15X4uQ8cM6.jpg", "embed": "https://www.youtube.com/embed/m95iY23Fec0"},
+        {"title": "Bluey", "type": "Animation", "sensory": "Medium", "poster": "https://image.tmdb.org/t/p/w500/aPL2hK02iG1iHlA4N8.jpg", "embed": None},
+        {"title": "Neuroplasticity", "type": "Lesson", "sensory": "Low", "poster": "https://cdn.kastatic.org/ka-perseus-images/179247497274092b6045d315694b0754860b001a.png", "embed": "https://www.youtube.com/embed/ELpfYCZa87g"},
+        {"title": "Mind of a Procrastinator", "type": "Talk", "sensory": "Medium", "poster": "https://pi.tedcdn.com/r/talkstar-photos.s3.amazonaws.com/uploads/703c80e1-482a-4340-9a25-925769742512/TimUrban_2016-embed.jpg", "embed": "https://www.youtube.com/embed/arj7oStGLkU"}
+    ]
+
+def get_music_vibes(mood_filter):
+    # Real Spotify Embed IDs
+    all_playlists = [
+        {"title": "Brown Noise", "vibe": "Focus", "sensory": "Low", "embed_id": "37i9dQZF1DX4sWSpwq3LiO", "img": "https://i.scdn.co/image/ab67616d0000b2734121faee8df82c5269fc2856"},
+        {"title": "Lo-Fi Beats", "vibe": "Focus", "sensory": "Low", "embed_id": "37i9dQZF1DWWQRwui0ExPn", "img": "https://i.scdn.co/image/ab67616d0000b27352b2a64db801b6973c9f2b8e"},
+        {"title": "Hyperpop Energy", "vibe": "Stimulation", "sensory": "High", "embed_id": "37i9dQZF1DX7HOk71GPfSw", "img": "https://i.scdn.co/image/ab67616d0000b273a048d0a0f0259e8674d8e755"},
+        {"title": "Deep Sleep", "vibe": "Regulation", "sensory": "Low", "embed_id": "37i9dQZF1DWZd79rJ6a7lp", "img": "https://i.scdn.co/image/ab67616d0000b273614995964082269a919293a5"},
+    ]
+    if mood_filter == "All": return all_playlists
+    return [p for p in all_playlists if p['vibe'] == mood_filter]
+
+# --- API FETCH ---
+@st.cache_data(ttl=1800)
 def fetch_streaming_movies():
-    """Fetches popular movies available on streaming in the US."""
     try:
-        url = (
-            "https://api.themoviedb.org/3/discover/movie"
-            f"?api_key={st.secrets['tmdb']['key']}"
-            "&include_adult=false"
-            "&include_video=false"
-            "&sort_by=popularity.desc"
-            "&watch_region=US"
-            "&with_watch_monetization_types=flatrate|free|ads|rent"
-        )
-        return requests.get(url, timeout=6).json().get("results", [])
-    except Exception:
-        return []
+        url = (f"https://api.themoviedb.org/3/discover/movie?api_key={st.secrets['tmdb']['key']}"
+               "&include_adult=false&sort_by=popularity.desc&watch_region=US"
+               "&with_watch_monetization_types=flatrate|free|ads|rent")
+        results = requests.get(url, timeout=6).json().get("results", [])
+        return results
+    except: return []
 
-@st.cache_data(ttl=3600) # Cache provider data for 1 hour
+@st.cache_data(ttl=3600)
 def fetch_watch_providers(movie_id):
-    """Gets the list of where a movie is streaming."""
     try:
-        url = (
-            f"https://api.themoviedb.org/3/movie/{movie_id}/watch/providers"
-            f"?api_key={st.secrets['tmdb']['key']}"
-        )
+        url = (f"https://api.themoviedb.org/3/movie/{movie_id}/watch/providers?api_key={st.secrets['tmdb']['key']}")
         data = requests.get(url, timeout=4).json()
-        if 'results' in data and 'US' in data['results']:
-            return data['results']['US']
+        if 'results' in data and 'US' in data['results']: return data['results']['US']
         return None
-    except Exception:
-        return None
+    except: return None
 
-# --------------------------------------------------
-# 5. IMAGE HELPERS
-# --------------------------------------------------
+# --- UI COMPONENTS ---
 def get_image_url(path):
-    return f"https://image.tmdb.org/t/p/w500{path}" if path else "https://via.placeholder.com/500x750?text=No+Image"
+    if not path: return "https://via.placeholder.com/500x750?text=No+Image"
+    if "http" in path: return path
+    return f"https://image.tmdb.org/t/p/w500{path}"
 
 def get_logo_url(path):
     return f"https://image.tmdb.org/t/p/original{path}" if path else None
 
-def get_backdrop_url(path):
-    return f"https://image.tmdb.org/t/p/original{path}" if path else None
-
-# --------------------------------------------------
-# 6. AUTHENTICATION & WATCHLIST
-# --------------------------------------------------
-def sign_up(email, password):
-    try:
-        return supabase.auth.sign_up({"email": email, "password": password}), None
-    except Exception as e:
-        return None, str(e)
-
-def sign_in(email, password):
-    try:
-        return supabase.auth.sign_in_with_password({"email": email, "password": password}), None
-    except Exception as e:
-        return None, str(e)
-
-def send_reset_email(email):
-    try:
-        supabase.auth.reset_password_email(email)
-        return True, None
-    except Exception as e:
-        return False, str(e)
-
-def update_password(new_password):
-    try:
-        supabase.auth.update_user({"password": new_password})
-        return True, None
-    except Exception as e:
-        return False, str(e)
-
-def login_with_url(url_string):
-    try:
-        if "#" in url_string:
-            fragment = url_string.split("#")[1]
-            params = dict(item.split("=") for item in fragment.split("&") if "=" in item)
-            if params.get("access_token") and params.get("refresh_token"):
-                return supabase.auth.set_session(params.get("access_token"), params.get("refresh_token")), None
-        
-        parsed_url = urlparse(url_string)
-        query_params = parse_qs(parsed_url.query)
-        if 'token_hash' in query_params and 'type' in query_params:
-            return supabase.auth.verify_otp({"token_hash": query_params['token_hash'][0], "type": query_params['type'][0]}), None
-        return None, "Invalid link."
-    except Exception as e:
-        return None, str(e)
-
-def add_to_db(user_email, title, poster, tmdb_id):
-    if supabase:
-        supabase.table("watchlist").insert({
-            "user_name": user_email,
-            "movie_title": title,
-            "poster_url": poster,
-            "tmdb_id": tmdb_id
-        }).execute()
-
-def remove_from_db(item_id):
-    if supabase:
-        supabase.table("watchlist").delete().eq("id", item_id).execute()
-
-def get_user_watchlist(user_email):
-    if supabase:
-        return supabase.table("watchlist").select("*").eq("user_name", user_email).execute().data
-    return []
-
-# --------------------------------------------------
-# 7. CSS STYLING (The Look & Feel)
-# --------------------------------------------------
-if 'user' not in st.session_state:
-    st.session_state.user = None
-
-st.markdown("""
-<style>
-    /* Dark Background */
-    .stApp {background-color: #0e0e0e;}
+def render_pro_card(title, poster, sensory_label, content_func):
+    # 1. Map Sensory Label to Color
+    b_cls = "badge-low"
+    if "Medium" in sensory_label: b_cls = "badge-med"
+    if "High" in sensory_label: b_cls = "badge-high"
     
-    /* Hero Section */
-    .hero-container {
-        padding: 4rem; border-radius: 20px; color: white; margin-bottom: 2rem;
-        background-size: cover; background-position: center;
-        box-shadow: inset 0 0 0 2000px rgba(0,0,0,0.7); border: 1px solid #333;
-    }
+    # 2. Render The Card
+    st.markdown(f"""
+    <div class="movie-card">
+        <img src="{poster}" style="width:100%; border-radius:8px;">
+        <div style="margin-top:10px;">
+            <span class="badge {b_cls}">{sensory_label}</span>
+            <div style="font-size:0.9rem; font-weight:bold; color:#eee; margin-top:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{title}</div>
+        </div>
+    </div>""", unsafe_allow_html=True)
     
-    /* Movie Poster Styling */
-    .movie-poster {
-        border-radius: 12px; width: 100%; border: 1px solid #333;
-        transition: transform 0.2s;
-        display: block;
-    }
-    .movie-poster:hover { transform: scale(1.03); border: 2px solid #7D4CDB; }
-    
-    /* THE AGGREGATOR ROW (Logos + Labels + Buttons) */
-    .provider-row {
-        display: flex; align-items: center; justify-content: space-between;
-        background-color: #1a1a1a; padding: 10px; margin-bottom: 8px;
-        border-radius: 10px; border: 1px solid #333;
-        text-decoration: none !important; color: white !important;
-        transition: background 0.2s;
-    }
-    .provider-row:hover { background-color: #252525; border-color: #7D4CDB; }
-    
-    .provider-left { display: flex; align-items: center; gap: 12px; }
-    .provider-icon { width: 35px; height: 35px; border-radius: 8px; }
-    
-    .provider-info { display: flex; flex-direction: column; line-height: 1.2; }
-    .provider-name { font-size: 0.95rem; font-weight: 600; }
-    .provider-meta { font-size: 0.75rem; color: #aaa; }
-    
-    /* The "Watch" Button Pill */
-    .provider-btn {
-        background-color: transparent; color: white; padding: 6px 14px;
-        border-radius: 20px; font-size: 0.8rem; border: 1px solid #777;
-        display: flex; align-items: center; gap: 5px;
-    }
-    .provider-btn:hover { background-color: #fff; color: #000; border-color: #fff; }
+    # 3. The Options (Expandable)
+    with st.expander("▶ Play / Options"):
+        content_func()
 
-    /* Clean Expander Header */
-    .streamlit-expanderHeader { background-color: transparent; color: #ccc; font-size: 0.85rem; }
+def render_provider_link(name, p_type, link, logo_path=None):
+    real_logo = LOGOS.get(name)
+    if real_logo:
+        logo_html = f'<img src="{real_logo}" class="provider-logo">'
+    elif logo_path:
+        logo_url = get_logo_url(logo_path)
+        logo_html = f'<img src="{logo_url}" class="provider-logo">'
+    else:
+        logo_html = '<div class="provider-logo" style="display:flex; align-items:center; justify-content:center;">🔗</div>'
     
-    a { text-decoration: none; }
-</style>
-""", unsafe_allow_html=True)
+    st.markdown(f"""
+    <a href="{link}" target="_blank" class="provider-card">
+        <div style="display:flex; align-items:center;">
+            {logo_html}
+            <div class="provider-info">
+                <span class="provider-name">{name}</span>
+                <span class="provider-type">{p_type}</span>
+            </div>
+        </div>
+        <div class="provider-btn-arrow">→</div>
+    </a>
+    """, unsafe_allow_html=True)
 
-# --------------------------------------------------
-# 8. LANDING PAGE (Login / Sign Up)
-# --------------------------------------------------
+# --- MAIN APP LOGIC ---
+if 'user' not in st.session_state: st.session_state.user = None
 if not st.session_state.user:
-    col1, col2 = st.columns([3, 2], gap="large")
-    with col1:
-        st.title("Stream Smarter.")
-        st.info("💡 **Demo:** Create an account to see the live feed!")
-    with col2:
-        with st.container(border=True):
-            auth_mode = st.radio("Option", ["Log In", "Sign Up", "Forgot Password?"], horizontal=True)
-            
-            if auth_mode == "Forgot Password?":
-                st.subheader("Reset")
-                tab1, tab2 = st.tabs(["📧 Email", "🔗 Paste Link"])
-                with tab1:
-                    with st.form("reset"):
-                        email = st.text_input("Email")
-                        if st.form_submit_button("Send"):
-                            send_reset_email(email)
-                            st.success("Check email!")
-                with tab2:
-                    with st.form("verify"):
-                        url = st.text_input("Paste URL")
-                        if st.form_submit_button("Login"):
-                            res, err = login_with_url(url)
-                            if res and res.user:
-                                st.session_state.user = res.user
-                                st.rerun()
-
-            elif auth_mode == "Sign Up":
-                with st.form("signup"):
-                    email = st.text_input("Email")
-                    pwd = st.text_input("Password", type="password")
-                    if st.form_submit_button("Sign Up"):
-                        res, err = sign_up(email, pwd)
-                        if res: st.success("Created!")
-            else:
-                with st.form("login"):
-                    email = st.text_input("Email")
-                    pwd = st.text_input("Password", type="password")
-                    if st.form_submit_button("Log In"):
-                        res, err = sign_in(email, pwd)
-                        if res and res.user:
-                            st.session_state.user = res.user
-                            st.rerun()
+    st.title("🧠 NeuroStream")
+    st.caption("Sensory-Safe Entertainment & Education")
+    if st.button("Log In (Demo Mode)"):
+        st.session_state.user = "DemoUser"
+        st.rerun()
     st.stop()
 
-# --------------------------------------------------
-# 9. MAIN APP DASHBOARD
-# --------------------------------------------------
-user_email = st.session_state.user.email
-
+# --- SIDEBAR ---
 with st.sidebar:
-    st.title("🧠 NeuroStream")
-    st.write(f"👤 {user_email}")
-    menu = st.radio("Menu", ["🍿 Live Feed", "📚 Education", "❤️ Watchlist", "🔐 Change Password"])
-    st.divider()
-    if st.button("Log Out"):
-        st.session_state.user = None
-        supabase.auth.sign_out()
-        st.rerun()
+    st.header("Settings")
+    selected_mood = st.radio("Mood:", ["Any Mood", "Happy", "Comforting", "Excited", "Educational"], index=0)
+    max_sensory = st.select_slider("Intensity:", options=["Low (Calming)", "Medium (Balanced)", "High (Stimulating)"], value="High (Stimulating)")
+    if st.button("Log Out"): st.session_state.user = None; st.rerun()
 
-if menu == "🔐 Change Password":
-    with st.form("pwd"):
-        p1 = st.text_input("New", type="password")
-        p2 = st.text_input("Confirm", type="password")
-        if st.form_submit_button("Update"):
-            if p1 == p2:
-                update_password(p1)
-                st.success("Updated! Logging out...")
-                time.sleep(1)
-                st.session_state.user = None
-                supabase.auth.sign_out()
-                st.rerun()
-            else:
-                st.error("Mismatch.")
+# --- MAIN PAGE ---
+st.title("NeuroStream")
+tab_watch, tab_learn, tab_music = st.tabs(["🎬 Movies & TV", "🧠 Learn & Listen", "🎵 Music & Vibe"])
 
-elif menu == "📚 Education":
-    st.header("Neuro-Support Hub 🌿")
-    st.video("https://www.youtube.com/watch?v=JhzxqLxY5xM")
-
-elif menu == "❤️ Watchlist":
-    st.header("Your Safe List")
-    my_list = get_user_watchlist(user_email)
-    cols = st.columns(4)
-    if my_list:
-        for i, item in enumerate(my_list):
-            with cols[i % 4]:
-                st.image(item['poster_url'])
-                if st.button("Remove", key=f"del_{item['id']}"):
-                    remove_from_db(item['id'])
-                    st.rerun()
-    else:
-        st.info("List is empty.")
-
-elif menu == "🍿 Live Feed":
+# TAB 1: MOVIES
+with tab_watch:
     movies = fetch_streaming_movies()
-    if movies:
-        hero = movies[0]
-        # Hero Section
-        st.markdown(f"""
-        <div class='hero-container' style='background-image: url({get_backdrop_url(hero.get('backdrop_path'))});'>
-            <h1>{hero['title']}</h1>
-            <p>{hero['overview'][:150]}...</p>
-        </div>
-        """, unsafe_allow_html=True)
+    # Simple Mock Sensory Data for the Demo since TMDB doesn't have it
+    import random
+    filtered_movies = []
+    for m in movies:
+        m['sensory'] = random.choice(["Low (Calming)", "Medium (Balanced)", "High (Stimulating)"])
+        m['mood'] = random.choice(["Happy", "Excited", "Comforting", "Melancholy", "Educational"])
+        
+        # Filter
+        if selected_mood != "Any Mood" and m['mood'] != selected_mood: continue
+        if max_sensory == "Low (Calming)" and m['sensory'] != "Low (Calming)": continue
+        if max_sensory == "Medium (Balanced)" and m['sensory'] == "High (Stimulating)": continue
+        filtered_movies.append(m)
 
-    st.subheader("Streaming Now")
+    if not filtered_movies: st.warning("No matches found.")
+    else:
+        st.subheader("🔥 Trending")
+        cols = st.columns(4)
+        for i, movie in enumerate(filtered_movies[:8]): # Show top 8
+            with cols[i % 4]:
+                def show_movie_ops():
+                    provs = fetch_watch_providers(movie['id'])
+                    if provs:
+                        for p in provs.get('flatrate', [])[:2]: # Show top 2 streams
+                            render_provider_link(p['provider_name'], "Stream", get_deep_link(p['provider_name'], movie['title']), p.get('logo_path'))
+                    render_provider_link("YouTube", "Search", get_deep_link("YouTube", movie['title']))
+                
+                render_pro_card(movie['title'], get_image_url(movie.get('poster_path')), movie['sensory'], show_movie_ops)
+
+# TAB 2: EDUCATION (Updated Layout)
+with tab_learn:
+    st.caption("Curated Educational Content")
+    edu_items = get_educational_content()
+    e_cols = st.columns(4) # Matching the Movie Grid
+    for i, item in enumerate(edu_items):
+        with e_cols[i % 4]:
+            def show_edu_ops():
+                if item.get('embed'):
+                    st.video(item['embed'])
+                render_provider_link("Khan Academy", "Learn", get_deep_link("Khan Academy", item['title']))
+                render_provider_link("Audible", "Audiobook", get_deep_link("Audible", item['title']))
+
+            render_pro_card(item['title'], get_image_url(item['poster']), item['sensory'], show_edu_ops)
+
+# TAB 3: MUSIC
+with tab_music:
+    st.subheader("🎧 Brain State Tuner")
+    vibe_mode = st.radio("I need to:", ["Focus (Work/Study)", "Stimulate (Energy)", "Regulate (Calm/Sleep)"], horizontal=True)
     
-    current_watchlist = get_user_watchlist(user_email)
-    saved_titles = [item['movie_title'] for item in current_watchlist] if current_watchlist else []
-
-    cols = st.columns(4)
-    for index, movie in enumerate(movies):
-        with cols[index % 4]:
-            poster = get_image_url(movie.get('poster_path'))
-            
-            # --- 1. FETCH PROVIDERS & SORT THEM ---
-            all_provs = fetch_watch_providers(movie['id'])
-            
-            # Create a list of tuples: (ProviderData, "Label")
-            display_list = []
-            if all_provs:
-                if 'flatrate' in all_provs:
-                    for p in all_provs['flatrate']: display_list.append((p, "Subscription"))
-                if 'free' in all_provs:
-                    for p in all_provs['free']: display_list.append((p, "Free"))
-                if 'ads' in all_provs:
-                    for p in all_provs['ads']: display_list.append((p, "Free (Ads)"))
-                if 'rent' in all_provs:
-                    for p in all_provs['rent']: display_list.append((p, "Rent"))
-
-            # --- 2. RENDER POSTER (FIXED: Using HTML to apply CSS Class) ---
-            # NOTE: We use st.markdown instead of st.image so the .movie-poster class applies
+    filter_key = "Focus"
+    if "Stimulate" in vibe_mode: filter_key = "Stimulation"
+    if "Regulate" in vibe_mode: filter_key = "Regulation"
+    
+    st.divider()
+    playlists = get_music_vibes(filter_key)
+    p_cols = st.columns(3)
+    for i, p in enumerate(playlists):
+        with p_cols[i % 3]:
             st.markdown(f"""
-            <img src="{poster}" class="movie-poster">
-            """, unsafe_allow_html=True)
-
-            if movie['title'] in saved_titles:
-                st.button("✅ Saved", key=f"btn_{index}", disabled=True)
-            else:
-                if st.button("➕ Add", key=f"btn_{index}"):
-                    add_to_db(user_email, movie['title'], poster, movie['id'])
-                    st.rerun()
+            <div class="movie-card">
+                <img src="{p['img']}" style="width:100%; border-radius:8px;">
+                <div style="margin-top:10px; font-weight:bold; color:white;">{p['title']}</div>
+            </div>""", unsafe_allow_html=True)
             
-            # --- 3. RENDER THE "WHERE TO WATCH" DROPDOWN ---
-            if display_list:
-                # Remove duplicates
-                seen = set()
-                unique_list = []
-                for p, p_type in display_list:
-                    p_name = p['provider_name']
-                    if p_name not in seen:
-                        unique_list.append((p, p_type))
-                        seen.add(p_name)
-
-                # The Expander Menu
-                with st.expander(f"📺 Watch ({len(unique_list)} options)"):
-                    for prov, p_type in unique_list[:6]:
-                        p_name = prov['provider_name']
-                        p_logo = get_logo_url(prov['logo_path'])
-                        p_link = get_deep_link(p_name, movie['title'])
-                        
-                        # The HTML for the Provider Row
-                        st.markdown(f"""
-                        <a href="{p_link}" target="_blank" class="provider-row">
-                            <div class="provider-left">
-                                <img src="{p_logo}" class="provider-icon">
-                                <div class="provider-info">
-                                    <span class="provider-name">{p_name}</span>
-                                    <span class="provider-meta">{p_type}</span>
-                                </div>
-                            </div>
-                            <div class="provider-btn">▶ Watch</div>
-                        </a>
-                        """, unsafe_allow_html=True)
-            else:
-                st.caption("No streaming info.")
+            with st.expander("▶ Play Here"):
+                embed_url = f"https://open.spotify.com/embed/playlist/{p['embed_id']}?utm_source=generator&theme=0"
+                components.iframe(embed_url, height=380)
+            
+            safe_link = f"http://open.spotify.com/search/{quote_plus(p['title'])}"
+            render_provider_link("Spotify", "Open App", safe_link)
