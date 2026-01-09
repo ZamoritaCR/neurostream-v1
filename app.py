@@ -20,72 +20,78 @@ def init_connection():
 
 supabase = init_connection()
 
-# --- 2. DEEP LINK LOGIC (The "Walled Garden" Map) ---
-# We distinguish between "Direct Search" (Netflix) and "Manual Search" (Disney)
-# so the user knows exactly what to expect.
+# --- 2. SMART LINK LOGIC (The "Walled Garden" Map) ---
+# This dictionary is the "Brain" that knows how to handle each specific service.
+# It distinguishes between services that allow Direct Search vs. those that don't.
 
 SERVICE_MAP = {
-    # ✅ CLASS A: DIRECT SEARCH (Opens results directly)
+    # ✅ TIER A: DIRECT DEEP SEARCH (Best Experience)
+    # These links take the user directly to the search results inside the app.
     "Netflix": {
         "url": "https://www.netflix.com/search?q={title}",
-        "action": "Search"
+        "label": "Search Netflix"
     },
     "Hulu": {
         "url": "https://www.hulu.com/search?q={title}",
-        "action": "Search"
+        "label": "Search Hulu"
     },
     "Peacock": {
         "url": "https://www.peacocktv.com/watch/search?q={title}",
-        "action": "Search"
+        "label": "Search Peacock"
     },
     "Paramount Plus": {
         "url": "https://www.paramountplus.com/search/?q={title}",
-        "action": "Search"
+        "label": "Search Paramount+"
     },
     "Apple TV Plus": {
         "url": "https://tv.apple.com/search?term={title}",
-        "action": "Search"
+        "label": "Search AppleTV+"
     },
     "Amazon Prime Video": {
         "url": "https://www.amazon.com/gp/video/search/ref=atv_nb_sr?phrase={title}&ie=UTF8",
-        "action": "Search"
+        "label": "Search Prime"
     },
     
-    # ⚠️ CLASS B: MANUAL SEARCH (Disney/Max blocked direct links)
-    # We link to the Search Bar page to avoid 404s.
+    # ⚠️ TIER B: SAFE LANDING (Blocked Search)
+    # Disney+ and Max block direct search links. To prevent 404 errors,
+    # we land the user safely on the Search Page so they can type the name.
     "Disney Plus": {
         "url": "https://www.disneyplus.com/search",
-        "action": "Open App" # Specific label so user knows they must type
+        "label": "Open Disney+" # Distinct label so user expects to type
     },
     "Max": {
         "url": "https://play.max.com/search",
-        "action": "Open App"
+        "label": "Open Max"
     }
 }
 
 def get_deep_link_info(provider_name, movie_title):
     """
-    Returns the URL and the Action Label ('Search' vs 'Open App')
+    Returns a tuple: (URL, Action_Label)
     """
+    # 1. Check if we have a smart map for this provider
     if provider_name in SERVICE_MAP:
         entry = SERVICE_MAP[provider_name]
         template = entry["url"]
         
+        # If the template supports {title}, fill it in
         if "{title}" in template:
             clean_title = quote_plus(movie_title)
             final_url = template.format(title=clean_title)
-            return final_url, entry["action"]
-        else:
-            return template, entry["action"]
-            
-    # Fallback
-    return f"https://www.google.com/search?q=watch+{quote_plus(movie_title)}", "Find"
+            return final_url, entry["label"]
+        
+        # Otherwise return the static URL (for Disney/Max)
+        return template, entry["label"]
+    
+    # 2. Fallback: If it's a service we don't know (e.g., Tubi, Pluto), use Google
+    return f"https://www.google.com/search?q=watch+{quote_plus(movie_title)}", "Find Online"
 
 # --- 3. TMDB API FUNCTIONS ---
 def fetch_streaming_movies():
+    """Fetches movies strictly on flatrate streaming (US)."""
     try:
         api_key = st.secrets["tmdb"]["key"]
-        # Filter for Subscription Streaming (Flatrate) in US
+        # Filter: Streaming (Flatrate) + US Region
         url = f"https://api.themoviedb.org/3/discover/movie?api_key={api_key}&include_adult=false&include_video=false&language=en-US&page=1&sort_by=popularity.desc&watch_region=US&with_watch_monetization_types=flatrate"
         
         response = requests.get(url, timeout=5)
@@ -96,6 +102,7 @@ def fetch_streaming_movies():
         return []
 
 def fetch_watch_providers(movie_id):
+    """Gets the providers for a specific movie."""
     try:
         api_key = st.secrets["tmdb"]["key"]
         url = f"https://api.themoviedb.org/3/movie/{movie_id}/watch/providers?api_key={api_key}"
@@ -203,6 +210,7 @@ st.markdown("""
         border: 1px solid #333;
     }
     
+    /* CARD DESIGN */
     .movie-card {
         position: relative;
         margin-bottom: 10px;
@@ -215,36 +223,39 @@ st.markdown("""
         display: block;
         border: 1px solid #333;
     }
+    
     .movie-poster:hover {
         transform: scale(1.03);
         cursor: pointer;
-        border: 2px solid #7D4CDB;
+        border: 2px solid #7D4CDB; /* Neuro Purple */
         box-shadow: 0 0 15px rgba(125, 76, 219, 0.4);
     }
 
+    /* SERVICE BADGE (The "Neuro-Bridge") */
     .service-badge {
         position: absolute;
         top: 10px;
         right: 10px;
-        background-color: rgba(0, 0, 0, 0.85);
+        background-color: rgba(0, 0, 0, 0.9); /* Darker for readability */
         color: white;
-        padding: 4px 8px;
+        padding: 5px 10px;
         border-radius: 6px;
         font-size: 0.75rem;
         font-weight: bold;
         backdrop-filter: blur(4px);
-        border: 1px solid #444;
+        border: 1px solid #555;
         pointer-events: none;
-    }
-    
-    /* New: Action Hint on Hover */
-    .action-hint {
-        font-size: 0.8rem;
-        color: #bbb;
-        text-align: center;
-        margin-top: 5px;
+        z-index: 10;
     }
 
+    /* ACTION HINT (Small text below badge) */
+    .action-subtext {
+        font-size: 0.8rem;
+        color: #888;
+        margin-top: 4px;
+        text-align: center;
+    }
+    
     a { text-decoration: none; }
 </style>
 """, unsafe_allow_html=True)
@@ -363,7 +374,7 @@ elif menu == "🍿 Live Feed":
         """, unsafe_allow_html=True)
 
     st.subheader("Streaming Now")
-    st.caption("Click a poster to watch.")
+    st.caption("Click a poster to launch the service.")
     
     current_watchlist = get_user_watchlist(user_email)
     saved_titles = [item['movie_title'] for item in current_watchlist] if current_watchlist else []
@@ -374,38 +385,35 @@ elif menu == "🍿 Live Feed":
             poster_url = get_image_url(movie.get('poster_path'))
             providers = fetch_watch_providers(movie['id'])
             
-            # --- INTELLIGENT DEEP LINKING ---
+            # --- THE "IMMACULATE" LOGIC ---
             deep_link = "#"
             service_name = "Watch"
             action_label = "Open"
             
             if providers and 'flatrate' in providers:
+                # 1. Pick the primary provider
                 primary_provider = providers['flatrate'][0]['provider_name']
                 service_name = primary_provider
                 
-                # GET LINK AND ACTION TYPE (Search vs Open App)
+                # 2. Get the Smart Link and Label
                 deep_link, action_label = get_deep_link_info(primary_provider, movie['title'])
             else:
                 service_name = "Details"
                 deep_link = f"https://www.themoviedb.org/movie/{movie['id']}"
+                action_label = "Info"
 
             # --- RENDER CARD ---
-            # Badge text now adapts: "On Netflix" vs "Open Disney+"
+            # Using Tooltip (title attribute) to explain what happens
             st.markdown(f"""
                 <div class="movie-card">
-                    <a href="{deep_link}" target="_blank" title="Click to {action_label}">
+                    <a href="{deep_link}" target="_blank" title="{action_label}">
                         <div class="service-badge">{service_name}</div>
                         <img src="{poster_url}" class="movie-poster">
                     </a>
+                    <div class="action-subtext">{action_label}</div>
                 </div>
             """, unsafe_allow_html=True)
             
-            # Helper text for Disney/Max users
-            if action_label == "Open App":
-                st.caption(f"⚠️ Type '{movie['title']}'")
-            else:
-                st.caption(f"✅ {action_label} Results")
-
             # Watchlist Button
             if movie['title'] in saved_titles:
                 st.button("✅ Saved", key=f"btn_{index}", disabled=True)
