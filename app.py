@@ -20,13 +20,19 @@ def init_connection():
 
 supabase = init_connection()
 
-# --- 2. TMDB API FUNCTIONS (With Safety Timeouts) ---
-def fetch_trending_movies():
-    """Fetches currently trending movies from TMDB."""
+# --- 2. TMDB API FUNCTIONS (Strictly Streaming) ---
+def fetch_streaming_movies():
+    """
+    Fetches popular movies that are SPECIFICALLY streaming on Flatrate services (Netflix, etc)
+    Filters out theatrical-only movies like Zootopia 2.
+    """
     try:
         api_key = st.secrets["tmdb"]["key"]
-        url = f"https://api.themoviedb.org/3/trending/movie/week?api_key={api_key}"
-        # Added timeout=5 to prevent infinite spinning
+        # discover endpoint allows strict filtering
+        # with_watch_monetization_types=flatrate -> Only subscription services (no rent/buy)
+        # watch_region=US -> US Availability (Change to GB/CA etc if needed)
+        url = f"https://api.themoviedb.org/3/discover/movie?api_key={api_key}&include_adult=false&include_video=false&language=en-US&page=1&sort_by=popularity.desc&watch_region=US&with_watch_monetization_types=flatrate"
+        
         response = requests.get(url, timeout=5)
         if response.status_code == 200:
             return response.json().get('results', [])
@@ -35,12 +41,11 @@ def fetch_trending_movies():
         return []
 
 def fetch_watch_providers(movie_id):
-    """Checks where a movie is streaming (US Region default)."""
+    """Checks exact providers for the cards."""
     try:
         api_key = st.secrets["tmdb"]["key"]
         url = f"https://api.themoviedb.org/3/movie/{movie_id}/watch/providers?api_key={api_key}"
-        # Added timeout=5
-        response = requests.get(url, timeout=5)
+        response = requests.get(url, timeout=3)
         if response.status_code == 200:
             data = response.json()
             if 'results' in data and 'US' in data['results']:
@@ -159,7 +164,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 7. LANDING PAGE (With FORMS to fix spinning) ---
+# --- 7. LANDING PAGE ---
 if not st.session_state.user:
     col1, col2 = st.columns([3, 2], gap="large")
     with col1:
@@ -260,7 +265,8 @@ elif menu == "❤️ Watchlist":
         st.info("List is empty.")
 
 elif menu == "🍿 Live Feed":
-    movies = fetch_trending_movies()
+    # NOW CALLING THE NEW FUNCTION
+    movies = fetch_streaming_movies()
     
     # HERO SECTION
     if movies:
@@ -273,8 +279,8 @@ elif menu == "🍿 Live Feed":
         </div>
         """, unsafe_allow_html=True)
 
-    st.subheader("Trending Now")
-    st.caption("Click a poster to watch or see details.")
+    st.subheader("Streaming Now")
+    st.caption("These movies are available on subscription services (US).")
     
     current_watchlist = get_user_watchlist(user_email)
     saved_titles = [item['movie_title'] for item in current_watchlist] if current_watchlist else []
@@ -287,6 +293,8 @@ elif menu == "🍿 Live Feed":
             providers = fetch_watch_providers(movie['id'])
             
             # 2. Determine Link
+            # Note: TMDB API Terms require us to link to their landing page for deep-linking.
+            # We can't bypass this on the free tier, but we can make it clear.
             if providers and 'link' in providers:
                 click_link = providers['link']
             else:
@@ -302,9 +310,9 @@ elif menu == "🍿 Live Feed":
             # 4. Show Providers Text
             if providers and 'flatrate' in providers:
                 streamers = [p['provider_name'] for p in providers['flatrate'][:2]]
-                st.caption(f"On: {', '.join(streamers)}")
+                st.caption(f"📺 {', '.join(streamers)}")
             else:
-                st.caption("Not streaming")
+                st.caption("Checking availability...")
 
             # 5. Watchlist Button
             if movie['title'] in saved_titles:
