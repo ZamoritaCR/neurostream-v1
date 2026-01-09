@@ -195,6 +195,7 @@ st.markdown("""
     .movie-poster {
         border-radius: 12px; width: 100%; border: 1px solid #333;
         transition: transform 0.2s;
+        display: block;
     }
     .movie-poster:hover { transform: scale(1.03); border: 2px solid #7D4CDB; }
     
@@ -363,8 +364,11 @@ elif menu == "🍿 Live Feed":
                 if 'rent' in all_provs:
                     for p in all_provs['rent']: display_list.append((p, "Rent"))
 
-            # --- 2. RENDER POSTER & BUTTONS ---
-            st.image(poster, use_container_width=True, className="movie-poster")
+            # --- 2. RENDER POSTER (FIXED: Using HTML to apply CSS Class) ---
+            # NOTE: We use st.markdown instead of st.image so the .movie-poster class applies
+            st.markdown(f"""
+            <img src="{poster}" class="movie-poster">
+            """, unsafe_allow_html=True)
 
             if movie['title'] in saved_titles:
                 st.button("✅ Saved", key=f"btn_{index}", disabled=True)
@@ -375,7 +379,7 @@ elif menu == "🍿 Live Feed":
             
             # --- 3. RENDER THE "WHERE TO WATCH" DROPDOWN ---
             if display_list:
-                # Remove duplicates (e.g. Netflix appearing in both Subs and Ads)
+                # Remove duplicates
                 seen = set()
                 unique_list = []
                 for p, p_type in display_list:
@@ -386,7 +390,6 @@ elif menu == "🍿 Live Feed":
 
                 # The Expander Menu
                 with st.expander(f"📺 Watch ({len(unique_list)} options)"):
-                    # Limit to top 6 to prevent scrolling fatigue
                     for prov, p_type in unique_list[:6]:
                         p_name = prov['provider_name']
                         p_logo = get_logo_url(prov['logo_path'])
