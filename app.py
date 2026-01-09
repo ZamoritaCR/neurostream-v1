@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 import time
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, quote_plus
 from supabase import create_client, Client
 
 # --- PAGE CONFIG ---
@@ -20,17 +20,15 @@ def init_connection():
 
 supabase = init_connection()
 
-# --- 2. TMDB API FUNCTIONS (Strictly Streaming) ---
+# --- 2. TMDB API FUNCTIONS ---
 def fetch_streaming_movies():
     """
-    Fetches popular movies that are SPECIFICALLY streaming on Flatrate services (Netflix, etc)
-    Filters out theatrical-only movies like Zootopia 2.
+    Fetches popular movies specifically streaming on Flatrate services (Netflix, etc).
     """
     try:
         api_key = st.secrets["tmdb"]["key"]
-        # discover endpoint allows strict filtering
-        # with_watch_monetization_types=flatrate -> Only subscription services (no rent/buy)
-        # watch_region=US -> US Availability (Change to GB/CA etc if needed)
+        # 'flatrate' = Subscription services only (No rent/buy)
+        # 'watch_region=US' = US catalogs
         url = f"https://api.themoviedb.org/3/discover/movie?api_key={api_key}&include_adult=false&include_video=false&language=en-US&page=1&sort_by=popularity.desc&watch_region=US&with_watch_monetization_types=flatrate"
         
         response = requests.get(url, timeout=5)
@@ -265,10 +263,9 @@ elif menu == "❤️ Watchlist":
         st.info("List is empty.")
 
 elif menu == "🍿 Live Feed":
-    # NOW CALLING THE NEW FUNCTION
+    # Using the STRICT STREAMING filter
     movies = fetch_streaming_movies()
     
-    # HERO SECTION
     if movies:
         hero = movies[0]
         backdrop = get_backdrop_url(hero.get('backdrop_path'))
@@ -280,7 +277,7 @@ elif menu == "🍿 Live Feed":
         """, unsafe_allow_html=True)
 
     st.subheader("Streaming Now")
-    st.caption("These movies are available on subscription services (US).")
+    st.caption("Click a poster to watch.")
     
     current_watchlist = get_user_watchlist(user_email)
     saved_titles = [item['movie_title'] for item in current_watchlist] if current_watchlist else []
@@ -288,33 +285,27 @@ elif menu == "🍿 Live Feed":
     cols = st.columns(4)
     for index, movie in enumerate(movies):
         with cols[index % 4]:
-            # 1. Get Data
             poster_url = get_image_url(movie.get('poster_path'))
             providers = fetch_watch_providers(movie['id'])
             
-            # 2. Determine Link
-            # Note: TMDB API Terms require us to link to their landing page for deep-linking.
-            # We can't bypass this on the free tier, but we can make it clear.
-            if providers and 'link' in providers:
-                click_link = providers['link']
-            else:
-                click_link = f"https://www.themoviedb.org/movie/{movie['id']}"
+            # --- THE SMART LINK FIX ---
+            # Instead of the TMDB link, we construct a Google Search link
+            # This lands the user on a page with a big "Watch on [App]" button
+            search_query = quote_plus(f"watch {movie['title']}")
+            click_link = f"https://www.google.com/search?q={search_query}"
 
-            # 3. Render Clickable Image
             st.markdown(f"""
                 <a href="{click_link}" target="_blank">
                     <img src="{poster_url}" class="movie-poster">
                 </a>
             """, unsafe_allow_html=True)
             
-            # 4. Show Providers Text
             if providers and 'flatrate' in providers:
                 streamers = [p['provider_name'] for p in providers['flatrate'][:2]]
                 st.caption(f"📺 {', '.join(streamers)}")
             else:
-                st.caption("Checking availability...")
+                st.caption("Available now")
 
-            # 5. Watchlist Button
             if movie['title'] in saved_titles:
                 st.button("✅ Saved", key=f"btn_{index}", disabled=True)
             else:
