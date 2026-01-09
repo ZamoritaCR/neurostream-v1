@@ -2,10 +2,10 @@ import streamlit as st
 import pandas as pd
 import requests
 import time
-from urllib.parse import urlparse, parse_qs, quote_plus
+from urllib.parse import quote_plus, urlparse, parse_qs
 from supabase import create_client, Client
 
-# --- PAGE CONFIG ---
+# --- PAGE CONFIG (Dark Mode & Wide Layout) ---
 st.set_page_config(page_title="NeuroStream", page_icon="🧠", layout="wide")
 
 # --- 1. SETUP & CONNECTIONS ---
@@ -20,15 +20,38 @@ def init_connection():
 
 supabase = init_connection()
 
-# --- 2. TMDB API FUNCTIONS ---
+# --- 2. DEEP LINK LOGIC (The "Affordable" Hack) ---
+# This maps the TMDB provider name to the actual streaming service URL structure.
+SERVICE_MAP = {
+    "Netflix": "https://www.netflix.com/search?q={title}",
+    "Disney Plus": "https://www.disneyplus.com/search?q={title}",
+    "Hulu": "https://www.hulu.com/search?q={title}",
+    "Max": "https://play.max.com/search?q={title}",
+    "Amazon Prime Video": "https://www.amazon.com/s?k={title}&i=instant-video",
+    "Peacock": "https://www.peacocktv.com/watch/search?q={title}",
+    "Paramount Plus": "https://www.paramountplus.com/search/?q={title}",
+    "Apple TV Plus": "https://tv.apple.com/search?term={title}"
+}
+
+def get_deep_link(provider_name, movie_title):
+    """
+    Constructs a direct link to the service's search page.
+    This bypasses Google/TMDB and goes straight to the app.
+    """
+    if provider_name in SERVICE_MAP:
+        # URL encode the title (e.g., "Iron Man" -> "Iron+Man")
+        clean_title = quote_plus(movie_title)
+        return SERVICE_MAP[provider_name].format(title=clean_title)
+    
+    # Fallback if we don't know the service URL structure
+    return f"https://www.google.com/search?q=watch+{quote_plus(movie_title)}"
+
+# --- 3. TMDB API FUNCTIONS ---
 def fetch_streaming_movies():
-    """
-    Fetches popular movies specifically streaming on Flatrate services (Netflix, etc).
-    """
+    """Fetches movies strictly on flatrate streaming (US)."""
     try:
         api_key = st.secrets["tmdb"]["key"]
-        # 'flatrate' = Subscription services only (No rent/buy)
-        # 'watch_region=US' = US catalogs
+        # Filter: Streaming (Flatrate) + US Region
         url = f"https://api.themoviedb.org/3/discover/movie?api_key={api_key}&include_adult=false&include_video=false&language=en-US&page=1&sort_by=popularity.desc&watch_region=US&with_watch_monetization_types=flatrate"
         
         response = requests.get(url, timeout=5)
@@ -39,7 +62,7 @@ def fetch_streaming_movies():
         return []
 
 def fetch_watch_providers(movie_id):
-    """Checks exact providers for the cards."""
+    """Gets the providers for a specific movie."""
     try:
         api_key = st.secrets["tmdb"]["key"]
         url = f"https://api.themoviedb.org/3/movie/{movie_id}/watch/providers?api_key={api_key}"
@@ -62,7 +85,7 @@ def get_backdrop_url(path):
         return f"https://image.tmdb.org/t/p/original{path}"
     return None
 
-# --- 3. AUTH FUNCTIONS ---
+# --- 4. AUTH & DB FUNCTIONS ---
 def sign_up(email, password):
     try:
         response = supabase.auth.sign_up({"email": email, "password": password})
@@ -113,7 +136,6 @@ def login_with_url(url_string):
     except Exception as e:
         return None, str(e)
 
-# --- 4. DATABASE FUNCTIONS ---
 def add_to_db(user_email, title, poster, tmdb_id):
     if supabase:
         data = {"user_name": user_email, "movie_title": title, "poster_url": poster, "tmdb_id": tmdb_id}
@@ -133,7 +155,8 @@ def get_user_watchlist(user_email):
 if 'user' not in st.session_state:
     st.session_state.user = None
 
-# --- 6. STYLING ---
+# --- 6. STYLING (Neuro-Friendly) ---
+# Clean lines, clear hover states, no jarring animations
 st.markdown("""
 <style>
     .stApp {background-color: #0e0e0e;}
@@ -147,17 +170,44 @@ st.markdown("""
         box-shadow: inset 0 0 0 2000px rgba(0,0,0,0.7);
         border: 1px solid #333;
     }
-    .movie-poster {
-        border-radius: 10px;
-        transition: transform 0.2s; 
-        width: 100%;
+    
+    /* Movie Card Container */
+    .movie-card {
+        position: relative;
         margin-bottom: 10px;
     }
-    .movie-poster:hover {
-        transform: scale(1.05);
-        cursor: pointer;
-        border: 2px solid #ff4b4b;
+
+    /* The Poster Image */
+    .movie-poster {
+        border-radius: 12px;
+        transition: transform 0.2s ease-in-out; 
+        width: 100%;
+        display: block;
+        border: 1px solid #333;
     }
+    .movie-poster:hover {
+        transform: scale(1.03);
+        cursor: pointer;
+        border: 2px solid #7D4CDB; /* NeuroStream Purple */
+        box-shadow: 0 0 15px rgba(125, 76, 219, 0.4);
+    }
+
+    /* The "On Netflix" Badge - Crucial for Cognitive Clarity */
+    .service-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: rgba(0, 0, 0, 0.85);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        backdrop-filter: blur(4px);
+        border: 1px solid #444;
+        pointer-events: none; /* Let clicks pass through to image */
+    }
+
     a { text-decoration: none; }
 </style>
 """, unsafe_allow_html=True)
@@ -263,7 +313,6 @@ elif menu == "❤️ Watchlist":
         st.info("List is empty.")
 
 elif menu == "🍿 Live Feed":
-    # Using the STRICT STREAMING filter
     movies = fetch_streaming_movies()
     
     if movies:
@@ -277,7 +326,7 @@ elif menu == "🍿 Live Feed":
         """, unsafe_allow_html=True)
 
     st.subheader("Streaming Now")
-    st.caption("Click a poster to watch.")
+    st.caption("Click a poster to go directly to the app.")
     
     current_watchlist = get_user_watchlist(user_email)
     saved_titles = [item['movie_title'] for item in current_watchlist] if current_watchlist else []
@@ -288,24 +337,35 @@ elif menu == "🍿 Live Feed":
             poster_url = get_image_url(movie.get('poster_path'))
             providers = fetch_watch_providers(movie['id'])
             
-            # --- THE SMART LINK FIX ---
-            # Instead of the TMDB link, we construct a Google Search link
-            # This lands the user on a page with a big "Watch on [App]" button
-            search_query = quote_plus(f"watch {movie['title']}")
-            click_link = f"https://www.google.com/search?q={search_query}"
+            # --- INTELLIGENT DEEP LINKING ---
+            deep_link = "#"
+            service_name = "Watch"
+            
+            # Find the "Best" provider (Top 1)
+            if providers and 'flatrate' in providers:
+                # Get the first provider in the list (e.g., Netflix)
+                primary_provider = providers['flatrate'][0]['provider_name']
+                service_name = primary_provider
+                
+                # Generate the direct search link
+                deep_link = get_deep_link(primary_provider, movie['title'])
+            else:
+                # Fallback if no flatrate found (should be rare due to filtering)
+                service_name = "Details"
+                deep_link = f"https://www.themoviedb.org/movie/{movie['id']}"
 
+            # --- RENDER CARD ---
+            # We add a "Badge" on top of the image so the user knows where they are going.
             st.markdown(f"""
-                <a href="{click_link}" target="_blank">
-                    <img src="{poster_url}" class="movie-poster">
-                </a>
+                <div class="movie-card">
+                    <a href="{deep_link}" target="_blank">
+                        <div class="service-badge">On {service_name}</div>
+                        <img src="{poster_url}" class="movie-poster">
+                    </a>
+                </div>
             """, unsafe_allow_html=True)
             
-            if providers and 'flatrate' in providers:
-                streamers = [p['provider_name'] for p in providers['flatrate'][:2]]
-                st.caption(f"📺 {', '.join(streamers)}")
-            else:
-                st.caption("Available now")
-
+            # Watchlist Button
             if movie['title'] in saved_titles:
                 st.button("✅ Saved", key=f"btn_{index}", disabled=True)
             else:
