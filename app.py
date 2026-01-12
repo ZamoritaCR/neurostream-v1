@@ -1,15 +1,3 @@
-import streamlit as st
-st.error("🚨 NEW CODE IS RUNNING 🚨")
-st.stop()
-st.title("SIGN UP SCREEN TEST")
-
-st.text_input("Username")
-st.text_input("Email")
-st.text_input("Password", type="password")
-
-st.button("Create account")
-st.stop()
-
 # FILE: app.py
 # --------------------------------------------------
 # DOPAMINE.WATCH v21.0
@@ -243,21 +231,22 @@ def daily_state_check():
         st.stop()
 
 # --------------------------------------------------
-# ENTRY ROUTER (EXPLICIT LOGIN / SIGNUP OVERRIDE)
+# ENTRY ROUTER (WordPress → Streamlit)
 # --------------------------------------------------
+
 query_params = st.query_params
-entry = query_params.get("entry", None)
+entry = query_params.get("entry")
+
+if "entry_resolved" not in st.session_state:
+    st.session_state.entry_resolved = False
 
 if entry and not st.session_state.entry_resolved and st.session_state.user is None:
     if entry == "login":
-        st.session_state.entry_resolved = True
-        login_screen()
-        st.stop()
-
+        st.session_state.auth_step = "login"
     elif entry == "signup":
-        st.session_state.entry_resolved = True
-        signup_screen()
-        st.stop()
+        st.session_state.auth_step = "signup"
+
+    st.session_state.entry_resolved = True
 
 # --------------------------------------------------
 # ROUTER (DEFAULT APP FLOW)
