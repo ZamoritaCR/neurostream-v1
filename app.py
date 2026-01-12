@@ -1,14 +1,17 @@
 # FILE: app.py
 # --------------------------------------------------
 # DOPAMINE.WATCH v21.0
-# Sprint 1 — AUTH + ONBOARDING ONLY
+# Sprint 1 — AUTH + ONBOARDING + AGGREGATOR
 # --------------------------------------------------
 
 import streamlit as st
 import os
 import time
-# ✅ ADDITION: Import the service layer
+
+# ✅ IMPORTS: These connect your UI to the backend logic
 from services.tmdb import search_global, get_streaming_providers
+# ✅ FIXED: Added missing import for the AI service
+from services.llm import get_mood_suggestions
 
 # --------------------------------------------------
 # CONFIG
@@ -33,7 +36,10 @@ def init_state():
         "baseline_prefs": {},
         "daily_state": {},
         "onboarding_complete": False,
-        "entry_resolved": False
+        "daily_check_done": False,  # ✅ Ensures we don't get stuck
+        "entry_resolved": False,
+        "active_search": "",
+        "suggestions": None         # Added to prevent key errors
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -203,13 +209,12 @@ def onboarding_baseline():
             st.rerun()
 
 # --------------------------------------------------
-# AGGREGATOR — GLOBAL SEARCH (✅ NEW FEATURE)
+# AGGREGATOR — GLOBAL SEARCH
 # --------------------------------------------------
 def search_screen():
     st.markdown("## 🔎 Find & Locate")
     
     # --- NEW: AUTO-SUGGESTION LOGIC ---
-    # If we just came from Daily Check, we have a mood but no query yet.
     initial_query = ""
     
     if "daily_state" in st.session_state and st.session_state.daily_state:
@@ -217,26 +222,30 @@ def search_screen():
         prefs = st.session_state.baseline_prefs
         
         # Only fetch if we haven't already
-        if "suggestions" not in st.session_state:
+        if "suggestions" not in st.session_state or st.session_state.suggestions is None:
             with st.spinner("🧠 Analyzing your dopamine state..."):
-                st.session_state.suggestions = get_mood_suggestions(
-                    state.get("mood", "Neutral"),
-                    state.get("intensity", 50),
-                    prefs.get("genres", [])
-                )
-        
+                try:
+                    st.session_state.suggestions = get_mood_suggestions(
+                        state.get("mood", "Neutral"),
+                        state.get("intensity", 50),
+                        prefs.get("genres", [])
+                    )
+                except Exception as e:
+                    # Fallback if AI fails so app doesn't crash
+                    st.session_state.suggestions = {"reason": "AI unavailable", "queries": []}
+
         suggestion_data = st.session_state.suggestions
-        if suggestion_data:
+        if suggestion_data and "reason" in suggestion_data:
             st.info(f"**Insight:** {suggestion_data['reason']}")
             
             # Let user pick a suggested path
-            cols = st.columns(3)
-            for i, term in enumerate(suggestion_data['queries']):
-                if cols[i].button(term, use_container_width=True):
-                    st.session_state.active_search = term
-                    st.rerun()
-
-    # --- END NEW LOGIC ---
+            if "queries" in suggestion_data:
+                cols = st.columns(3)
+                for i, term in enumerate(suggestion_data['queries']):
+                    if i < 3: # Safety check for column index
+                        if cols[i].button(term, use_container_width=True):
+                            st.session_state.active_search = term
+                            st.rerun()
 
     st.caption("Search across all streaming services. Intentional lookup only.")
     
@@ -248,7 +257,6 @@ def search_screen():
 
     # 2. Results
     if query:
-        # Update active search state
         st.session_state.active_search = query
         
         with st.spinner("Scanning databases..."):
@@ -311,7 +319,6 @@ def daily_state_check():
         "intensity": intensity
     }
 
-    # 👇 THIS IS THE CRITICAL CHANGE
     if st.button("Continue"):
         st.session_state.daily_check_done = True 
         st.rerun()
@@ -319,7 +326,6 @@ def daily_state_check():
 # --------------------------------------------------
 # ENTRY ROUTER (WordPress → Streamlit)
 # --------------------------------------------------
-
 query_params = st.query_params
 entry = query_params.get("entry")
 
@@ -348,7 +354,7 @@ if not st.session_state.onboarding_complete:
     onboarding_baseline()
     st.stop()
 
-# ✅ MODIFICATION: Update router to show Search after daily check
+# ✅ FIXED LOGIC: Checks value, not key existence
 if not st.session_state.daily_check_done:
     daily_state_check()
     st.stop()
