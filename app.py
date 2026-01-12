@@ -1,7 +1,7 @@
 # FILE: app.py
 # --------------------------------------------------
-# DOPAMINE.WATCH v21.2
-# Sprint 1 — AUTH + ONBOARDING + AGGREGATOR (STABLE)
+# DOPAMINE.WATCH v21.4 (FULL APP + ERROR REVEAL)
+# Sprint 1 — AUTH + ONBOARDING + AGGREGATOR + UI
 # --------------------------------------------------
 
 import streamlit as st
@@ -10,7 +10,6 @@ import os
 # --------------------------------------------------
 # SAFE PAGE CONFIG (must run once)
 # --------------------------------------------------
-# This prevents the "StreamlitAPIException" if config is set twice
 if "page_config_set" not in st.session_state:
     st.set_page_config(
         page_title="Dopamine.watch",
@@ -22,10 +21,8 @@ if "page_config_set" not in st.session_state:
 # --------------------------------------------------
 # 🚨 STARTUP SAFETY CHECK
 # --------------------------------------------------
-# This catches missing files/libraries and prints the error on screen
 try:
     import requests
-    # Check if the 'services' folder and files exist
     from services.tmdb import search_global, get_streaming_providers
     from services.llm import get_mood_suggestions
 except ImportError as e:
@@ -245,11 +242,15 @@ def search_screen():
 
     if query:
         st.session_state.active_search = ""
+        
+        # --- 🚨 CHANGED: Error Reveal Logic ---
         try:
             results = search_global(query)
-        except Exception:
-            st.error("Streaming search unavailable.")
+        except Exception as e:
+            st.error(f"🛑 API ERROR: {e}")
+            st.code(str(e)) # Print the exact Python error
             return
+        # --------------------------------------
 
         if not results:
             st.info("No results found.")
@@ -273,8 +274,8 @@ def search_screen():
                     try:
                         providers = get_streaming_providers(item["id"], item["type"])
                         st.success(", ".join(providers) if providers else "Not streaming")
-                    except Exception:
-                        st.warning("Provider lookup failed.")
+                    except Exception as e:
+                        st.warning(f"Provider lookup failed: {e}")
             
             st.markdown("</div>", unsafe_allow_html=True)
 
