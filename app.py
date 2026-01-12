@@ -349,7 +349,7 @@ if not st.session_state.onboarding_complete:
     st.stop()
 
 # ✅ MODIFICATION: Update router to show Search after daily check
-if "daily_check_done" not in st.session_state:
+if not st.session_state.daily_check_done:
     daily_state_check()
     st.stop()
 
