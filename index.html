@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dopamine.watch</title>
+
+<style>
+/* RESET */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Inter, system-ui, sans-serif;
+}
+
+body {
+    height: 100vh;
+    overflow: hidden;
+    color: white;
+    background: #050505;
+}
+
+/* FULL-PAGE LOGO BACKGROUND */
+.bg-logo {
+    position: fixed;
+    inset: 0;
+    background: url("logo.gif") center center / cover no-repeat;
+    opacity: 0.25;
+    filter: blur(3px) saturate(120%);
+    z-index: 1;
+}
+
+/* RGB NEURON FLOW */
+.neurons {
+    position: fixed;
+    inset: 0;
+    background:
+        repeating-linear-gradient(
+            120deg,
+            rgba(0,255,255,0.25),
+            rgba(161,0,242,0.25),
+            rgba(0,255,255,0.25) 4px,
+            transparent 8px
+        );
+    animation: flow 18s linear infinite;
+    mix-blend-mode: screen;
+    z-index: 2;
+}
+
+@keyframes flow {
+    from { background-position: 0 0; }
+    to { background-position: 1400px 1000px; }
+}
+
+/* MAIN PANEL */
+.panel {
+    position: relative;
+    z-index: 3;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(20px);
+}
+
+/* GLASS CARD */
+.card {
+    width: 92%;
+    max-width: 1200px;
+    background: rgba(10,10,10,0.65);
+    border-radius: 30px;
+    padding: 60px;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 60px;
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+}
+
+/* LEFT COPY */
+.brand {
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+    color: #00f2ea;
+    font-weight: 800;
+    margin-bottom: 18px;
+}
+
+h1 {
+    font-size: 3.6rem;
+    line-height: 1.1;
+    margin-bottom: 24px;
+}
+
+.gradient {
+    background: linear-gradient(90deg,#00f2ea,#7c4dff,#a100f2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+p {
+    font-size: 1.15rem;
+    color: #bbb;
+    max-width: 520px;
+}
+
+/* AUTH CARD */
+.auth {
+    background: rgba(0,0,0,0.55);
+    border-radius: 24px;
+    padding: 40px;
+    border: 1px solid rgba(255,255,255,0.12);
+}
+
+/* FORM */
+label {
+    font-size: 0.85rem;
+    color: #bbb;
+    margin-top: 16px;
+    display: block;
+}
+
+input {
+    width: 100%;
+    margin-top: 6px;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    background: #1a1a1a;
+    color: white;
+    font-size: 1rem;
+}
+
+button {
+    width: 100%;
+    margin-top: 20px;
+    padding: 14px;
+    border-radius: 14px;
+    border: none;
+    font-weight: 800;
+    cursor: pointer;
+    background: linear-gradient(90deg,#00f2ea,#7c4dff,#a100f2);
+    color: black;
+}
+
+.secondary {
+    background: transparent;
+    color: white;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+.link {
+    margin-top: 18px;
+    text-align: center;
+    font-size: 0.85rem;
+    color: #aaa;
+    cursor: pointer;
+}
+
+/* SCREENS */
+.screen { display: none; }
+.screen.active { display: block; }
+
+@media(max-width: 900px){
+    .card {
+        grid-template-columns: 1fr;
+        padding: 40px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="bg-logo"></div>
+<div class="neurons"></div>
+
+<div class="panel">
+<div class="card">
+
+<!-- LEFT -->
+<div>
+    <div class="brand">DOPAMINE.WATCH</div>
+    <h1>
+        Stop scrolling.<br/>
+        Start <span class="gradient">bossing dopamine.</span>
+    </h1>
+    <p>
+        Media as medicine for neurodivergent minds.<br/>
+        Regulation over addiction. Control over chaos.
+    </p>
+</div>
+
+<!-- RIGHT -->
+<div class="auth">
+
+<!-- LOGIN -->
+<div id="login" class="screen active">
+    <label>Email or Dopamine ID</label>
+    <input placeholder="ZamoritaCR or you@email.com">
+
+    <label>Password</label>
+    <input type="password">
+
+    <button>Log In</button>
+
+    <div class="link" onclick="show('signup')">Create Dopamine ID</div>
+    <div class="link">Continue as Guest</div>
+</div>
+
+<!-- SIGN UP -->
+<div id="signup" class="screen">
+    <label>Dopamine ID (public username)</label>
+    <input placeholder="ZamoritaCR">
+
+    <label>Email</label>
+    <input placeholder="you@email.com">
+
+    <label>Password</label>
+    <input type="password">
+
+    <button>Create Account</button>
+
+    <div class="link" onclick="show('login')">Back to Login</div>
+</div>
+
+</div>
+</div>
+</div>
+
+<script>
+function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+</script>
+
+</body>
+</html>
