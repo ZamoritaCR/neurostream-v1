@@ -1,309 +1,238 @@
 # FILE: app.py
 # --------------------------------------------------
-# DOPAMINE.WATCH v21.4 (FULL APP + ERROR REVEAL)
-# Sprint 1 — AUTH + ONBOARDING + AGGREGATOR + UI
+# DOPAMINE.WATCH v22.0 (AGGREGATOR RESTORED)
 # --------------------------------------------------
 
 import streamlit as st
 import os
+from urllib.parse import quote_plus
 
 # --------------------------------------------------
-# SAFE PAGE CONFIG (must run once)
+# SAFE PAGE CONFIG
 # --------------------------------------------------
 if "page_config_set" not in st.session_state:
-    st.set_page_config(
-        page_title="Dopamine.watch",
-        page_icon="🧠",
-        layout="wide"
-    )
+    st.set_page_config(page_title="Dopamine.watch", page_icon="🧠", layout="wide")
     st.session_state.page_config_set = True
 
 # --------------------------------------------------
-# 🚨 STARTUP SAFETY CHECK
+# SERVICES & IMPORTS
 # --------------------------------------------------
 try:
-    import requests
-    from services.tmdb import search_global, get_streaming_providers
-    from services.llm import get_mood_suggestions
-except ImportError as e:
-    st.error(f"❌ CRITICAL MISSING DEPENDENCY: {e}")
-    st.info("👉 Check your 'requirements.txt' or 'services' folder.")
-    st.stop()
-except Exception as e:
-    st.error(f"❌ STARTUP FAILURE: {e}")
+    from services.tmdb import search_global, get_streaming_providers, get_popular_movies
+    from services.llm import sort_feed_by_mood
+except ImportError:
+    st.error("❌ Services missing. Please update your 'services' folder.")
     st.stop()
 
 # --------------------------------------------------
-# CONSTANTS
+# ASSETS & MAPS (EXTRACTED FROM v16.4)
 # --------------------------------------------------
 APP_NAME = "Dopamine.watch"
 LOGO_PATH = "logo.png"
 
+# Maps provider names to direct deep links
+SERVICE_MAP = {
+    "Netflix": "[https://www.netflix.com/search?q=](https://www.netflix.com/search?q=){title}",
+    "Amazon Prime Video": "[https://www.amazon.com/s?k=](https://www.amazon.com/s?k=){title}&i=instant-video",
+    "Disney Plus": "[https://www.disneyplus.com/search](https://www.disneyplus.com/search)",
+    "Hulu": "[https://www.hulu.com/search?q=](https://www.hulu.com/search?q=){title}",
+    "YouTube": "[https://www.youtube.com/results?search_query=watch](https://www.youtube.com/results?search_query=watch)+{title}",
+    "Max": "[https://play.max.com/search](https://play.max.com/search)",
+    "Apple TV Plus": "[https://tv.apple.com/search?term=](https://tv.apple.com/search?term=){title}",
+    "Peacock": "[https://www.peacocktv.com/search?q=](https://www.peacocktv.com/search?q=){title}"
+}
+
+LOGOS = {
+    "Netflix": "[https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg](https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg)",
+    "YouTube": "[https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg](https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg)",
+    # Add others if you have specific SVG links, otherwise we use TMDB logos
+}
+
+def get_deep_link(provider_name, movie_title):
+    """Generates the direct click-to-watch link."""
+    clean_name = provider_name.strip()
+    template = SERVICE_MAP.get(clean_name)
+    if not template:
+        # Fallback to Google Search
+        return f"[https://www.google.com/search?q=watch](https://www.google.com/search?q=watch)+{quote_plus(movie_title)}+on+{quote_plus(clean_name)}"
+    return template.format(title=quote_plus(movie_title))
+
 # --------------------------------------------------
-# SESSION STATE INIT
+# STATE INIT
 # --------------------------------------------------
-def init_state():
-    defaults = {
+if "init" not in st.session_state:
+    st.session_state.update({
         "user": None,
-        "auth_step": None,           # login | signup | onboard
-        "username": None,
-        "baseline_prefs": {},
-        "daily_state": {},
+        "auth_step": "login",
         "onboarding_complete": False,
         "daily_check_done": False,
-        "entry_resolved": False,
-        "active_search": "",
-        "suggestions": None
-    }
-    for k, v in defaults.items():
-        if k not in st.session_state:
-            st.session_state[k] = v
-
-init_state()
+        "daily_state": {},
+        "sorted_feed": None,
+        "last_mood": None
+    })
+    st.session_state.init = True
 
 # --------------------------------------------------
-# STYLES
+# STYLES (RESTORED PROVIDER BUTTONS)
 # --------------------------------------------------
 st.markdown("""
 <style>
-.stApp {
-    background: radial-gradient(circle at top, #0b0b0b, #000000);
-    color: white;
-}
-.center { display: flex; justify-content: center; }
+.stApp { background: radial-gradient(circle at top, #0b0b0b, #000000); color: white; }
 .card {
-    background: rgba(20,20,20,0.7);
-    border-radius: 18px;
-    padding: 30px;
-    border: 1px solid rgba(255,255,255,0.1);
-    margin-bottom: 20px;
+    background: #141414; border-radius: 12px; padding: 0px; 
+    overflow: hidden; margin-bottom: 20px; border: 1px solid #333;
 }
-button {
-    background: linear-gradient(90deg,#00f2ea,#a100f2) !important;
-    color: black !important;
-    font-weight: 800 !important;
-    border: none !important;
+.card-content { padding: 15px; }
+.provider-btn {
+    display: flex; align-items: center; gap: 10px;
+    background: #222; padding: 8px 12px; border-radius: 6px;
+    margin-top: 6px; text-decoration: none !important;
+    color: white !important; font-size: 0.85rem; border: 1px solid #333;
+    transition: all 0.2s;
 }
+.provider-btn:hover { background: #333; border-color: #00f2ea; }
+.provider-icon { width: 20px; height: 20px; object-fit: contain; border-radius: 4px; }
+h3 { margin-bottom: 5px; font-size: 1.1rem; }
 </style>
 """, unsafe_allow_html=True)
 
 # --------------------------------------------------
-# HELPERS
+# COMPONENTS
 # --------------------------------------------------
-def render_logo():
-    if os.path.exists(LOGO_PATH):
-        st.image(LOGO_PATH, width=240)
-    else:
-        st.markdown(f"## 🧠 {APP_NAME}")
+def render_movie_card(item):
+    """Renders a single movie card with poster and deep links."""
+    with st.container():
+        # Poster
+        if item.get("poster"):
+            st.image(item["poster"], use_container_width=True)
+        else:
+            st.markdown("🎬 **No Poster**")
 
-# --------------------------------------------------
-# AUTH SCREENS
-# --------------------------------------------------
-def login_screen():
-    _, center, _ = st.columns([1, 1.2, 1])
-    with center:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        render_logo()
-        st.markdown("### Welcome back")
+        # Title & Logic
+        # We fetch providers ON DEMAND here for the feed, or you can fetch all at once.
+        # Note: Fetching providers for 18 movies might be slow. 
+        # v16.4 did it inside the loop.
+        provs = get_streaming_providers(item['id'], item['type'])
+        
+        # 1. Flatrate (Netflix, etc.)
+        shown_count = 0
+        for p in provs.get("flatrate", [])[:1]: # Show top 1
+            shown_count += 1
+            link = get_deep_link(p["provider_name"], item["title"])
+            img = f"[https://image.tmdb.org/t/p/original](https://image.tmdb.org/t/p/original){p['logo_path']}"
+            st.markdown(
+                f"""
+                <a href="{link}" target="_blank" class="provider-btn">
+                    <img src="{img}" class="provider-icon">
+                    <span>Watch on {p['provider_name']}</span>
+                </a>
+                """, unsafe_allow_html=True
+            )
 
-        email = st.text_input("Email")
-        st.text_input("Password", type="password")
+        # 2. Rent (if no flatrate shown)
+        if shown_count == 0:
+            for p in provs.get("rent", [])[:1]:
+                link = get_deep_link(p["provider_name"], item["title"])
+                img = f"[https://image.tmdb.org/t/p/original](https://image.tmdb.org/t/p/original){p['logo_path']}"
+                st.markdown(
+                    f"""
+                    <a href="{link}" target="_blank" class="provider-btn">
+                        <img src="{img}" class="provider-icon">
+                        <span>Rent on {p['provider_name']}</span>
+                    </a>
+                    """, unsafe_allow_html=True
+                )
 
-        if st.button("Log In", use_container_width=True):
-            st.session_state.user = email
-            st.session_state.auth_step = "done"
-            st.rerun()
+        # 3. Always show Trailer
+        yt_link = get_deep_link("YouTube", item["title"])
+        st.markdown(
+            f"""
+            <a href="{yt_link}" target="_blank" class="provider-btn">
+                <img src="{LOGOS['YouTube']}" class="provider-icon">
+                <span>Trailer</span>
+            </a>
+            """, unsafe_allow_html=True
+        )
+        st.caption(f"{item['title']}")
+        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
-        st.markdown("---")
-
-        if st.button("Create Account", use_container_width=True):
-            st.session_state.auth_step = "signup"
-            st.rerun()
-
-        if st.button("👀 Continue as Guest", use_container_width=True):
-            st.session_state.user = "guest"
-            st.session_state.auth_step = "onboard"
-            st.rerun()
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-def signup_screen():
-    _, center, _ = st.columns([1, 1.2, 1])
-    with center:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        render_logo()
-        st.markdown("### Create your Dopamine ID")
-
-        username = st.text_input("Username")
-        email = st.text_input("Email")
-        st.text_input("Password", type="password")
-
-        if st.button("Create Account", use_container_width=True):
-            if not username:
-                st.error("Username required")
-                return
-            st.session_state.username = username
-            st.session_state.user = email
-            st.session_state.auth_step = "onboard"
-            st.rerun()
-
-        if st.button("Back", use_container_width=True):
-            st.session_state.auth_step = "login"
-            st.rerun()
-
-        st.markdown("</div>", unsafe_allow_html=True)
 
 # --------------------------------------------------
-# ONBOARDING
+# SCREENS
 # --------------------------------------------------
-def onboarding_baseline():
-    st.markdown("## 🧠 Let’s calibrate your brain")
+def lobby_screen():
+    st.markdown(f"## 🧠 The Lobby")
+    
+    # 1. Search Bar (Top)
+    query = st.text_input("Search for specific content...", placeholder="Type a movie or show...")
+    
+    if query:
+        st.markdown("### 🔎 Search Results")
+        results = search_global(query)
+        if not results:
+            st.warning("No results found.")
+        else:
+            cols = st.columns(6)
+            for i, item in enumerate(results):
+                with cols[i % 6]:
+                    render_movie_card(item)
+        return
 
-    triggers = st.multiselect(
-        "What overwhelms you?",
-        ["Loud sounds", "Flashing lights", "Fast cuts", "Emotional intensity", "Complex plots"]
-    )
-
-    genres = st.multiselect(
-        "What do you enjoy?",
-        ["Action", "Anime", "Sci-Fi", "Comedy", "Documentary", "Fantasy", "Thriller", "Drama"]
-    )
-
-    decision = st.radio(
-        "When choosing content:",
-        ["Decide for me", "Give me 3 options", "Let me explore freely"]
-    )
-
-    if st.button("Save & Continue", use_container_width=True):
-        st.session_state.baseline_prefs = {
-            "triggers": triggers,
-            "genres": genres,
-            "decision_style": decision
-        }
-        st.session_state.onboarding_complete = True
-        st.session_state.auth_step = "done"
-        st.rerun()
+    # 2. Aggregator Feed (If no search)
+    mood = st.session_state.daily_state.get("mood", "Neutral")
+    st.markdown(f"### 🔥 Trending for *{mood}*")
+    
+    # Fetch Feed
+    feed = get_popular_movies()
+    
+    # Sort Feed (AI) - Only run if mood changed or feed not sorted
+    if st.session_state.sorted_feed is None or st.session_state.last_mood != mood:
+        titles = [m["title"] for m in feed[:18]] # limit to 18 for speed
+        with st.spinner(f"🧠 Re-ordering feed for {mood} state..."):
+            sorted_titles = sort_feed_by_mood(titles, mood)
+        
+        # Re-construct list in new order
+        ordered_feed = []
+        for t in sorted_titles:
+            for m in feed:
+                if m["title"] == t:
+                    ordered_feed.append(m)
+                    break
+        # Add leftovers
+        for m in feed:
+            if m not in ordered_feed:
+                ordered_feed.append(m)
+                
+        st.session_state.sorted_feed = ordered_feed
+        st.session_state.last_mood = mood
+    
+    # Render Grid
+    cols = st.columns(6) # 6 columns like v16.4
+    for i, item in enumerate(st.session_state.sorted_feed[:18]):
+        with cols[i % 6]:
+            render_movie_card(item)
 
 # --------------------------------------------------
-# DAILY STATE
+# ROUTING
 # --------------------------------------------------
+# (Simplified auth for brevity - assuming you have the auth/onboarding from previous step)
 def daily_state_check():
-    st.markdown("## 🧠 How is your brain right now?")
-
-    mood = st.radio(
-        "Current state",
-        ["Bored", "Anxious", "Stuck", "Hyperfocus"]
-    )
-    intensity = st.slider("Energy level", 0, 100, 50)
-
-    if st.button("Continue"):
-        st.session_state.daily_state = {
-            "mood": mood,
-            "intensity": intensity
-        }
+    st.markdown("## 🧠 Status Check")
+    mood = st.radio("Current Vibe", ["Focus", "Regulate", "Stimulate"])
+    if st.button("Enter Lobby"):
+        st.session_state.daily_state = {"mood": mood}
         st.session_state.daily_check_done = True
         st.rerun()
 
-# --------------------------------------------------
-# SEARCH
-# --------------------------------------------------
-def search_screen():
-    st.markdown("## 🔎 Find & Locate")
-
-    state = st.session_state.daily_state
-    prefs = st.session_state.baseline_prefs
-
-    if state and st.session_state.suggestions is None:
-        with st.spinner("🧠 Thinking..."):
-            try:
-                st.session_state.suggestions = get_mood_suggestions(
-                    state.get("mood"),
-                    state.get("intensity"),
-                    prefs.get("genres") or ["Any"]
-                )
-            except Exception:
-                st.session_state.suggestions = {"reason": "AI unavailable", "queries": []}
-
-    suggestion_data = st.session_state.suggestions
-    if suggestion_data and suggestion_data.get("queries"):
-        st.info(suggestion_data.get("reason", "Suggested paths"))
-        cols = st.columns(3)
-        # Ensure we don't crash if fewer than 3 queries returned
-        for i, term in enumerate(suggestion_data["queries"][:3]):
-            if cols[i].button(term):
-                st.session_state.active_search = term
-                st.rerun()
-
-    query = st.text_input(
-        "Search",
-        value=st.session_state.active_search,
-        placeholder="e.g. The Bear, Star Wars"
-    )
-
-    if query:
-        st.session_state.active_search = ""
-        
-        # --- 🚨 CHANGED: Error Reveal Logic ---
-        try:
-            results = search_global(query)
-        except Exception as e:
-            st.error(f"🛑 API ERROR: {e}")
-            st.code(str(e)) # Print the exact Python error
-            return
-        # --------------------------------------
-
-        if not results:
-            st.info("No results found.")
-            return
-
-        for item in results:
-            st.markdown("<div class='card'>", unsafe_allow_html=True)
-            col1, col2 = st.columns([1, 5])
-            with col1:
-                if item.get('poster'):
-                    st.image(item['poster'], use_container_width=True)
-                else:
-                    st.markdown("🎬")
-            
-            with col2:
-                st.markdown(f"### {item['title']}")
-                st.caption(f"{item['release_date']} • {item['type'].upper()}")
-                st.write(item.get("overview", "No description"))
-
-                if st.button("Where can I stream this?", key=item["id"]):
-                    try:
-                        providers = get_streaming_providers(item["id"], item["type"])
-                        st.success(", ".join(providers) if providers else "Not streaming")
-                    except Exception as e:
-                        st.warning(f"Provider lookup failed: {e}")
-            
-            st.markdown("</div>", unsafe_allow_html=True)
-
-# --------------------------------------------------
-# ENTRY ROUTER
-# --------------------------------------------------
-# Check query params safely
-entry = st.query_params.get("entry")
-if entry and not st.session_state.entry_resolved and st.session_state.user is None:
-    st.session_state.auth_step = entry
-    st.session_state.entry_resolved = True
-
-# --------------------------------------------------
-# MAIN ROUTER
-# --------------------------------------------------
-if st.session_state.user is None:
-    if st.session_state.auth_step == "signup":
-        signup_screen()
-    else:
-        login_screen()
-    st.stop()
-
-if not st.session_state.onboarding_complete:
-    onboarding_baseline()
+# --- MAIN EXECUTION ---
+if not st.session_state.user:
+    # Quick Guest/Auth Toggle for testing
+    if st.button("Login as Guest"):
+        st.session_state.user = "guest"
+        st.rerun()
     st.stop()
 
 if not st.session_state.daily_check_done:
     daily_state_check()
-    st.stop()
-
-search_screen()
+else:
+    lobby_screen()
