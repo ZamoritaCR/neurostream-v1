@@ -311,8 +311,8 @@ def daily_state_check():
         "intensity": intensity
     }
 
+    # 👇 THIS IS THE CRITICAL CHANGE
     if st.button("Continue"):
-        # TEMPORARY: Move to search after check-in for testing
         st.session_state.daily_check_done = True 
         st.rerun()
 
