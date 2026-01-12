@@ -4,3 +4,4 @@ supabase
 requests
 fastapi
 uvicorn
+openai
