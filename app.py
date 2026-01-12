@@ -1,27 +1,44 @@
 # FILE: app.py
 # --------------------------------------------------
-# DOPAMINE.WATCH v21.0
-# Sprint 1 — AUTH + ONBOARDING + AGGREGATOR
+# DOPAMINE.WATCH v21.2
+# Sprint 1 — AUTH + ONBOARDING + AGGREGATOR (STABLE)
 # --------------------------------------------------
 
 import streamlit as st
 import os
-import time
-
-# ✅ IMPORTS: These connect your UI to the backend logic
-from services.tmdb import search_global, get_streaming_providers
-# ✅ FIXED: Added missing import for the AI service
-from services.llm import get_mood_suggestions
 
 # --------------------------------------------------
-# CONFIG
+# SAFE PAGE CONFIG (must run once)
 # --------------------------------------------------
-st.set_page_config(
-    page_title="Dopamine.watch",
-    page_icon="🧠",
-    layout="wide"
-)
+# This prevents the "StreamlitAPIException" if config is set twice
+if "page_config_set" not in st.session_state:
+    st.set_page_config(
+        page_title="Dopamine.watch",
+        page_icon="🧠",
+        layout="wide"
+    )
+    st.session_state.page_config_set = True
 
+# --------------------------------------------------
+# 🚨 STARTUP SAFETY CHECK
+# --------------------------------------------------
+# This catches missing files/libraries and prints the error on screen
+try:
+    import requests
+    # Check if the 'services' folder and files exist
+    from services.tmdb import search_global, get_streaming_providers
+    from services.llm import get_mood_suggestions
+except ImportError as e:
+    st.error(f"❌ CRITICAL MISSING DEPENDENCY: {e}")
+    st.info("👉 Check your 'requirements.txt' or 'services' folder.")
+    st.stop()
+except Exception as e:
+    st.error(f"❌ STARTUP FAILURE: {e}")
+    st.stop()
+
+# --------------------------------------------------
+# CONSTANTS
+# --------------------------------------------------
 APP_NAME = "Dopamine.watch"
 LOGO_PATH = "logo.png"
 
@@ -31,15 +48,15 @@ LOGO_PATH = "logo.png"
 def init_state():
     defaults = {
         "user": None,
-        "auth_step": None,          # login | signup | onboard
+        "auth_step": None,           # login | signup | onboard
         "username": None,
         "baseline_prefs": {},
         "daily_state": {},
         "onboarding_complete": False,
-        "daily_check_done": False,  # ✅ Ensures we don't get stuck
+        "daily_check_done": False,
         "entry_resolved": False,
         "active_search": "",
-        "suggestions": None         # Added to prevent key errors
+        "suggestions": None
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -48,7 +65,7 @@ def init_state():
 init_state()
 
 # --------------------------------------------------
-# STYLES (NEURODIVERGENT FIRST)
+# STYLES
 # --------------------------------------------------
 st.markdown("""
 <style>
@@ -56,17 +73,7 @@ st.markdown("""
     background: radial-gradient(circle at top, #0b0b0b, #000000);
     color: white;
 }
-
-.center {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.glow {
-    filter: drop-shadow(0 0 25px #00f2ea);
-}
-
+.center { display: flex; justify-content: center; }
 .card {
     background: rgba(20,20,20,0.7);
     border-radius: 18px;
@@ -74,16 +81,11 @@ st.markdown("""
     border: 1px solid rgba(255,255,255,0.1);
     margin-bottom: 20px;
 }
-
 button {
     background: linear-gradient(90deg,#00f2ea,#a100f2) !important;
     color: black !important;
     font-weight: 800 !important;
     border: none !important;
-}
-
-label {
-    font-size: 0.9rem !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -91,13 +93,9 @@ label {
 # --------------------------------------------------
 # HELPERS
 # --------------------------------------------------
-def render_logo(centered=True):
+def render_logo():
     if os.path.exists(LOGO_PATH):
-        if centered:
-            st.markdown("<div class='center'>", unsafe_allow_html=True)
         st.image(LOGO_PATH, width=240)
-        if centered:
-            st.markdown("</div>", unsafe_allow_html=True)
     else:
         st.markdown(f"## 🧠 {APP_NAME}")
 
@@ -105,16 +103,14 @@ def render_logo(centered=True):
 # AUTH SCREENS
 # --------------------------------------------------
 def login_screen():
-    left, center, right = st.columns([1, 1.2, 1])
-
+    _, center, _ = st.columns([1, 1.2, 1])
     with center:
         st.markdown("<div class='card'>", unsafe_allow_html=True)
-
         render_logo()
         st.markdown("### Welcome back")
 
         email = st.text_input("Email")
-        pwd = st.text_input("Password", type="password")
+        st.text_input("Password", type="password")
 
         if st.button("Log In", use_container_width=True):
             st.session_state.user = email
@@ -135,17 +131,15 @@ def login_screen():
         st.markdown("</div>", unsafe_allow_html=True)
 
 def signup_screen():
-    left, center, right = st.columns([1, 1.2, 1])
-
+    _, center, _ = st.columns([1, 1.2, 1])
     with center:
         st.markdown("<div class='card'>", unsafe_allow_html=True)
-
         render_logo()
         st.markdown("### Create your Dopamine ID")
 
-        username = st.text_input("Username (public)")
+        username = st.text_input("Username")
         email = st.text_input("Email")
-        pwd = st.text_input("Password", type="password")
+        st.text_input("Password", type="password")
 
         if st.button("Create Account", use_container_width=True):
             if not username:
@@ -163,198 +157,150 @@ def signup_screen():
         st.markdown("</div>", unsafe_allow_html=True)
 
 # --------------------------------------------------
-# ONBOARDING — BASELINE (ONE TIME)
+# ONBOARDING
 # --------------------------------------------------
 def onboarding_baseline():
     st.markdown("## 🧠 Let’s calibrate your brain")
-    st.caption("Nothing here is permanent. You can change this anytime.")
 
-    with st.container():
-        st.markdown("### 🚨 Sensory Triggers")
-        triggers = st.multiselect(
-            "What overwhelms you?",
-            [
-                "Loud sounds", "Flashing lights", "Fast cuts",
-                "Emotional intensity", "Complex plots"
-            ]
-        )
-
-        st.markdown("### 🎬 Genre Affinity")
-        genres = st.multiselect(
-            "What do you enjoy? (All allowed)",
-            [
-                "Action", "Anime", "Sci-Fi", "Comedy", "Documentary",
-                "Fantasy", "Thriller", "Drama", "Animation", "Mystery"
-            ]
-        )
-
-        st.markdown("### 🧩 Decision Style")
-        decision = st.radio(
-            "When choosing content, you prefer:",
-            [
-                "Decide for me",
-                "Give me 3 options",
-                "Let me explore freely"
-            ]
-        )
-
-        if st.button("Save & Continue", use_container_width=True):
-            st.session_state.baseline_prefs = {
-                "triggers": triggers,
-                "genres": genres,
-                "decision_style": decision
-            }
-            st.session_state.onboarding_complete = True
-            st.session_state.auth_step = "done"
-            st.rerun()
-
-# --------------------------------------------------
-# AGGREGATOR — GLOBAL SEARCH
-# --------------------------------------------------
-def search_screen():
-    st.markdown("## 🔎 Find & Locate")
-    
-    # --- NEW: AUTO-SUGGESTION LOGIC ---
-    initial_query = ""
-    
-    if "daily_state" in st.session_state and st.session_state.daily_state:
-        state = st.session_state.daily_state
-        prefs = st.session_state.baseline_prefs
-        
-        # Only fetch if we haven't already
-        if "suggestions" not in st.session_state or st.session_state.suggestions is None:
-            with st.spinner("🧠 Analyzing your dopamine state..."):
-                try:
-                    st.session_state.suggestions = get_mood_suggestions(
-                        state.get("mood", "Neutral"),
-                        state.get("intensity", 50),
-                        prefs.get("genres", [])
-                    )
-                except Exception as e:
-                    # Fallback if AI fails so app doesn't crash
-                    st.session_state.suggestions = {"reason": "AI unavailable", "queries": []}
-
-        suggestion_data = st.session_state.suggestions
-        if suggestion_data and "reason" in suggestion_data:
-            st.info(f"**Insight:** {suggestion_data['reason']}")
-            
-            # Let user pick a suggested path
-            if "queries" in suggestion_data:
-                cols = st.columns(3)
-                for i, term in enumerate(suggestion_data['queries']):
-                    if i < 3: # Safety check for column index
-                        if cols[i].button(term, use_container_width=True):
-                            st.session_state.active_search = term
-                            st.rerun()
-
-    st.caption("Search across all streaming services. Intentional lookup only.")
-    
-    # Check if a button click set the search term
-    default_val = st.session_state.get("active_search", "")
-    query = st.text_input("What are you looking for?", value=default_val, placeholder="e.g., Star Wars, The Bear...")
-    
-    st.markdown("---")
-
-    # 2. Results
-    if query:
-        st.session_state.active_search = query
-        
-        with st.spinner("Scanning databases..."):
-            results = search_global(query)
-        
-        if not results:
-            st.info("No results found. Try a different title.")
-            return
-
-        # 3. Render Cards
-        for item in results:
-            st.markdown("<div class='card'>", unsafe_allow_html=True)
-            col1, col2 = st.columns([1, 5])
-            
-            with col1:
-                if item['poster']:
-                    st.image(item['poster'], use_container_width=True)
-                else:
-                    st.markdown("🎬") 
-            
-            with col2:
-                st.markdown(f"### {item['title']}")
-                st.caption(f"Released: {item['release_date']} • {item['type'].upper()}")
-                st.write(item['overview'][:150] + "..." if item['overview'] else "No description available.")
-                
-                if st.button("Where can I stream this?", key=f"btn_{item['id']}"):
-                    providers = get_streaming_providers(item['id'], item['type'])
-                    if providers:
-                        st.success(f"**Streaming on:** {', '.join(providers)}")
-                    else:
-                        st.warning("Not currently streaming on major subscriptions in the US.")
-
-            st.markdown("</div>", unsafe_allow_html=True)
-            st.markdown("<br>", unsafe_allow_html=True)
-
-# --------------------------------------------------
-# DAILY STATE (REPEATABLE — NOT SAVED PERMANENTLY)
-# --------------------------------------------------
-def daily_state_check():
-    st.markdown("## 🧠 How is your brain *right now*?")
-    st.caption("This resets every day.")
-
-    mood = st.radio(
-        "Current state",
-        [
-            "Bored / Under-stimulated",
-            "Anxious / Over-stimulated",
-            "Stuck / Can’t decide",
-            "Locked-in / Hyperfocus"
-        ]
+    triggers = st.multiselect(
+        "What overwhelms you?",
+        ["Loud sounds", "Flashing lights", "Fast cuts", "Emotional intensity", "Complex plots"]
     )
 
-    intensity = st.slider(
-        "Energy level",
-        0, 100, 50
+    genres = st.multiselect(
+        "What do you enjoy?",
+        ["Action", "Anime", "Sci-Fi", "Comedy", "Documentary", "Fantasy", "Thriller", "Drama"]
     )
 
-    st.session_state.daily_state = {
-        "mood": mood,
-        "intensity": intensity
-    }
+    decision = st.radio(
+        "When choosing content:",
+        ["Decide for me", "Give me 3 options", "Let me explore freely"]
+    )
 
-    if st.button("Continue"):
-        st.session_state.daily_check_done = True 
+    if st.button("Save & Continue", use_container_width=True):
+        st.session_state.baseline_prefs = {
+            "triggers": triggers,
+            "genres": genres,
+            "decision_style": decision
+        }
+        st.session_state.onboarding_complete = True
+        st.session_state.auth_step = "done"
         st.rerun()
 
 # --------------------------------------------------
-# ENTRY ROUTER (WordPress → Streamlit)
+# DAILY STATE
 # --------------------------------------------------
-query_params = st.query_params
-entry = query_params.get("entry")
+def daily_state_check():
+    st.markdown("## 🧠 How is your brain right now?")
 
-if "entry_resolved" not in st.session_state:
-    st.session_state.entry_resolved = False
+    mood = st.radio(
+        "Current state",
+        ["Bored", "Anxious", "Stuck", "Hyperfocus"]
+    )
+    intensity = st.slider("Energy level", 0, 100, 50)
 
+    if st.button("Continue"):
+        st.session_state.daily_state = {
+            "mood": mood,
+            "intensity": intensity
+        }
+        st.session_state.daily_check_done = True
+        st.rerun()
+
+# --------------------------------------------------
+# SEARCH
+# --------------------------------------------------
+def search_screen():
+    st.markdown("## 🔎 Find & Locate")
+
+    state = st.session_state.daily_state
+    prefs = st.session_state.baseline_prefs
+
+    if state and st.session_state.suggestions is None:
+        with st.spinner("🧠 Thinking..."):
+            try:
+                st.session_state.suggestions = get_mood_suggestions(
+                    state.get("mood"),
+                    state.get("intensity"),
+                    prefs.get("genres") or ["Any"]
+                )
+            except Exception:
+                st.session_state.suggestions = {"reason": "AI unavailable", "queries": []}
+
+    suggestion_data = st.session_state.suggestions
+    if suggestion_data and suggestion_data.get("queries"):
+        st.info(suggestion_data.get("reason", "Suggested paths"))
+        cols = st.columns(3)
+        # Ensure we don't crash if fewer than 3 queries returned
+        for i, term in enumerate(suggestion_data["queries"][:3]):
+            if cols[i].button(term):
+                st.session_state.active_search = term
+                st.rerun()
+
+    query = st.text_input(
+        "Search",
+        value=st.session_state.active_search,
+        placeholder="e.g. The Bear, Star Wars"
+    )
+
+    if query:
+        st.session_state.active_search = ""
+        try:
+            results = search_global(query)
+        except Exception:
+            st.error("Streaming search unavailable.")
+            return
+
+        if not results:
+            st.info("No results found.")
+            return
+
+        for item in results:
+            st.markdown("<div class='card'>", unsafe_allow_html=True)
+            col1, col2 = st.columns([1, 5])
+            with col1:
+                if item.get('poster'):
+                    st.image(item['poster'], use_container_width=True)
+                else:
+                    st.markdown("🎬")
+            
+            with col2:
+                st.markdown(f"### {item['title']}")
+                st.caption(f"{item['release_date']} • {item['type'].upper()}")
+                st.write(item.get("overview", "No description"))
+
+                if st.button("Where can I stream this?", key=item["id"]):
+                    try:
+                        providers = get_streaming_providers(item["id"], item["type"])
+                        st.success(", ".join(providers) if providers else "Not streaming")
+                    except Exception:
+                        st.warning("Provider lookup failed.")
+            
+            st.markdown("</div>", unsafe_allow_html=True)
+
+# --------------------------------------------------
+# ENTRY ROUTER
+# --------------------------------------------------
+# Check query params safely
+entry = st.query_params.get("entry")
 if entry and not st.session_state.entry_resolved and st.session_state.user is None:
-    if entry == "login":
-        st.session_state.auth_step = "login"
-    elif entry == "signup":
-        st.session_state.auth_step = "signup"
-
+    st.session_state.auth_step = entry
     st.session_state.entry_resolved = True
 
 # --------------------------------------------------
-# ROUTER (DEFAULT APP FLOW)
+# MAIN ROUTER
 # --------------------------------------------------
 if st.session_state.user is None:
-    if st.session_state.auth_step == "login":
-        login_screen()
-    elif st.session_state.auth_step == "signup":
+    if st.session_state.auth_step == "signup":
         signup_screen()
+    else:
+        login_screen()
     st.stop()
 
 if not st.session_state.onboarding_complete:
     onboarding_baseline()
     st.stop()
 
-# ✅ FIXED LOGIC: Checks value, not key existence
 if not st.session_state.daily_check_done:
     daily_state_check()
     st.stop()
