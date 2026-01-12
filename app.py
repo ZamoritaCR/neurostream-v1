@@ -1,3 +1,6 @@
+import streamlit as st
+st.error("🚨 NEW CODE IS RUNNING 🚨")
+st.stop()
 st.title("SIGN UP SCREEN TEST")
 
 st.text_input("Username")
