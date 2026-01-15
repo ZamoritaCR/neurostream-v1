@@ -1,6 +1,6 @@
 # FILE: app.py
 # --------------------------------------------------
-# DOPAMINE.WATCH v27.5 (STABILITY + SEARCH + CARD UI)
+# DOPAMINE.WATCH v27.6 (STABILITY + SEARCH + CARD UI)
 # Fixes:
 # - Provider icons contained inside each movie card + wrap into a neat grid
 # - Clicking the poster/title opens the best provider link (mobile-friendly)
@@ -548,6 +548,7 @@ def login_screen():
         st.markdown("<div class='card' style='max-width:520px;margin:0 auto;'>", unsafe_allow_html=True)
         render_logo()
         st.markdown("### Welcome back")
+        st.caption("Prototype mode: authentication is demo-only right now.")
         e = st.text_input("Email")
         st.text_input("Password", type="password")
         if st.button("Log In", use_container_width=True):
@@ -569,6 +570,8 @@ def signup_screen():
         st.markdown("<div class='card' style='max-width:520px;margin:0 auto;'>", unsafe_allow_html=True)
         render_logo()
         st.markdown("### Create ID")
+        st.caption("Prototype mode: authentication is demo-only right now.")
+        st.caption("Demo signup (no real authentication yet).")
         st.text_input("Username")
         e = st.text_input("Email")
         st.text_input("Password", type="password")
@@ -750,7 +753,7 @@ def lobby_screen():
     # TRENDING (dynamic based on feelings + paging)
     # --------------------------------------------------
     st.markdown(f"### 🔥 Trending for *{mood}*")
-    t1, t2, t3 = st.tabs(["🎬 Movies", "⚡ Shot", "🎵 Music"])
+    t1, t2, t3, t4, t5 = st.tabs(["🎬 Movies", "⚡ Shot", "🎵 Music", "🎙️ Podcasts", "📚 Audiobooks"])
 
     # Genre mapping (simple + safe)
     mood_to_genres = {
@@ -807,7 +810,13 @@ def lobby_screen():
 
             # Keep your AI sort behavior (top 18)
             titles = [m["title"] for m in feed[:18]]
-            sorted_titles = sort_feed_by_mood(titles, mood)
+            
+            if openai_client:
+                with st.spinner("AI is curating your vibe..."):
+                    sorted_titles = sort_feed_by_mood(titles, mood)
+            else:
+                sorted_titles = sort_feed_by_mood(titles, mood)
+
             feed_map = {m["title"]: m for m in feed}
             ordered = []
             seen = set()
@@ -846,6 +855,26 @@ def lobby_screen():
             f"https://open.spotify.com/embed/playlist/{SPOTIFY_PLAYLIST_ID}?utm_source=generator",
             height=380,
         )
+
+    # --------------------------------------------------
+    # PODCASTS (TAB)
+    # --------------------------------------------------
+    with t4:
+        st.markdown("### 🎙️ Podcasts")
+        st.caption("Coming next: vibe-based podcast picks + deep links.")
+        q = st.text_input("Search podcasts...", key="podcast_search", placeholder="Try: ADHD, dopamine, anxiety, focus")
+        if q:
+            st.link_button("Open in Spotify", f"https://open.spotify.com/search/{quote_plus(q)}")
+
+    # --------------------------------------------------
+    # AUDIOBOOKS (TAB)
+    # --------------------------------------------------
+    with t5:
+        st.markdown("### 📚 Audiobooks")
+        st.caption("Coming next: audiobook picks + links (Audible, Libby, etc.).")
+        q = st.text_input("Search audiobooks...", key="audiobook_search", placeholder="Try: Atomic Habits, Deep Work")
+        if q:
+            st.link_button("Open in Audible", f"https://www.audible.com/search?keywords={quote_plus(q)}")
 
     # --------------------------------------------------
     # QUICK DOPE HIT (FLOATING)
