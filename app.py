@@ -569,6 +569,8 @@ def safe(s: str) -> str:
 # --------------------------------------------------
 if "init" not in st.session_state:
     st.session_state.update({
+        "nlp_last_prompt": "",
+
         "user": None,
         "auth_step": "login",
         "onboarding_complete": False,
