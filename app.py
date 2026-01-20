@@ -626,7 +626,13 @@ Your personality:
 
 Your job:
 1. Understand what the user is feeling and what they NEED to feel
-2. Detect if they want MOVIES or MUSIC (default to movies unless they mention music/songs/playlist/beats/tunes)
+2. Detect what type of content they want:
+   - "movies" (default) - films, shows, watch
+   - "music" - songs, playlist, beats, tunes, albums
+   - "podcasts" - podcast, episode, listen to talk, interviews
+   - "audiobooks" - audiobook, book, read, listen to story
+   - "shorts" - shorts, tiktok, reels, quick videos, clips
+   - "artist" - specific artist/band on Spotify (e.g. "play Drake", "Taylor Swift music")
 3. Respond with empathy and explain your recommendation approach
 4. Return structured data for the app to use
 
@@ -635,9 +641,9 @@ ALWAYS respond in this exact JSON format:
     "message": "Your friendly 1-3 sentence response to the user",
     "current_feeling": "one of: Sad, Lonely, Anxious, Overwhelmed, Angry, Stressed, Bored, Tired, Numb, Confused, Restless, Focused, Calm, Happy, Excited, Curious (or null)",
     "desired_feeling": "one of: Comforted, Calm, Relaxed, Focused, Energized, Stimulated, Happy, Entertained, Inspired, Grounded, Curious, Sleepy, Connected (or null)",
-    "media_type": "movies or music",
+    "media_type": "movies, music, podcasts, audiobooks, shorts, or artist",
     "mode": "discover or search",
-    "search_query": "specific search terms if mode is search, empty string otherwise",
+    "search_query": "specific search terms if mode is search OR artist name for artist type, empty string otherwise",
     "genres": "brief description of what kind of content you're recommending"
 }
 
@@ -665,6 +671,105 @@ User: "need some focus music for coding"
     "genres": "lo-fi beats, electronic focus, ambient coding music"
 }
 
+User: "play some Drake"
+{
+    "message": "Drizzy coming right up! 🎤 Let me pull up his top tracks and albums for you.",
+    "current_feeling": null,
+    "desired_feeling": "Entertained",
+    "media_type": "artist",
+    "mode": "search",
+    "search_query": "Drake",
+    "genres": "hip-hop, rap, R&B"
+}
+
+User: "I want to listen to Taylor Swift"
+{
+    "message": "A Swiftie moment! 💜 Loading up Taylor's catalog - from country roots to pop bangers!",
+    "current_feeling": null,
+    "desired_feeling": "Happy",
+    "media_type": "artist",
+    "mode": "search",
+    "search_query": "Taylor Swift",
+    "genres": "pop, country, indie folk"
+}
+
+User: "recommend a good podcast"
+{
+    "message": "Ooh, podcast time! Let me find something that'll keep your brain engaged without overwhelming it. 🎙️",
+    "current_feeling": "Bored",
+    "desired_feeling": "Stimulated",
+    "media_type": "podcasts",
+    "mode": "discover",
+    "search_query": "",
+    "genres": "true crime, comedy, storytelling"
+}
+
+User: "I need a podcast for my commute"
+{
+    "message": "Commute vibes! I've got some engaging shows that'll make that drive fly by 🚗",
+    "current_feeling": "Bored",
+    "desired_feeling": "Entertained",
+    "media_type": "podcasts",
+    "mode": "discover",
+    "search_query": "",
+    "genres": "true crime, comedy, news"
+}
+
+User: "suggest an audiobook"
+{
+    "message": "Audiobook time! Let me find something that'll transport you to another world 📚",
+    "current_feeling": "Bored",
+    "desired_feeling": "Entertained",
+    "media_type": "audiobooks",
+    "mode": "discover",
+    "search_query": "",
+    "genres": "fiction, thriller, self-help"
+}
+
+User: "I want to listen to a book while I sleep"
+{
+    "message": "Sleep listening! I've got some gentle, soothing audiobooks perfect for drifting off 🌙",
+    "current_feeling": "Tired",
+    "desired_feeling": "Sleepy",
+    "media_type": "audiobooks",
+    "mode": "discover",
+    "search_query": "",
+    "genres": "fantasy, fiction, gentle narration"
+}
+
+User: "show me some funny shorts"
+{
+    "message": "Quick dopamine hits coming up! Here's some hilarious shorts to scroll through 😂",
+    "current_feeling": "Bored",
+    "desired_feeling": "Entertained",
+    "media_type": "shorts",
+    "mode": "discover",
+    "search_query": "",
+    "genres": "comedy, fails, viral"
+}
+
+User: "I need quick videos to wake up"
+{
+    "message": "Morning boost! Let me queue up some energizing clips to get you going ⚡",
+    "current_feeling": "Tired",
+    "desired_feeling": "Energized",
+    "media_type": "shorts",
+    "mode": "discover",
+    "search_query": "",
+    "genres": "motivation, hype, energy"
+}
+
+User: "satisfying videos"
+{
+    "message": "Ahh, the satisfying content rabbit hole! Here's some oddly calming clips ✨",
+    "current_feeling": "Anxious",
+    "desired_feeling": "Calm",
+    "media_type": "shorts",
+    "mode": "discover",
+    "search_query": "",
+    "genres": "satisfying, ASMR, calming"
+}
+
 User: "feeling anxious, need something calming"
 {
     "message": "I got you. When anxiety hits, you need gentle, predictable comfort. I'm pulling up some cozy feel-good films - nothing stressful, just warm vibes. 💫",
@@ -676,39 +781,6 @@ User: "feeling anxious, need something calming"
     "genres": "heartwarming comedies, gentle animations, comfort films"
 }
 
-User: "play me something upbeat"
-{
-    "message": "Time to boost that energy! I've got the perfect playlist to get those good vibes flowing. Upbeat bangers incoming! 🔥",
-    "current_feeling": "Bored",
-    "desired_feeling": "Energized",
-    "media_type": "music",
-    "mode": "discover",
-    "search_query": "",
-    "genres": "upbeat pop, dance hits, feel-good energy"
-}
-
-User: "Christopher Nolan movies"
-{
-    "message": "Ah, a person of culture! Nolan's mind-benders are perfect for when you want to feel intellectually stimulated. Bringing up his filmography! 🎬",
-    "current_feeling": null,
-    "desired_feeling": "Stimulated",
-    "media_type": "movies",
-    "mode": "search",
-    "search_query": "Christopher Nolan",
-    "genres": "cerebral thrillers, mind-bending sci-fi"
-}
-
-User: "sad playlist"
-{
-    "message": "Sometimes you just need to feel your feelings with the right soundtrack. Here's some music that gets it - perfect for processing those emotions. 💙",
-    "current_feeling": "Sad",
-    "desired_feeling": "Comforted",
-    "media_type": "music",
-    "mode": "discover",
-    "search_query": "",
-    "genres": "emotional ballads, comfort songs, healing music"
-}
-
 User: "make me laugh"
 {
     "message": "Say no more! Laughter is the best dopamine hit. Loading up comedies that'll actually make you LOL, not just exhale slightly harder 😂",
@@ -718,17 +790,6 @@ User: "make me laugh"
     "mode": "discover",
     "search_query": "",
     "genres": "comedies, funny adventures, witty films"
-}
-
-User: "workout songs"
-{
-    "message": "Let's GO! Time to get that adrenaline pumping with some serious workout fuel. These tracks will push you through any set! 💪",
-    "current_feeling": "Tired",
-    "desired_feeling": "Energized",
-    "media_type": "music",
-    "mode": "discover",
-    "search_query": "",
-    "genres": "workout anthems, high energy, pump-up tracks"
 }
 
 Remember: Be genuine, warm, and helpful. You're not just finding content - you're helping someone feel better."""
@@ -781,7 +842,7 @@ def ask_mr_dp(user_prompt):
                 result["desired_feeling"] = None
             
             # Validate media_type
-            if result["media_type"] not in ["movies", "music"]:
+            if result["media_type"] not in ["movies", "music", "podcasts", "audiobooks", "shorts", "artist"]:
                 result["media_type"] = "movies"
             
             return result
@@ -796,63 +857,146 @@ def ask_mr_dp(user_prompt):
 def heuristic_mr_dp(prompt):
     """
     Fallback heuristic when GPT is unavailable.
-    Still provides conversational responses based on keyword matching.
+    Detects media type and provides conversational responses based on keyword matching.
     """
     t = (prompt or "").lower()
     
     current, desired, message, mode, query, genres = None, None, "", "discover", "", ""
     media_type = "movies"  # Default to movies
     
-    # Detect if user wants MUSIC
-    music_keywords = ["music", "song", "songs", "playlist", "beats", "tunes", "listen", "track", "tracks", 
-                      "spotify", "album", "artist", "band", "melody", "lo-fi", "lofi", "workout music",
-                      "study music", "focus music", "chill music", "sad songs", "happy songs"]
-    if any(k in t for k in music_keywords):
-        media_type = "music"
+    # Detect media type priority (most specific first)
+    
+    # Check for specific artist request (e.g. "play Drake", "Taylor Swift music")
+    artist_patterns = ["play ", "listen to ", "put on ", "songs by ", "music by "]
+    popular_artists = ["drake", "taylor swift", "kendrick", "beyonce", "kanye", "travis scott", "bad bunny", 
+                       "weeknd", "doja cat", "sza", "dua lipa", "billie eilish", "ed sheeran", "ariana grande",
+                       "post malone", "harry styles", "olivia rodrigo", "morgan wallen", "luke combs", "eminem",
+                       "rihanna", "bruno mars", "coldplay", "imagine dragons", "maroon 5", "adele", "shakira"]
+    
+    # Check for artist mentions
+    for artist in popular_artists:
+        if artist in t:
+            media_type = "artist"
+            query = artist.title()
+            message = f"Great taste! Loading up {artist.title()}'s hits! 🎤"
+            desired = "Entertained"
+            genres = "artist discography"
+            break
+    
+    # Check for artist patterns like "play X" or "listen to X"
+    if media_type != "artist":
+        for pattern in artist_patterns:
+            if pattern in t:
+                # Extract what comes after the pattern
+                idx = t.find(pattern) + len(pattern)
+                remaining = t[idx:].strip()
+                # Take first 2-3 words as artist name
+                words = remaining.split()[:3]
+                if words:
+                    potential_artist = " ".join(words).strip(".,!?")
+                    if len(potential_artist) > 2 and potential_artist not in ["some", "something", "music", "songs", "a"]:
+                        media_type = "artist"
+                        query = potential_artist.title()
+                        message = f"Let me pull up {potential_artist.title()} for you! 🎤"
+                        desired = "Entertained"
+                        genres = "artist discography"
+                        break
+    
+    # Check for shorts/short videos
+    if media_type == "movies":
+        shorts_keywords = ["shorts", "short video", "tiktok", "reels", "quick video", "clips", "viral video",
+                          "satisfying", "asmr video", "quick dopamine", "scroll"]
+        if any(k in t for k in shorts_keywords):
+            media_type = "shorts"
+    
+    # Check for podcasts
+    if media_type == "movies":
+        podcast_keywords = ["podcast", "podcasts", "episode", "episodes", "listen to talk", "talk show",
+                           "interview", "conversations", "joe rogan", "lex fridman", "true crime podcast"]
+        if any(k in t for k in podcast_keywords):
+            media_type = "podcasts"
+    
+    # Check for audiobooks
+    if media_type == "movies":
+        audiobook_keywords = ["audiobook", "audiobooks", "audio book", "listen to a book", "book to listen",
+                             "audible", "read to me", "narrated book", "spoken book"]
+        if any(k in t for k in audiobook_keywords):
+            media_type = "audiobooks"
+    
+    # Check for music (but not artist - that's already handled)
+    if media_type == "movies":
+        music_keywords = ["music", "song", "songs", "playlist", "beats", "tunes", "track", "tracks", 
+                          "album", "melody", "lo-fi", "lofi", "workout music", "study music", 
+                          "focus music", "chill music", "sad songs", "happy songs"]
+        if any(k in t for k in music_keywords):
+            media_type = "music"
+    
+    # Media type specific defaults
+    media_defaults = {
+        "movies": {"icon": "🎬", "default_msg": "Let me find something perfect for your vibe!", "default_genres": "popular films, crowd-pleasers"},
+        "music": {"icon": "🎵", "default_msg": "Let me find the perfect tunes for you!", "default_genres": "popular hits"},
+        "podcasts": {"icon": "🎙️", "default_msg": "Let me find some great podcasts for you!", "default_genres": "engaging shows, storytelling"},
+        "audiobooks": {"icon": "📚", "default_msg": "Let me find a great audiobook for you!", "default_genres": "bestsellers, engaging narration"},
+        "shorts": {"icon": "⚡", "default_msg": "Quick dopamine hits coming up!", "default_genres": "viral, entertaining, trending"},
+        "artist": {"icon": "🎤", "default_msg": "Let me pull up that artist!", "default_genres": "artist discography"},
+    }
     
     # Detect current feeling
     feeling_responses = {
         "Bored": {
             "keywords": ["bored", "boring", "nothing to watch", "meh", "blah", "dull"],
-            "message": "The boredom struggle is real! Let me find something that'll actually grab your attention 🎬" if media_type == "movies" else "The boredom struggle is real! Let me queue up some bangers 🎵",
             "desired": "Entertained",
-            "genres": "action, adventure, engaging comedies" if media_type == "movies" else "upbeat pop, energetic hits"
+            "messages": {
+                "movies": "The boredom struggle is real! Let me find something that'll actually grab your attention 🎬",
+                "music": "The boredom struggle is real! Let me queue up some bangers 🎵",
+                "podcasts": "Boredom be gone! I've got some engaging podcasts that'll hook you 🎙️",
+                "audiobooks": "Time to escape! Here's an audiobook that'll transport you 📚",
+                "shorts": "Quick fix incoming! Here's some content that'll snap you out of it ⚡",
+            }
         },
         "Stressed": {
             "keywords": ["stress", "overwhelm", "too much", "burnout", "pressure"],
-            "message": "Deep breath - I've got you. Time for some gentle, relaxing vibes to help you decompress 🌿",
             "desired": "Relaxed",
-            "genres": "calming films, light comedies, nature docs" if media_type == "movies" else "ambient, chill, relaxation"
+            "messages": {
+                "movies": "Deep breath - time for some gentle, relaxing vibes 🌿",
+                "music": "Deep breath - I've got calming tunes to help you decompress 🌿",
+                "podcasts": "Let's ease that stress with some soothing content 🌿",
+                "audiobooks": "Escape the stress with a calming listen 🌿",
+                "shorts": "Some satisfying, calming shorts to melt that stress away 🌿",
+            }
         },
         "Anxious": {
             "keywords": ["anxious", "anxiety", "nervous", "worried", "panic", "scared"],
-            "message": "Anxiety is tough. Let me find something comforting and soothing 💫",
             "desired": "Calm",
-            "genres": "feel-good movies, gentle animations, comfort films" if media_type == "movies" else "calming ambient, peaceful piano, meditation"
+            "messages": {
+                "movies": "Anxiety is tough. Here's something comforting and soothing 💫",
+                "music": "I've got calming music to ease that anxiety 💫",
+                "podcasts": "Here are some calming podcasts for when anxiety hits 💫",
+                "audiobooks": "A gentle audiobook to help you feel grounded 💫",
+                "shorts": "Oddly satisfying content to calm those nerves 💫",
+            }
         },
         "Sad": {
             "keywords": ["sad", "down", "depressed", "crying", "upset", "heartbr", "grief"],
-            "message": "Sending virtual hugs 🫂 I'll find something to help you feel a bit better.",
             "desired": "Comforted",
-            "genres": "heartwarming stories, uplifting dramas, wholesome films" if media_type == "movies" else "comfort songs, healing music, emotional ballads"
-        },
-        "Lonely": {
-            "keywords": ["lonely", "alone", "isolated", "miss people"],
-            "message": "Feeling lonely sucks. Let me find something with beautiful connections ❤️",
-            "desired": "Connected",
-            "genres": "friendship stories, heartfelt dramas, romantic comedies" if media_type == "movies" else "love songs, soulful R&B, connection vibes"
-        },
-        "Angry": {
-            "keywords": ["angry", "mad", "pissed", "furious", "frustrated", "annoyed"],
-            "message": "I feel you! Sometimes you need to let it out 🔥",
-            "desired": "Calm",
-            "genres": "action catharsis, calming films" if media_type == "movies" else "metal, rock, intense workout"
+            "messages": {
+                "movies": "Sending virtual hugs 🫂 Here's something warm and uplifting.",
+                "music": "Sending hugs 🫂 Sometimes you need music that understands.",
+                "podcasts": "Here's some comforting voices to keep you company 🫂",
+                "audiobooks": "A story to wrap around you like a blanket 🫂",
+                "shorts": "Wholesome content to lift your spirits 🫂",
+            }
         },
         "Tired": {
             "keywords": ["tired", "exhaust", "drained", "sleepy", "no energy", "wiped"],
-            "message": "Running on empty? I've got easy-going picks that won't require much energy 😴",
             "desired": "Relaxed",
-            "genres": "light comedies, feel-good films, easy watches" if media_type == "movies" else "chill lo-fi, acoustic, mellow vibes"
+            "messages": {
+                "movies": "Running on empty? Easy-watching picks that won't drain you 😴",
+                "music": "Chill vibes for when you're running on empty 😴",
+                "podcasts": "Light, easy listening for tired ears 😴",
+                "audiobooks": "Something gentle for tired minds 😴",
+                "shorts": "Low-effort content for when you're drained 😴",
+            }
         },
     }
     
@@ -861,65 +1005,64 @@ def heuristic_mr_dp(prompt):
         if any(k in t for k in data["keywords"]):
             current = feeling
             desired = data["desired"]
-            message = data["message"]
-            genres = data["genres"]
+            message = data["messages"].get(media_type, data["messages"]["movies"])
             break
     
-    # Check for desired feeling keywords
+    # Check for desired feeling keywords with media-specific genres
     desire_responses = {
-        "laugh": ("Entertained", "Say no more! Comedy incoming - the good stuff that actually makes you LOL 😂", "comedies, funny films", "funny songs, comedy podcasts"),
-        "funny": ("Entertained", "Let's get those laughs going! 🎭", "comedies, witty films", "funny songs, comedy"),
-        "action": ("Energized", "Time to get that adrenaline pumping! 💥", "action, thrillers, adventure", "high energy, workout anthems"),
-        "scary": ("Stimulated", "Ooh, feeling brave! 👻", "horror, thrillers", "dark ambient, suspense"),
-        "romance": ("Connected", "In the mood for love? 💕", "romantic films, love stories", "love songs, romantic ballads"),
-        "romantic": ("Connected", "Love is in the air! 🦋", "romance, romantic comedies", "love songs, R&B"),
-        "think": ("Stimulated", "Big brain time! 🧠", "cerebral thrillers, mind-benders", "classical, instrumental focus"),
-        "smart": ("Stimulated", "Intellectual stimulation coming up! 🎯", "thought-provoking films", "jazz, classical"),
-        "relax": ("Relaxed", "Chill mode activated ✨", "calming films, gentle stories", "ambient, chill, lo-fi"),
-        "comfort": ("Comforted", "Comfort content is my specialty! 🧸", "feel-good, heartwarming films", "acoustic, cozy vibes"),
-        "focus": ("Focused", "Lock-in mode activated! 🎯", "documentaries, slow burns", "lo-fi beats, focus music, ambient"),
-        "study": ("Focused", "Study session? I got the perfect vibe! 📚", "documentaries", "lo-fi hip hop, study beats"),
-        "workout": ("Energized", "Let's get those gains! 💪", "sports films, action", "workout anthems, pump-up tracks, EDM"),
-        "sleep": ("Sleepy", "Sweet dreams incoming 🌙", "gentle films", "sleep sounds, ambient, rain"),
-        "energy": ("Energized", "Let's boost that energy! ⚡", "action, adventure", "upbeat pop, EDM, dance hits"),
+        "laugh": {"desired": "Entertained", "message": "Say no more! Comedy incoming 😂", 
+                  "genres": {"movies": "comedies, funny films", "music": "funny songs", "podcasts": "comedy podcasts, funny shows", "audiobooks": "humorous books", "shorts": "comedy, fails, funny"}},
+        "funny": {"desired": "Entertained", "message": "Let's get those laughs going! 🎭",
+                  "genres": {"movies": "comedies, witty films", "music": "comedy, funny", "podcasts": "comedy podcasts", "audiobooks": "humorous books", "shorts": "comedy, fails"}},
+        "relax": {"desired": "Relaxed", "message": "Chill mode activated ✨",
+                  "genres": {"movies": "calming films", "music": "ambient, chill, lo-fi", "podcasts": "calm, soothing shows", "audiobooks": "peaceful fiction", "shorts": "satisfying, ASMR, calming"}},
+        "focus": {"desired": "Focused", "message": "Lock-in mode activated! 🎯",
+                  "genres": {"movies": "documentaries", "music": "lo-fi beats, focus music", "podcasts": "educational, learning", "audiobooks": "non-fiction, productivity", "shorts": "focus tips, productivity"}},
+        "sleep": {"desired": "Sleepy", "message": "Sweet dreams incoming 🌙",
+                  "genres": {"movies": "gentle films", "music": "sleep sounds, ambient", "podcasts": "sleep stories, bedtime", "audiobooks": "gentle narration, fiction", "shorts": "rain sounds, ASMR"}},
+        "energy": {"desired": "Energized", "message": "Let's boost that energy! ⚡",
+                  "genres": {"movies": "action, adventure", "music": "upbeat, EDM, dance", "podcasts": "motivation, hype", "audiobooks": "inspiring, motivation", "shorts": "hype, motivation, workout"}},
+        "workout": {"desired": "Energized", "message": "Let's get those gains! 💪",
+                  "genres": {"movies": "sports films", "music": "workout anthems, EDM", "podcasts": "fitness, motivation", "audiobooks": "sports, discipline", "shorts": "workout, fitness, gym"}},
+        "motivat": {"desired": "Inspired", "message": "Let's get motivated! 🌟",
+                  "genres": {"movies": "inspiring true stories", "music": "motivational, uplifting", "podcasts": "success stories, motivation", "audiobooks": "self-help, success", "shorts": "motivation, success, transformation"}},
+        "learn": {"desired": "Curious", "message": "Knowledge time! 🧠",
+                  "genres": {"movies": "documentaries", "music": "classical, focus", "podcasts": "educational, science", "audiobooks": "non-fiction, learning", "shorts": "facts, explained, science"}},
     }
     
-    for keyword, (des_feeling, des_message, movie_genres, music_genres) in desire_responses.items():
+    for keyword, data in desire_responses.items():
         if keyword in t:
             if not desired:
-                desired = des_feeling
+                desired = data["desired"]
             if not message:
-                message = des_message
+                message = data["message"]
             if not genres:
-                genres = music_genres if media_type == "music" else movie_genres
+                genres = data["genres"].get(media_type, data["genres"]["movies"])
             if not current:
-                current = "Bored"  # Default
+                current = "Bored"
             break
     
-    # Check for search mode (specific titles, actors, directors)
-    search_indicators = ["movie", "film", "show", "series", "directed by", "starring", "with", "called"]
-    names_pattern = r'\b[A-Z][a-z]+ [A-Z][a-z]+\b'  # Matches "Christopher Nolan" etc
+    # Check for search mode (specific titles, actors, directors) - only for movies
+    if media_type == "movies":
+        import re
+        names_pattern = r'\b[A-Z][a-z]+ [A-Z][a-z]+\b'
+        names = re.findall(names_pattern, prompt)
+        
+        if names or any(ind in t for ind in ["nolan", "spielberg", "tarantino", "scorsese", "kubrick", "villeneuve"]):
+            mode = "search"
+            query = prompt
+            message = message or "Great choice! Let me search for that 🔍"
     
-    import re
-    names = re.findall(names_pattern, prompt)
-    
-    if names or any(ind in t for ind in ["nolan", "spielberg", "tarantino", "scorsese", "kubrick", "villeneuve"]):
-        mode = "search"
-        query = prompt
-        message = message or f"Great choice! Let me search for that 🔍"
-    
-    # Default fallback
+    # Default fallbacks
+    defaults = media_defaults.get(media_type, media_defaults["movies"])
     if not message:
-        if media_type == "music":
-            message = "Let me find the perfect tunes for your vibe! 🎵"
-        else:
-            message = "Let me find something perfect for your current vibe! 🎬"
+        message = f"{defaults['default_msg']} {defaults['icon']}"
     if not current:
         current = "Bored"
     if not desired:
         desired = "Entertained"
     if not genres:
-        genres = "popular hits" if media_type == "music" else "popular films, crowd-pleasers"
+        genres = defaults["default_genres"]
     
     return {
         "message": message,
@@ -993,7 +1136,7 @@ def discover_movies_fresh(current_feeling=None, desired_feeling=None):
 def mr_dp_search(response):
     """
     Execute Mr.DP's recommendation based on his analysis.
-    Handles both movies and music.
+    Handles movies, music, podcasts, audiobooks, shorts, and artist search.
     """
     if not response:
         return []
@@ -1004,9 +1147,16 @@ def mr_dp_search(response):
     current_feeling = response.get("current_feeling")
     desired_feeling = response.get("desired_feeling")
     
+    # ARTIST MODE - Spotify artist search
+    if media_type == "artist" and query:
+        return {
+            "type": "artist",
+            "artist_name": query,
+            "query": query
+        }
+    
     # MUSIC MODE
     if media_type == "music":
-        # Return music data (playlist ID based on feeling)
         mood_music = FEELING_TO_MUSIC.get(desired_feeling) or FEELING_TO_MUSIC.get(current_feeling) or FEELING_TO_MUSIC.get("Happy")
         return {
             "type": "music",
@@ -1015,7 +1165,34 @@ def mr_dp_search(response):
             "genres": mood_music.get("genres", [])
         }
     
-    # MOVIES MODE
+    # PODCASTS MODE
+    if media_type == "podcasts":
+        mood_pods = FEELING_TO_PODCASTS.get(desired_feeling) or FEELING_TO_PODCASTS.get(current_feeling) or FEELING_TO_PODCASTS.get("Curious")
+        return {
+            "type": "podcasts",
+            "query": mood_pods.get("query", ""),
+            "shows": mood_pods.get("shows", [])
+        }
+    
+    # AUDIOBOOKS MODE
+    if media_type == "audiobooks":
+        mood_books = FEELING_TO_AUDIOBOOKS.get(desired_feeling) or FEELING_TO_AUDIOBOOKS.get(current_feeling) or FEELING_TO_AUDIOBOOKS.get("Curious")
+        return {
+            "type": "audiobooks",
+            "query": mood_books.get("query", ""),
+            "genres": mood_books.get("genres", []),
+            "picks": mood_books.get("picks", [])
+        }
+    
+    # SHORTS MODE
+    if media_type == "shorts":
+        vq = FEELING_TO_VIDEOS.get(desired_feeling) or FEELING_TO_VIDEOS.get(current_feeling) or "trending viral shorts"
+        return {
+            "type": "shorts",
+            "query": vq
+        }
+    
+    # MOVIES MODE (default)
     # SEARCH MODE: Specific title/actor/director
     if mode == "search" and query:
         results = search_movies(query)
@@ -2962,29 +3139,70 @@ def render_main():
         media_type = response.get("media_type", "movies")
         results = st.session_state.mr_dp_results
         
-        # Check if results are music (dict with type: music) or movies (list)
-        is_music = isinstance(results, dict) and results.get("type") == "music"
+        # Determine result type from dict
+        result_type = results.get("type") if isinstance(results, dict) else "movies"
         
-        # Icon based on media type
-        icon = "🎵" if is_music else "🧠"
-        title = "Mr.DP's Playlist" if is_music else "Mr.DP's Picks"
+        # Icons and titles based on type
+        type_config = {
+            "music": {"icon": "🎵", "title": "Mr.DP's Playlist"},
+            "artist": {"icon": "🎤", "title": "Mr.DP's Artist Pick"},
+            "podcasts": {"icon": "🎙️", "title": "Mr.DP's Podcast Picks"},
+            "audiobooks": {"icon": "📚", "title": "Mr.DP's Audiobook Picks"},
+            "shorts": {"icon": "⚡", "title": "Mr.DP's Quick Hits"},
+            "movies": {"icon": "🧠", "title": "Mr.DP's Picks"},
+        }
+        config = type_config.get(result_type, type_config["movies"])
         
         # Anchor + Header with mood info
         st.markdown(f"""
         <div id="mr-dp-results"></div>
         <div class="section-header" style="margin-bottom: 8px;">
-            <span class="section-icon">{icon}</span>
-            <h2 class="section-title">{title}</h2>
+            <span class="section-icon">{config['icon']}</span>
+            <h2 class="section-title">{config['title']}</h2>
         </div>
         <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
             {f'<span style="padding:6px 14px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);border-radius:20px;font-size:0.85rem;color:var(--text-primary);">{MOOD_EMOJIS.get(current_f, "😊")} {current_f}</span>' if current_f else ''}
             {f'<span style="padding:6px 14px;background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.2);border-radius:20px;font-size:0.85rem;color:var(--text-primary);">→ {MOOD_EMOJIS.get(desired_f, "✨")} {desired_f}</span>' if desired_f else ''}
-            {f'<span style="padding:6px 14px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:20px;font-size:0.85rem;color:var(--text-primary);">{"🎵" if is_music else "🎬"} {genres}</span>' if genres else ''}
+            {f'<span style="padding:6px 14px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:20px;font-size:0.85rem;color:var(--text-primary);">{config["icon"]} {genres}</span>' if genres else ''}
         </div>
         """, unsafe_allow_html=True)
         
-        if is_music:
-            # MUSIC RESULTS - Embedded Spotify playlist
+        # ===================== ARTIST RESULTS =====================
+        if result_type == "artist":
+            artist_name = results.get("artist_name", "")
+            artist_query = quote_plus(artist_name)
+            
+            st.markdown(f"### 🎤 {artist_name}")
+            
+            # Spotify search embed for artist
+            components.iframe(f"https://open.spotify.com/embed/search/{artist_query}?theme=0", height=380)
+            
+            # Direct links to artist on services
+            st.markdown("##### 🔍 Find on Music Services")
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                st.markdown(f'<a href="https://open.spotify.com/search/{artist_query}" target="_blank" style="display:block;text-align:center;padding:16px;background:#1DB954;border-radius:12px;color:white;text-decoration:none;font-weight:600;">🎵 Spotify</a>', unsafe_allow_html=True)
+            with c2:
+                st.markdown(f'<a href="https://music.apple.com/search?term={artist_query}" target="_blank" style="display:block;text-align:center;padding:16px;background:linear-gradient(135deg,#fc3c44,#fc9a9a);border-radius:12px;color:white;text-decoration:none;font-weight:600;">🍎 Apple Music</a>', unsafe_allow_html=True)
+            with c3:
+                st.markdown(f'<a href="https://music.youtube.com/search?q={artist_query}" target="_blank" style="display:block;text-align:center;padding:16px;background:#FF0000;border-radius:12px;color:white;text-decoration:none;font-weight:600;">▶️ YouTube Music</a>', unsafe_allow_html=True)
+            
+            # Action buttons
+            btn_cols = st.columns([1, 1])
+            with btn_cols[0]:
+                if st.button("🔄 Different Artist", key="mr_dp_shuffle_artist", use_container_width=True):
+                    st.session_state.mr_dp_results = []
+                    st.session_state.mr_dp_response = None
+                    st.rerun()
+            with btn_cols[1]:
+                if st.button("✕ Clear", key="mr_dp_clear_artist", use_container_width=True):
+                    st.session_state.mr_dp_results = []
+                    st.session_state.mr_dp_response = None
+                    st.session_state.mr_dp_chat_history = []
+                    st.rerun()
+        
+        # ===================== MUSIC RESULTS =====================
+        elif result_type == "music":
             playlist_id = results.get("playlist_id", "37i9dQZF1DXcBWIGoYBM5M")
             music_query = results.get("query", "")
             music_genres = results.get("genres", [])
@@ -3015,6 +3233,146 @@ def render_main():
                     st.session_state.mr_dp_response = None
                     st.session_state.mr_dp_chat_history = []
                     st.rerun()
+        
+        # ===================== PODCASTS RESULTS =====================
+        elif result_type == "podcasts":
+            pod_query = results.get("query", "")
+            pod_shows = results.get("shows", [])
+            
+            # Show recommended podcasts with nice cards
+            st.markdown("##### ⭐ Recommended Shows")
+            for show, desc in pod_shows:
+                st.markdown(f"""
+                <div class="glass-card" style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
+                    <div style="font-size:2.5rem;">🎙️</div>
+                    <div style="flex:1;">
+                        <div style="font-weight:600;font-size:1.1rem;">{show}</div>
+                        <div style="color:var(--text-secondary);font-size:0.85rem;">{desc}</div>
+                    </div>
+                    <a href="https://open.spotify.com/search/{quote_plus(show)}" target="_blank" style="padding:8px 16px;background:#1DB954;border-radius:20px;color:white;text-decoration:none;font-size:0.8rem;">Play</a>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # Spotify podcast search embed
+            st.markdown("##### 🎧 Browse on Spotify")
+            components.iframe(f"https://open.spotify.com/embed/search/{quote_plus(pod_query)}?theme=0", height=200)
+            
+            # Podcast service links
+            st.markdown("##### 🔍 Find on Podcast Apps")
+            c1, c2 = st.columns(2)
+            with c1:
+                render_service_buttons(dict(list(PODCAST_SERVICES.items())[:3]), pod_query)
+            with c2:
+                render_service_buttons(dict(list(PODCAST_SERVICES.items())[3:]), pod_query)
+            
+            # Action buttons
+            btn_cols = st.columns([1, 1])
+            with btn_cols[0]:
+                if st.button("🔄 Different Podcasts", key="mr_dp_shuffle_pods", use_container_width=True):
+                    st.session_state.mr_dp_results = mr_dp_search(st.session_state.mr_dp_response)
+                    add_dopamine_points(5, "New shows!")
+                    st.rerun()
+            with btn_cols[1]:
+                if st.button("✕ Clear", key="mr_dp_clear_pods", use_container_width=True):
+                    st.session_state.mr_dp_results = []
+                    st.session_state.mr_dp_response = None
+                    st.session_state.mr_dp_chat_history = []
+                    st.rerun()
+        
+        # ===================== AUDIOBOOKS RESULTS =====================
+        elif result_type == "audiobooks":
+            book_query = results.get("query", "")
+            book_genres = results.get("genres", [])
+            book_picks = results.get("picks", [])
+            
+            st.caption(f"Genres: {', '.join(book_genres)}")
+            
+            # Show recommended audiobooks with nice cards
+            st.markdown("##### ⭐ Top Picks")
+            cols = st.columns(min(len(book_picks), 3))
+            for i, (title, author) in enumerate(book_picks[:3]):
+                with cols[i]:
+                    st.markdown(f"""
+                    <div class="glass-card" style="text-align:center;padding:24px;height:200px;display:flex;flex-direction:column;justify-content:center;">
+                        <div style="font-size:3rem;margin-bottom:12px;">📖</div>
+                        <div style="font-weight:600;font-size:0.95rem;margin-bottom:4px;">{title}</div>
+                        <div style="color:var(--text-secondary);font-size:0.8rem;">{author}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+            # Audiobook service links
+            st.markdown("##### 🔍 Find Audiobooks")
+            c1, c2 = st.columns(2)
+            with c1:
+                render_service_buttons(dict(list(AUDIOBOOK_SERVICES.items())[:3]), book_query)
+            with c2:
+                render_service_buttons(dict(list(AUDIOBOOK_SERVICES.items())[3:]), book_query)
+            
+            st.info("💡 **Tip:** Check if your local library offers free audiobooks through **Libby** or **Hoopla**!")
+            
+            # Action buttons
+            btn_cols = st.columns([1, 1])
+            with btn_cols[0]:
+                if st.button("🔄 Different Books", key="mr_dp_shuffle_books", use_container_width=True):
+                    st.session_state.mr_dp_results = mr_dp_search(st.session_state.mr_dp_response)
+                    add_dopamine_points(5, "New reads!")
+                    st.rerun()
+            with btn_cols[1]:
+                if st.button("✕ Clear", key="mr_dp_clear_books", use_container_width=True):
+                    st.session_state.mr_dp_results = []
+                    st.session_state.mr_dp_response = None
+                    st.session_state.mr_dp_chat_history = []
+                    st.rerun()
+        
+        # ===================== SHORTS RESULTS =====================
+        elif result_type == "shorts":
+            vq = results.get("query", "trending viral")
+            
+            # Big colorful buttons to platforms
+            yt_url = f"https://www.youtube.com/results?search_query={quote_plus(vq)}+shorts"
+            tt_url = f"https://www.tiktok.com/search?q={quote_plus(vq)}"
+            ig_url = f"https://www.instagram.com/explore/tags/{quote_plus(vq.replace(' ', ''))}/"
+            
+            st.markdown(f"""
+            <a href="{yt_url}" target="_blank" style="display:block;text-align:center;padding:28px;background:linear-gradient(135deg, #FF0000, #CC0000);border-radius:20px;color:white;text-decoration:none;font-weight:700;font-size:1.2rem;margin-bottom:16px;box-shadow:0 8px 32px rgba(255,0,0,0.3);">
+                ▶️ Watch {vq.split()[0].title()} Shorts on YouTube →
+            </a>
+            <a href="{tt_url}" target="_blank" style="display:block;text-align:center;padding:28px;background:linear-gradient(135deg,#ff0050,#00f2ea);border-radius:20px;color:white;text-decoration:none;font-weight:700;font-size:1.2rem;margin-bottom:16px;box-shadow:0 8px 32px rgba(255,0,80,0.3);">
+                📱 Browse {vq.split()[0].title()} on TikTok →
+            </a>
+            <a href="{ig_url}" target="_blank" style="display:block;text-align:center;padding:28px;background:linear-gradient(135deg,#833AB4,#FD1D1D,#F77737);border-radius:20px;color:white;text-decoration:none;font-weight:700;font-size:1.2rem;box-shadow:0 8px 32px rgba(131,58,180,0.3);">
+                📸 Explore on Instagram Reels →
+            </a>
+            """, unsafe_allow_html=True)
+            
+            # Custom search
+            st.markdown("##### 🔍 Custom Search")
+            shorts_custom = st.text_input("Search for different shorts...", placeholder="Any topic or vibe", key="mr_dp_shorts_search")
+            if shorts_custom:
+                yt2 = f"https://www.youtube.com/results?search_query={quote_plus(shorts_custom)}+shorts"
+                tt2 = f"https://www.tiktok.com/search?q={quote_plus(shorts_custom)}"
+                st.markdown(f"""
+                <div style="display:flex;gap:12px;margin-top:12px;">
+                    <a href="{yt2}" target="_blank" style="flex:1;text-align:center;padding:16px;background:#FF0000;border-radius:12px;color:white;text-decoration:none;font-weight:600;">YouTube</a>
+                    <a href="{tt2}" target="_blank" style="flex:1;text-align:center;padding:16px;background:linear-gradient(135deg,#ff0050,#00f2ea);border-radius:12px;color:white;text-decoration:none;font-weight:600;">TikTok</a>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # Action buttons
+            btn_cols = st.columns([1, 1])
+            with btn_cols[0]:
+                if st.button("🔄 Different Vibe", key="mr_dp_shuffle_shorts", use_container_width=True):
+                    st.session_state.mr_dp_results = mr_dp_search(st.session_state.mr_dp_response)
+                    add_dopamine_points(5, "New clips!")
+                    st.rerun()
+            with btn_cols[1]:
+                if st.button("✕ Clear", key="mr_dp_clear_shorts", use_container_width=True):
+                    st.session_state.mr_dp_results = []
+                    st.session_state.mr_dp_response = None
+                    st.session_state.mr_dp_chat_history = []
+                    st.rerun()
+        
+        # ===================== MOVIES RESULTS (DEFAULT) =====================
         else:
             # MOVIE RESULTS - Movie grid
             cols = st.columns(6)
