@@ -326,16 +326,21 @@ except:
 # --------------------------------------------------
 # 7. EMOTION MAPPINGS - COMPLETE
 # --------------------------------------------------
-CURRENT_FEELINGS = ["Sad", "Lonely", "Anxious", "Overwhelmed", "Angry", "Stressed", "Bored", "Tired", "Numb", "Confused", "Restless", "Focused", "Calm", "Happy", "Excited", "Curious"]
-DESIRED_FEELINGS = ["Comforted", "Calm", "Relaxed", "Focused", "Energized", "Stimulated", "Happy", "Entertained", "Inspired", "Grounded", "Curious", "Sleepy", "Connected"]
+CURRENT_FEELINGS = ["Sad", "Lonely", "Anxious", "Overwhelmed", "Angry", "Stressed", "Bored", "Tired", "Numb", "Confused", "Restless", "Focused", "Calm", "Happy", "Excited", "Curious", "Scared", "Nostalgic", "Romantic", "Adventurous", "Frustrated", "Hopeful"]
+DESIRED_FEELINGS = ["Comforted", "Calm", "Relaxed", "Focused", "Energized", "Stimulated", "Happy", "Entertained", "Inspired", "Grounded", "Curious", "Sleepy", "Connected", "Scared", "Thrilled", "Nostalgic", "Romantic", "Adventurous", "Amused", "Motivated"]
 
 MOOD_EMOJIS = {
+    # Current feelings
     "Sad": "🌧️", "Lonely": "🥺", "Anxious": "😰", "Overwhelmed": "😵‍💫",
     "Angry": "😡", "Stressed": "😫", "Bored": "😐", "Tired": "😴",
     "Numb": "🫥", "Confused": "🤔", "Restless": "😬", "Focused": "🎯",
     "Calm": "😌", "Happy": "😊", "Excited": "⚡", "Curious": "🧐",
+    "Scared": "😱", "Nostalgic": "🥹", "Romantic": "💕", "Adventurous": "🏔️",
+    "Frustrated": "😤", "Hopeful": "🌈",
+    # Desired feelings
     "Comforted": "🫶", "Relaxed": "🛋️", "Energized": "🔥", "Stimulated": "🚀",
-    "Entertained": "🍿", "Inspired": "✨", "Grounded": "🌱", "Sleepy": "🌙", "Connected": "❤️"
+    "Entertained": "🍿", "Inspired": "✨", "Grounded": "🌱", "Sleepy": "🌙", 
+    "Connected": "❤️", "Thrilled": "🎢", "Amused": "😂", "Motivated": "💪"
 }
 
 FEELING_TO_GENRES = {
@@ -364,6 +369,16 @@ FEELING_TO_GENRES = {
     "Grounded": {"prefer": [99, 36, 10751]},
     "Sleepy": {"prefer": [16, 10751, 10749]},
     "Connected": {"prefer": [10749, 18, 10751]},
+    # New feelings
+    "Scared": {"prefer": [27, 53, 9648]},  # Horror, Thriller, Mystery
+    "Thrilled": {"prefer": [28, 53, 80, 12]},  # Action, Thriller, Crime, Adventure
+    "Nostalgic": {"prefer": [36, 18, 10751]},  # History, Drama, Family (classics)
+    "Romantic": {"prefer": [10749, 35, 18]},  # Romance, Comedy, Drama
+    "Adventurous": {"prefer": [12, 28, 878, 14]},  # Adventure, Action, Sci-Fi, Fantasy
+    "Frustrated": {"prefer": [28, 35, 80]},  # Action, Comedy, Crime
+    "Hopeful": {"prefer": [18, 10751, 99]},  # Drama, Family, Documentary
+    "Amused": {"prefer": [35, 16, 10751]},  # Comedy, Animation, Family
+    "Motivated": {"prefer": [18, 99, 36]},  # Drama, Documentary, History (inspiring)
 }
 
 # Music mood mappings
@@ -393,6 +408,16 @@ FEELING_TO_MUSIC = {
     "Grounded": {"query": "folk roots acoustic americana", "playlist": "37i9dQZF1DX4E3UdUs7fUx", "genres": ["folk", "americana", "acoustic"]},
     "Sleepy": {"query": "sleep sounds rain white noise", "playlist": "37i9dQZF1DWZd79rJ6a7lp", "genres": ["sleep", "ambient", "nature"]},
     "Connected": {"query": "love songs romance ballads", "playlist": "37i9dQZF1DX50QitC6Oqtn", "genres": ["r&b", "soul", "pop"]},
+    # New feelings
+    "Scared": {"query": "dark ambient horror soundtrack eerie", "playlist": "37i9dQZF1DX6R7QUWePReA", "genres": ["dark ambient", "horror", "soundtrack"]},
+    "Thrilled": {"query": "intense epic action soundtrack adrenaline", "playlist": "37i9dQZF1DX4eRPd9frC1m", "genres": ["epic", "action", "cinematic"]},
+    "Nostalgic": {"query": "90s 2000s throwback hits nostalgia", "playlist": "37i9dQZF1DX4o1oenSJRJd", "genres": ["90s", "2000s", "throwback"]},
+    "Romantic": {"query": "love songs romantic dinner date night", "playlist": "37i9dQZF1DX50QitC6Oqtn", "genres": ["r&b", "soul", "romantic"]},
+    "Adventurous": {"query": "epic adventure cinematic orchestral travel", "playlist": "37i9dQZF1DX4eRPd9frC1m", "genres": ["epic", "cinematic", "adventure"]},
+    "Frustrated": {"query": "angry rock metal intense rage", "playlist": "37i9dQZF1DX1tyCD9QhIWF", "genres": ["metal", "rock", "punk"]},
+    "Hopeful": {"query": "uplifting inspiring hopeful positive", "playlist": "37i9dQZF1DX3rxVfibe1L0", "genres": ["indie", "pop", "uplifting"]},
+    "Amused": {"query": "fun party happy dance", "playlist": "37i9dQZF1DXa2PvUpywmrr", "genres": ["pop", "dance", "party"]},
+    "Motivated": {"query": "motivation workout pump up gym", "playlist": "37i9dQZF1DX76Wlfdnj7AP", "genres": ["hip-hop", "edm", "rock"]},
 }
 
 # Podcast mood mappings
@@ -453,34 +478,183 @@ FEELING_TO_AUDIOBOOKS = {
     "Connected": {"query": "romance love relationships", "genres": ["Romance", "Contemporary", "Fiction"], "picks": [("The Notebook", "Nicholas Sparks"), ("Me Before You", "Jojo Moyes"), ("Outlander", "Diana Gabaldon")]},
 }
 
-# Shorts/Videos mood mappings
-FEELING_TO_VIDEOS = {
-    "Sad": "wholesome animals cute puppies kittens",
-    "Lonely": "heartwarming friendship stories",
-    "Anxious": "satisfying oddly calming asmr",
-    "Overwhelmed": "calming nature scenery peaceful",
-    "Angry": "epic fails funny karma instant",
-    "Stressed": "meditation guided relaxing calm",
-    "Bored": "mind blowing facts amazing",
-    "Tired": "asmr relaxing sleep sounds",
-    "Numb": "extreme sports adrenaline rush",
-    "Confused": "explained simply 5 minute crafts",
-    "Restless": "action parkour extreme sports",
-    "Focused": "productivity hacks study tips",
-    "Calm": "ocean waves nature sounds rain",
-    "Happy": "funny moments comedy fails",
-    "Excited": "epic moments incredible amazing",
-    "Curious": "science experiments cool facts",
-    "Comforted": "cozy vibes aesthetic room",
-    "Relaxed": "coffee shop ambience rain sounds",
-    "Energized": "hype motivation workout beast",
-    "Stimulated": "wtf moments mind blown",
-    "Entertained": "viral comedy trending funny",
-    "Inspired": "success stories motivation transformation",
-    "Grounded": "minimalist living simple life",
-    "Sleepy": "rain sounds sleep asmr",
-    "Connected": "friendship goals wholesome couples",
+# Shorts/Videos mood mappings with YouTube video IDs for embedding
+# Each entry has: query (for search), videos (YouTube IDs for embedding)
+FEELING_TO_SHORTS = {
+    "Sad": {
+        "query": "wholesome animals cute puppies kittens",
+        "label": "Wholesome & Cute",
+        "videos": ["Sz_MnHH5GeQ", "OHbCqoaLhZc", "W6GDil0rGls", "7VEFPcqJsW4"]  # Cute animal shorts
+    },
+    "Lonely": {
+        "query": "heartwarming friendship stories wholesome",
+        "label": "Heartwarming Moments",
+        "videos": ["7VEFPcqJsW4", "OHbCqoaLhZc", "Sz_MnHH5GeQ", "J---aiyznGQ"]
+    },
+    "Anxious": {
+        "query": "satisfying oddly calming asmr relaxing",
+        "label": "Oddly Satisfying",
+        "videos": ["2YLl4Sc65Tg", "36FVlGY7dKU", "WLfdZ9ItOrc", "iA8Kh0bm6f0"]  # Satisfying/ASMR
+    },
+    "Overwhelmed": {
+        "query": "calming nature scenery peaceful relaxing",
+        "label": "Peaceful Nature",
+        "videos": ["lM02vNMRRB0", "WHPEKLQID4U", "hlWiI4xVXKY", "SkVqJ1SGeL0"]  # Nature/calming
+    },
+    "Angry": {
+        "query": "instant karma fails justice served",
+        "label": "Karma & Justice",
+        "videos": ["K3NxJ0E1oFQ", "0EqSXDwTq6U", "QGXxcSdsXJ4", "B2tpVWXQDJA"]
+    },
+    "Stressed": {
+        "query": "meditation guided relaxing calm breathing",
+        "label": "Calm & Breathe",
+        "videos": ["inpok4MKVLM", "2YLl4Sc65Tg", "lM02vNMRRB0", "aXItOY0sLRY"]  # Meditation
+    },
+    "Bored": {
+        "query": "mind blowing facts amazing viral",
+        "label": "Mind-Blowing Facts",
+        "videos": ["jJOwdrTA8Gw", "GkQHdRTkmCs", "TQl7lTTEdPM", "n8TLcPFX4S0"]
+    },
+    "Tired": {
+        "query": "asmr relaxing sleep sounds soothing",
+        "label": "Sleep & Relax",
+        "videos": ["2YLl4Sc65Tg", "inpok4MKVLM", "lM02vNMRRB0", "WHPEKLQID4U"]
+    },
+    "Numb": {
+        "query": "extreme sports adrenaline rush intense",
+        "label": "Adrenaline Rush",
+        "videos": ["TWfph3iNC-k", "nLwML2PagbY", "S3oZ4E4W6pg", "sDJH67AKVLM"]
+    },
+    "Confused": {
+        "query": "life hacks explained simply tutorial",
+        "label": "Quick Hacks",
+        "videos": ["TQl7lTTEdPM", "GkQHdRTkmCs", "jJOwdrTA8Gw", "n8TLcPFX4S0"]
+    },
+    "Restless": {
+        "query": "parkour extreme sports action wow",
+        "label": "Action & Parkour",
+        "videos": ["nLwML2PagbY", "TWfph3iNC-k", "S3oZ4E4W6pg", "H0sLvRk8RyU"]
+    },
+    "Focused": {
+        "query": "productivity hacks study tips focus",
+        "label": "Productivity Tips",
+        "videos": ["GkQHdRTkmCs", "TQl7lTTEdPM", "2YLl4Sc65Tg", "inpok4MKVLM"]
+    },
+    "Calm": {
+        "query": "ocean waves nature sounds rain peaceful",
+        "label": "Nature Sounds",
+        "videos": ["lM02vNMRRB0", "WHPEKLQID4U", "hlWiI4xVXKY", "inpok4MKVLM"]
+    },
+    "Happy": {
+        "query": "funny moments comedy fails hilarious",
+        "label": "Comedy & Fails",
+        "videos": ["dQw4w9WgXcQ", "K3NxJ0E1oFQ", "0EqSXDwTq6U", "B2tpVWXQDJA"]
+    },
+    "Excited": {
+        "query": "epic moments incredible wow amazing",
+        "label": "Epic Moments",
+        "videos": ["TWfph3iNC-k", "nLwML2PagbY", "jJOwdrTA8Gw", "n8TLcPFX4S0"]
+    },
+    "Curious": {
+        "query": "science experiments cool facts interesting",
+        "label": "Science & Facts",
+        "videos": ["GkQHdRTkmCs", "jJOwdrTA8Gw", "TQl7lTTEdPM", "n8TLcPFX4S0"]
+    },
+    "Scared": {
+        "query": "scary horror creepy jumpscare thriller",
+        "label": "Scary & Creepy",
+        "videos": ["uyV0IVItlM4", "rLy-AwdCOmI", "0z6xGU2_g9s", "MR7Y9Aw0K8c"]  # Horror shorts
+    },
+    "Nostalgic": {
+        "query": "90s 2000s throwback nostalgia memories",
+        "label": "Nostalgic Throwbacks",
+        "videos": ["dQw4w9WgXcQ", "J---aiyznGQ", "L_jWHffIx5E", "kJQP7kiw5Fk"]
+    },
+    "Romantic": {
+        "query": "romantic couples love cute relationship",
+        "label": "Love & Romance",
+        "videos": ["450p7goxZqg", "7WJXHY2OXGE", "0yW7w8F2TVA", "lp-EO5I60KA"]
+    },
+    "Adventurous": {
+        "query": "travel adventure explore world amazing places",
+        "label": "Travel & Adventure",
+        "videos": ["TWfph3iNC-k", "nLwML2PagbY", "SkVqJ1SGeL0", "lM02vNMRRB0"]
+    },
+    "Frustrated": {
+        "query": "rage fails instant karma satisfying",
+        "label": "Rage & Karma",
+        "videos": ["K3NxJ0E1oFQ", "0EqSXDwTq6U", "QGXxcSdsXJ4", "B2tpVWXQDJA"]
+    },
+    "Hopeful": {
+        "query": "inspiring transformation glow up success",
+        "label": "Inspiring Stories",
+        "videos": ["7VEFPcqJsW4", "OHbCqoaLhZc", "J---aiyznGQ", "dQw4w9WgXcQ"]
+    },
+    "Comforted": {
+        "query": "cozy vibes aesthetic room wholesome",
+        "label": "Cozy Vibes",
+        "videos": ["lM02vNMRRB0", "2YLl4Sc65Tg", "WHPEKLQID4U", "inpok4MKVLM"]
+    },
+    "Relaxed": {
+        "query": "coffee shop ambience rain sounds lofi",
+        "label": "Ambient & Chill",
+        "videos": ["inpok4MKVLM", "lM02vNMRRB0", "2YLl4Sc65Tg", "WHPEKLQID4U"]
+    },
+    "Energized": {
+        "query": "workout motivation hype pump beast mode",
+        "label": "Workout & Hype",
+        "videos": ["TWfph3iNC-k", "nLwML2PagbY", "S3oZ4E4W6pg", "H0sLvRk8RyU"]
+    },
+    "Stimulated": {
+        "query": "mind blown wtf moments crazy",
+        "label": "Mind-Blown",
+        "videos": ["jJOwdrTA8Gw", "GkQHdRTkmCs", "TQl7lTTEdPM", "n8TLcPFX4S0"]
+    },
+    "Entertained": {
+        "query": "viral comedy trending funny memes",
+        "label": "Viral & Trending",
+        "videos": ["dQw4w9WgXcQ", "K3NxJ0E1oFQ", "0EqSXDwTq6U", "B2tpVWXQDJA"]
+    },
+    "Inspired": {
+        "query": "success stories motivation transformation glow up",
+        "label": "Success Stories",
+        "videos": ["7VEFPcqJsW4", "OHbCqoaLhZc", "J---aiyznGQ", "dQw4w9WgXcQ"]
+    },
+    "Grounded": {
+        "query": "minimalist living simple life peaceful",
+        "label": "Simple Living",
+        "videos": ["lM02vNMRRB0", "WHPEKLQID4U", "inpok4MKVLM", "2YLl4Sc65Tg"]
+    },
+    "Sleepy": {
+        "query": "rain sounds sleep asmr relaxing night",
+        "label": "Sleep Sounds",
+        "videos": ["inpok4MKVLM", "lM02vNMRRB0", "2YLl4Sc65Tg", "WHPEKLQID4U"]
+    },
+    "Connected": {
+        "query": "friendship goals wholesome couples love",
+        "label": "Connection & Love",
+        "videos": ["7VEFPcqJsW4", "OHbCqoaLhZc", "450p7goxZqg", "J---aiyznGQ"]
+    },
+    "Thrilled": {
+        "query": "roller coaster extreme scary thrilling",
+        "label": "Thrilling Rides",
+        "videos": ["TWfph3iNC-k", "nLwML2PagbY", "uyV0IVItlM4", "S3oZ4E4W6pg"]
+    },
+    "Amused": {
+        "query": "funny animals fails comedy hilarious",
+        "label": "Hilarious Moments",
+        "videos": ["Sz_MnHH5GeQ", "K3NxJ0E1oFQ", "0EqSXDwTq6U", "dQw4w9WgXcQ"]
+    },
+    "Motivated": {
+        "query": "motivation workout success grind hustle",
+        "label": "Motivation & Grind",
+        "videos": ["TWfph3iNC-k", "nLwML2PagbY", "7VEFPcqJsW4", "OHbCqoaLhZc"]
+    },
 }
+
+# Keep old mapping for backwards compatibility
+FEELING_TO_VIDEOS = {k: v["query"] for k, v in FEELING_TO_SHORTS.items()}
 
 # --------------------------------------------------
 # 8. DATA ENGINE - MOVIES
@@ -978,7 +1152,7 @@ def heuristic_mr_dp(prompt):
             }
         },
         "Anxious": {
-            "keywords": ["anxious", "anxiety", "nervous", "worried", "panic", "scared"],
+            "keywords": ["anxious", "anxiety", "nervous", "worried", "panic"],
             "desired": "Calm",
             "messages": {
                 "movies": "Anxiety is tough. Here's something comforting and soothing 💫",
@@ -1010,6 +1184,72 @@ def heuristic_mr_dp(prompt):
                 "shorts": "Low-effort content for when you're drained 😴",
             }
         },
+        "Scared": {
+            "keywords": ["scared", "spooky", "horror", "creepy", "terrif", "frighten"],
+            "desired": "Scared",
+            "messages": {
+                "movies": "Ooh, feeling brave! Let me find some quality scares for you 👻",
+                "music": "Dark and eerie vibes coming right up 🎃",
+                "podcasts": "Creepy podcasts that'll give you chills 👻",
+                "audiobooks": "Spine-tingling stories to keep you up at night 🌙",
+                "shorts": "Jump scares and creepy content incoming! 😱",
+            }
+        },
+        "Nostalgic": {
+            "keywords": ["nostalg", "throwback", "miss", "remember", "old times", "childhood", "90s", "2000s"],
+            "desired": "Nostalgic",
+            "messages": {
+                "movies": "Taking you back in time! Classic vibes incoming 🥹",
+                "music": "Time machine activated! Here's some throwback hits 📼",
+                "podcasts": "Nostalgic conversations about the good old days 🥹",
+                "audiobooks": "Stories that'll take you back 📼",
+                "shorts": "Throwback content for the feels! 🥹",
+            }
+        },
+        "Romantic": {
+            "keywords": ["romantic", "love", "date night", "cuddle", "partner", "valentine"],
+            "desired": "Romantic",
+            "messages": {
+                "movies": "Love is in the air! Here's some swoon-worthy picks 💕",
+                "music": "Setting the mood with romantic tunes 💕",
+                "podcasts": "Love stories and relationship wisdom 💕",
+                "audiobooks": "Romance that'll make your heart flutter 💕",
+                "shorts": "Cute couples and romantic moments 💕",
+            }
+        },
+        "Adventurous": {
+            "keywords": ["adventure", "explore", "travel", "wild", "spontan"],
+            "desired": "Adventurous",
+            "messages": {
+                "movies": "Adventure awaits! Let's explore new worlds 🏔️",
+                "music": "Epic soundtracks for your next adventure 🏔️",
+                "podcasts": "Travel stories and wild adventures 🏔️",
+                "audiobooks": "Epic journeys and explorations 🏔️",
+                "shorts": "Amazing places and adventures to inspire you 🏔️",
+            }
+        },
+        "Frustrated": {
+            "keywords": ["frustrat", "ugh", "annoyed", "irritat", "fed up"],
+            "desired": "Calm",
+            "messages": {
+                "movies": "I feel you! Let's find something to take the edge off 😤",
+                "music": "Let's channel that energy! 😤",
+                "podcasts": "Something to help you vent and relax 😤",
+                "audiobooks": "An escape from the frustration 😤",
+                "shorts": "Satisfying karma videos to make you feel better 😤",
+            }
+        },
+        "Hopeful": {
+            "keywords": ["hope", "optimist", "looking up", "better", "positive"],
+            "desired": "Inspired",
+            "messages": {
+                "movies": "Keeping that hope alive with inspiring stories 🌈",
+                "music": "Uplifting tunes to keep you going 🌈",
+                "podcasts": "Inspiring conversations and success stories 🌈",
+                "audiobooks": "Stories of triumph and perseverance 🌈",
+                "shorts": "Inspiring transformations and success stories 🌈",
+            }
+        },
     }
     
     # Check for feeling matches
@@ -1036,10 +1276,33 @@ def heuristic_mr_dp(prompt):
                   "genres": {"movies": "action, adventure", "music": "upbeat, EDM, dance", "podcasts": "motivation, hype", "audiobooks": "inspiring, motivation", "shorts": "hype, motivation, workout"}},
         "workout": {"desired": "Energized", "message": "Let's get those gains! 💪",
                   "genres": {"movies": "sports films", "music": "workout anthems, EDM", "podcasts": "fitness, motivation", "audiobooks": "sports, discipline", "shorts": "workout, fitness, gym"}},
-        "motivat": {"desired": "Inspired", "message": "Let's get motivated! 🌟",
+        "motivat": {"desired": "Motivated", "message": "Let's get motivated! 🌟",
                   "genres": {"movies": "inspiring true stories", "music": "motivational, uplifting", "podcasts": "success stories, motivation", "audiobooks": "self-help, success", "shorts": "motivation, success, transformation"}},
         "learn": {"desired": "Curious", "message": "Knowledge time! 🧠",
                   "genres": {"movies": "documentaries", "music": "classical, focus", "podcasts": "educational, science", "audiobooks": "non-fiction, learning", "shorts": "facts, explained, science"}},
+        # NEW FEELINGS
+        "scared": {"desired": "Scared", "message": "Ooh feeling brave! Spooky content incoming 👻",
+                  "genres": {"movies": "horror, thriller", "music": "dark ambient, eerie", "podcasts": "true crime, horror stories", "audiobooks": "horror, thriller", "shorts": "scary, horror, jumpscare"}},
+        "spooky": {"desired": "Scared", "message": "Let's get creepy! 🎃",
+                  "genres": {"movies": "horror, supernatural", "music": "spooky, halloween", "podcasts": "paranormal, horror", "audiobooks": "ghost stories, horror", "shorts": "creepy, scary, paranormal"}},
+        "thrill": {"desired": "Thrilled", "message": "Adrenaline time! 🎢",
+                  "genres": {"movies": "thriller, action", "music": "intense, epic", "podcasts": "true crime, suspense", "audiobooks": "thriller, suspense", "shorts": "extreme, thrilling, intense"}},
+        "nostalg": {"desired": "Nostalgic", "message": "Taking you back in time! 🥹",
+                  "genres": {"movies": "classic films, retro", "music": "throwback hits, oldies", "podcasts": "90s, 2000s, retro", "audiobooks": "classic literature", "shorts": "throwback, nostalgia, 90s 2000s"}},
+        "romantic": {"desired": "Romantic", "message": "Love is in the air! 💕",
+                  "genres": {"movies": "romance, romantic comedy", "music": "love songs, R&B", "podcasts": "love stories, relationship", "audiobooks": "romance novels", "shorts": "cute couples, romantic"}},
+        "love": {"desired": "Romantic", "message": "Swoon-worthy picks coming up! 💕",
+                  "genres": {"movies": "romance, love stories", "music": "love ballads, romantic", "podcasts": "love, relationships", "audiobooks": "romance", "shorts": "couples, love, romantic"}},
+        "adventure": {"desired": "Adventurous", "message": "Adventure awaits! 🏔️",
+                  "genres": {"movies": "adventure, exploration", "music": "epic, cinematic", "podcasts": "travel, adventure", "audiobooks": "adventure, travel", "shorts": "travel, explore, adventure"}},
+        "amuse": {"desired": "Amused", "message": "Let's get those giggles! 😂",
+                  "genres": {"movies": "comedy, funny", "music": "fun, upbeat", "podcasts": "comedy, humor", "audiobooks": "comedy, humor", "shorts": "funny, fails, comedy"}},
+        "creepy": {"desired": "Scared", "message": "Getting creepy! 👀",
+                  "genres": {"movies": "horror, psychological", "music": "dark, eerie", "podcasts": "creepypasta, horror", "audiobooks": "horror, dark", "shorts": "creepy, unsettling, horror"}},
+        "scare me": {"desired": "Scared", "message": "You asked for it! 😱",
+                  "genres": {"movies": "horror, jump scares", "music": "horror soundtrack", "podcasts": "scary stories", "audiobooks": "horror", "shorts": "jumpscare, scary, horror"}},
+        "feel scared": {"desired": "Scared", "message": "Brave mode ON! Let's get spooky 👻",
+                  "genres": {"movies": "horror, thriller", "music": "dark ambient", "podcasts": "horror, true crime", "audiobooks": "horror, thriller", "shorts": "scary, creepy, horror"}},
     }
     
     for keyword, data in desire_responses.items():
@@ -1198,10 +1461,12 @@ def mr_dp_search(response):
     
     # SHORTS MODE
     if media_type == "shorts":
-        vq = FEELING_TO_VIDEOS.get(desired_feeling) or FEELING_TO_VIDEOS.get(current_feeling) or "trending viral shorts"
+        shorts_data = FEELING_TO_SHORTS.get(desired_feeling) or FEELING_TO_SHORTS.get(current_feeling) or FEELING_TO_SHORTS.get("Entertained")
         return {
             "type": "shorts",
-            "query": vq
+            "query": shorts_data.get("query", "viral shorts"),
+            "label": shorts_data.get("label", "Trending"),
+            "videos": shorts_data.get("videos", [])
         }
     
     # MOVIES MODE (default)
@@ -3355,23 +3620,49 @@ def render_main():
         # ===================== SHORTS RESULTS =====================
         elif result_type == "shorts":
             vq = results.get("query", "trending viral")
+            label = results.get("label", "Trending")
+            video_ids = results.get("videos", [])
+            
+            st.markdown(f"### ⚡ {label} Shorts")
+            
+            # Embed YouTube videos in a grid
+            if video_ids:
+                st.markdown("##### 📺 Watch Here")
+                vid_cols = st.columns(2)
+                for i, vid_id in enumerate(video_ids[:4]):
+                    with vid_cols[i % 2]:
+                        # Use YouTube Shorts embed format
+                        components.iframe(
+                            f"https://www.youtube.com/embed/{vid_id}?rel=0&modestbranding=1",
+                            height=400
+                        )
+            
+            st.markdown("##### 🔗 Browse More")
             
             # Big colorful buttons to platforms
             yt_url = f"https://www.youtube.com/results?search_query={quote_plus(vq)}+shorts"
             tt_url = f"https://www.tiktok.com/search?q={quote_plus(vq)}"
             ig_url = f"https://www.instagram.com/explore/tags/{quote_plus(vq.replace(' ', ''))}/"
             
-            st.markdown(f"""
-            <a href="{yt_url}" target="_blank" style="display:block;text-align:center;padding:28px;background:linear-gradient(135deg, #FF0000, #CC0000);border-radius:20px;color:white;text-decoration:none;font-weight:700;font-size:1.2rem;margin-bottom:16px;box-shadow:0 8px 32px rgba(255,0,0,0.3);">
-                ▶️ Watch {vq.split()[0].title()} Shorts on YouTube →
-            </a>
-            <a href="{tt_url}" target="_blank" style="display:block;text-align:center;padding:28px;background:linear-gradient(135deg,#ff0050,#00f2ea);border-radius:20px;color:white;text-decoration:none;font-weight:700;font-size:1.2rem;margin-bottom:16px;box-shadow:0 8px 32px rgba(255,0,80,0.3);">
-                📱 Browse {vq.split()[0].title()} on TikTok →
-            </a>
-            <a href="{ig_url}" target="_blank" style="display:block;text-align:center;padding:28px;background:linear-gradient(135deg,#833AB4,#FD1D1D,#F77737);border-radius:20px;color:white;text-decoration:none;font-weight:700;font-size:1.2rem;box-shadow:0 8px 32px rgba(131,58,180,0.3);">
-                📸 Explore on Instagram Reels →
-            </a>
-            """, unsafe_allow_html=True)
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                st.markdown(f"""
+                <a href="{yt_url}" target="_blank" style="display:block;text-align:center;padding:20px;background:linear-gradient(135deg, #FF0000, #CC0000);border-radius:16px;color:white;text-decoration:none;font-weight:700;font-size:1rem;box-shadow:0 8px 32px rgba(255,0,0,0.3);">
+                    ▶️ YouTube Shorts
+                </a>
+                """, unsafe_allow_html=True)
+            with c2:
+                st.markdown(f"""
+                <a href="{tt_url}" target="_blank" style="display:block;text-align:center;padding:20px;background:linear-gradient(135deg,#ff0050,#00f2ea);border-radius:16px;color:white;text-decoration:none;font-weight:700;font-size:1rem;box-shadow:0 8px 32px rgba(255,0,80,0.3);">
+                    📱 TikTok
+                </a>
+                """, unsafe_allow_html=True)
+            with c3:
+                st.markdown(f"""
+                <a href="{ig_url}" target="_blank" style="display:block;text-align:center;padding:20px;background:linear-gradient(135deg,#833AB4,#FD1D1D,#F77737);border-radius:16px;color:white;text-decoration:none;font-weight:700;font-size:1rem;box-shadow:0 8px 32px rgba(131,58,180,0.3);">
+                    📸 Reels
+                </a>
+                """, unsafe_allow_html=True)
             
             # Custom search
             st.markdown("##### 🔍 Custom Search")
@@ -3554,25 +3845,68 @@ def render_main():
         st.info("💡 **Tip:** Check if your local library offers free audiobooks through **Libby** or **Hoopla**!")
     
     elif page == "⚡ Shorts":
-        vq = FEELING_TO_VIDEOS.get(st.session_state.desired_feeling, "trending viral shorts")
-        st.markdown(f"<div class='section-header'><span class='section-icon'>⚡</span><h2 class='section-title'>Quick Dopamine for {st.session_state.desired_feeling}</h2></div>", unsafe_allow_html=True)
-        st.caption(f"Perfect content: {vq}")
+        shorts_data = FEELING_TO_SHORTS.get(st.session_state.desired_feeling) or FEELING_TO_SHORTS.get("Entertained")
+        vq = shorts_data.get("query", "trending viral")
+        label = shorts_data.get("label", "Trending")
+        video_ids = shorts_data.get("videos", [])
         
+        st.markdown(f"<div class='section-header'><span class='section-icon'>⚡</span><h2 class='section-title'>{label} Shorts</h2></div>", unsafe_allow_html=True)
+        st.caption(f"Curated for: {MOOD_EMOJIS.get(st.session_state.desired_feeling, '✨')} {st.session_state.desired_feeling}")
+        
+        # Embed YouTube videos directly in the app
+        if video_ids:
+            st.markdown("##### 📺 Watch Now")
+            vid_cols = st.columns(2)
+            for i, vid_id in enumerate(video_ids[:4]):
+                with vid_cols[i % 2]:
+                    components.iframe(
+                        f"https://www.youtube.com/embed/{vid_id}?rel=0&modestbranding=1",
+                        height=400
+                    )
+        
+        # Quick mood pills to switch vibes
+        st.markdown("##### 🎯 Quick Vibes")
+        vibe_options = {
+            "😂 Funny": "Amused",
+            "😱 Scary": "Scared",
+            "🔥 Hype": "Energized",
+            "😌 Calm": "Relaxed",
+            "🤯 Mind-Blown": "Stimulated",
+            "🥹 Wholesome": "Comforted",
+            "😴 Sleepy": "Sleepy",
+            "💪 Motivated": "Motivated"
+        }
+        vibe_cols = st.columns(4)
+        for i, (vibe_label, feeling) in enumerate(vibe_options.items()):
+            with vibe_cols[i % 4]:
+                if st.button(vibe_label, key=f"shorts_vibe_{feeling}", use_container_width=True):
+                    st.session_state.desired_feeling = feeling
+                    st.rerun()
+        
+        st.markdown("##### 🔗 Browse More")
         yt_url = f"https://www.youtube.com/results?search_query={quote_plus(vq)}+shorts"
         tt_url = f"https://www.tiktok.com/search?q={quote_plus(vq)}"
         ig_url = f"https://www.instagram.com/explore/tags/{quote_plus(vq.replace(' ', ''))}/"
         
-        st.markdown(f"""
-        <a href="{yt_url}" target="_blank" style="display:block;text-align:center;padding:28px;background:linear-gradient(135deg, #FF0000, #CC0000);border-radius:20px;color:white;text-decoration:none;font-weight:700;font-size:1.2rem;margin-bottom:16px;">
-            ▶️ Watch {vq.split()[0].title()} Shorts on YouTube →
-        </a>
-        <a href="{tt_url}" target="_blank" style="display:block;text-align:center;padding:28px;background:linear-gradient(135deg,#ff0050,#00f2ea);border-radius:20px;color:white;text-decoration:none;font-weight:700;font-size:1.2rem;margin-bottom:16px;">
-            📱 Browse {vq.split()[0].title()} on TikTok →
-        </a>
-        <a href="{ig_url}" target="_blank" style="display:block;text-align:center;padding:28px;background:linear-gradient(135deg,#833AB4,#FD1D1D,#F77737);border-radius:20px;color:white;text-decoration:none;font-weight:700;font-size:1.2rem;">
-            📸 Explore on Instagram Reels →
-        </a>
-        """, unsafe_allow_html=True)
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.markdown(f"""
+            <a href="{yt_url}" target="_blank" style="display:block;text-align:center;padding:16px;background:#FF0000;border-radius:16px;color:white;text-decoration:none;font-weight:700;">
+                ▶️ YouTube Shorts
+            </a>
+            """, unsafe_allow_html=True)
+        with c2:
+            st.markdown(f"""
+            <a href="{tt_url}" target="_blank" style="display:block;text-align:center;padding:16px;background:linear-gradient(135deg,#ff0050,#00f2ea);border-radius:16px;color:white;text-decoration:none;font-weight:700;">
+                📱 TikTok
+            </a>
+            """, unsafe_allow_html=True)
+        with c3:
+            st.markdown(f"""
+            <a href="{ig_url}" target="_blank" style="display:block;text-align:center;padding:16px;background:linear-gradient(135deg,#833AB4,#FD1D1D);border-radius:16px;color:white;text-decoration:none;font-weight:700;">
+                📸 Reels
+            </a>
+            """, unsafe_allow_html=True)
         
         st.markdown("##### 🔍 Custom Search")
         shorts_query = st.text_input("Search for shorts...", placeholder="Any topic or vibe", key="shorts_search")
@@ -3580,8 +3914,10 @@ def render_main():
             yt2 = f"https://www.youtube.com/results?search_query={quote_plus(shorts_query)}+shorts"
             tt2 = f"https://www.tiktok.com/search?q={quote_plus(shorts_query)}"
             st.markdown(f"""
-            <a href="{yt2}" target="_blank" class="service-btn"><div class="service-icon" style="background:#FF0000;">▶️</div><div><div class="service-name">YouTube Shorts</div><div class="service-desc">Search "{shorts_query}"</div></div></a>
-            <a href="{tt2}" target="_blank" class="service-btn"><div class="service-icon" style="background:linear-gradient(135deg,#ff0050,#00f2ea);">📱</div><div><div class="service-name">TikTok</div><div class="service-desc">Search "{shorts_query}"</div></div></a>
+            <div style="display:flex;gap:12px;margin-top:12px;">
+                <a href="{yt2}" target="_blank" style="flex:1;text-align:center;padding:12px;background:#FF0000;border-radius:12px;color:white;text-decoration:none;font-weight:600;">YouTube</a>
+                <a href="{tt2}" target="_blank" style="flex:1;text-align:center;padding:12px;background:linear-gradient(135deg,#ff0050,#00f2ea);border-radius:12px;color:white;text-decoration:none;font-weight:600;">TikTok</a>
+            </div>
             """, unsafe_allow_html=True)
     
     # SHARE
