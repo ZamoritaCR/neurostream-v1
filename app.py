@@ -868,10 +868,22 @@ def heuristic_mr_dp(prompt):
     
     # Check for specific artist request (e.g. "play Drake", "Taylor Swift music")
     artist_patterns = ["play ", "listen to ", "put on ", "songs by ", "music by "]
-    popular_artists = ["drake", "taylor swift", "kendrick", "beyonce", "kanye", "travis scott", "bad bunny", 
-                       "weeknd", "doja cat", "sza", "dua lipa", "billie eilish", "ed sheeran", "ariana grande",
-                       "post malone", "harry styles", "olivia rodrigo", "morgan wallen", "luke combs", "eminem",
-                       "rihanna", "bruno mars", "coldplay", "imagine dragons", "maroon 5", "adele", "shakira"]
+    popular_artists = [
+        # Pop/Hip-Hop
+        "drake", "taylor swift", "kendrick", "beyonce", "kanye", "travis scott", "bad bunny", 
+        "weeknd", "doja cat", "sza", "dua lipa", "billie eilish", "ed sheeran", "ariana grande",
+        "post malone", "harry styles", "olivia rodrigo", "morgan wallen", "luke combs", "eminem",
+        "rihanna", "bruno mars", "coldplay", "imagine dragons", "maroon 5", "adele", "shakira",
+        # Rock/Metal
+        "metallica", "led zeppelin", "pink floyd", "queen", "ac/dc", "acdc", "guns n roses",
+        "nirvana", "foo fighters", "linkin park", "green day", "blink 182", "fall out boy",
+        "panic at the disco", "my chemical romance", "slipknot", "avenged sevenfold",
+        "iron maiden", "black sabbath", "megadeth", "slayer", "pantera", "tool",
+        "red hot chili peppers", "pearl jam", "soundgarden", "alice in chains",
+        # Classic/Other
+        "the beatles", "beatles", "rolling stones", "david bowie", "prince", "michael jackson",
+        "elton john", "fleetwood mac", "eagles", "u2", "radiohead", "oasis", "arctic monkeys"
+    ]
     
     # Check for artist mentions
     for artist in popular_artists:
@@ -3172,25 +3184,35 @@ def render_main():
             artist_name = results.get("artist_name", "")
             artist_query = quote_plus(artist_name)
             
-            st.markdown(f"### 🎤 {artist_name}")
+            # Big artist card
+            st.markdown(f"""
+            <div style="text-align:center;padding:40px;background:linear-gradient(135deg,rgba(139,92,246,0.2),rgba(6,182,212,0.2));border-radius:24px;border:1px solid rgba(139,92,246,0.3);margin-bottom:24px;">
+                <div style="font-size:4rem;margin-bottom:16px;">🎤</div>
+                <div style="font-size:2rem;font-weight:700;background:linear-gradient(135deg,#8b5cf6,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">{artist_name}</div>
+                <div style="color:var(--text-secondary);margin-top:8px;">Click below to listen</div>
+            </div>
+            """, unsafe_allow_html=True)
             
-            # Spotify search embed for artist
-            components.iframe(f"https://open.spotify.com/embed/search/{artist_query}?theme=0", height=380)
-            
-            # Direct links to artist on services
-            st.markdown("##### 🔍 Find on Music Services")
-            c1, c2, c3 = st.columns(3)
-            with c1:
-                st.markdown(f'<a href="https://open.spotify.com/search/{artist_query}" target="_blank" style="display:block;text-align:center;padding:16px;background:#1DB954;border-radius:12px;color:white;text-decoration:none;font-weight:600;">🎵 Spotify</a>', unsafe_allow_html=True)
-            with c2:
-                st.markdown(f'<a href="https://music.apple.com/search?term={artist_query}" target="_blank" style="display:block;text-align:center;padding:16px;background:linear-gradient(135deg,#fc3c44,#fc9a9a);border-radius:12px;color:white;text-decoration:none;font-weight:600;">🍎 Apple Music</a>', unsafe_allow_html=True)
-            with c3:
-                st.markdown(f'<a href="https://music.youtube.com/search?q={artist_query}" target="_blank" style="display:block;text-align:center;padding:16px;background:#FF0000;border-radius:12px;color:white;text-decoration:none;font-weight:600;">▶️ YouTube Music</a>', unsafe_allow_html=True)
+            # Big buttons to music services
+            st.markdown(f"""
+            <a href="https://open.spotify.com/search/{artist_query}" target="_blank" style="display:block;text-align:center;padding:20px;background:#1DB954;border-radius:16px;color:white;text-decoration:none;font-weight:700;font-size:1.1rem;margin-bottom:12px;box-shadow:0 8px 32px rgba(29,185,84,0.3);">
+                🎵 Play {artist_name} on Spotify →
+            </a>
+            <a href="https://music.apple.com/search?term={artist_query}" target="_blank" style="display:block;text-align:center;padding:20px;background:linear-gradient(135deg,#fc3c44,#fc9a9a);border-radius:16px;color:white;text-decoration:none;font-weight:700;font-size:1.1rem;margin-bottom:12px;box-shadow:0 8px 32px rgba(252,60,68,0.3);">
+                🍎 Play on Apple Music →
+            </a>
+            <a href="https://music.youtube.com/search?q={artist_query}" target="_blank" style="display:block;text-align:center;padding:20px;background:#FF0000;border-radius:16px;color:white;text-decoration:none;font-weight:700;font-size:1.1rem;margin-bottom:12px;box-shadow:0 8px 32px rgba(255,0,0,0.3);">
+                ▶️ Play on YouTube Music →
+            </a>
+            <a href="https://www.youtube.com/results?search_query={artist_query}" target="_blank" style="display:block;text-align:center;padding:20px;background:linear-gradient(135deg,#333,#666);border-radius:16px;color:white;text-decoration:none;font-weight:700;font-size:1.1rem;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+                📺 Watch Music Videos on YouTube →
+            </a>
+            """, unsafe_allow_html=True)
             
             # Action buttons
             btn_cols = st.columns([1, 1])
             with btn_cols[0]:
-                if st.button("🔄 Different Artist", key="mr_dp_shuffle_artist", use_container_width=True):
+                if st.button("🔄 Search Another Artist", key="mr_dp_shuffle_artist", use_container_width=True):
                     st.session_state.mr_dp_results = []
                     st.session_state.mr_dp_response = None
                     st.rerun()
@@ -3242,6 +3264,7 @@ def render_main():
             # Show recommended podcasts with nice cards
             st.markdown("##### ⭐ Recommended Shows")
             for show, desc in pod_shows:
+                show_query = quote_plus(show)
                 st.markdown(f"""
                 <div class="glass-card" style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
                     <div style="font-size:2.5rem;">🎙️</div>
@@ -3249,13 +3272,9 @@ def render_main():
                         <div style="font-weight:600;font-size:1.1rem;">{show}</div>
                         <div style="color:var(--text-secondary);font-size:0.85rem;">{desc}</div>
                     </div>
-                    <a href="https://open.spotify.com/search/{quote_plus(show)}" target="_blank" style="padding:8px 16px;background:#1DB954;border-radius:20px;color:white;text-decoration:none;font-size:0.8rem;">Play</a>
+                    <a href="https://open.spotify.com/search/{show_query}" target="_blank" style="padding:10px 20px;background:#1DB954;border-radius:20px;color:white;text-decoration:none;font-size:0.85rem;font-weight:600;">▶️ Play</a>
                 </div>
                 """, unsafe_allow_html=True)
-            
-            # Spotify podcast search embed
-            st.markdown("##### 🎧 Browse on Spotify")
-            components.iframe(f"https://open.spotify.com/embed/search/{quote_plus(pod_query)}?theme=0", height=200)
             
             # Podcast service links
             st.markdown("##### 🔍 Find on Podcast Apps")
