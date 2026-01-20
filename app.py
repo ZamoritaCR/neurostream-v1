@@ -3165,6 +3165,17 @@ def render_main():
         }
         config = type_config.get(result_type, type_config["movies"])
         
+        # Build mood tags HTML separately
+        mood_tags = ""
+        if current_f:
+            emoji = MOOD_EMOJIS.get(current_f, "😊")
+            mood_tags += f'<span style="padding:6px 14px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);border-radius:20px;font-size:0.85rem;color:white;">{emoji} {current_f}</span>'
+        if desired_f:
+            emoji = MOOD_EMOJIS.get(desired_f, "✨")
+            mood_tags += f'<span style="padding:6px 14px;background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.2);border-radius:20px;font-size:0.85rem;color:white;">→ {emoji} {desired_f}</span>'
+        if genres:
+            mood_tags += f'<span style="padding:6px 14px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:20px;font-size:0.85rem;color:white;">{config["icon"]} {genres}</span>'
+        
         # Anchor + Header with mood info
         st.markdown(f"""
         <div id="mr-dp-results"></div>
@@ -3173,9 +3184,7 @@ def render_main():
             <h2 class="section-title">{config['title']}</h2>
         </div>
         <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
-            {f'<span style="padding:6px 14px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);border-radius:20px;font-size:0.85rem;color:var(--text-primary);">{MOOD_EMOJIS.get(current_f, "😊")} {current_f}</span>' if current_f else ''}
-            {f'<span style="padding:6px 14px;background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.2);border-radius:20px;font-size:0.85rem;color:var(--text-primary);">→ {MOOD_EMOJIS.get(desired_f, "✨")} {desired_f}</span>' if desired_f else ''}
-            {f'<span style="padding:6px 14px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:20px;font-size:0.85rem;color:var(--text-primary);">{config["icon"]} {genres}</span>' if genres else ''}
+            {mood_tags}
         </div>
         """, unsafe_allow_html=True)
         
