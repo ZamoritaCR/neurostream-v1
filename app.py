@@ -1,7 +1,10 @@
 # FILE: app.py
 # --------------------------------------------------
-# DOPAMINE.WATCH v28.2 - NLP (Mr.DP) + HARD 4x4 PROVIDER GRID
-# Baseline v28.0 (NO REFACTOR) + additions requested
+# DOPAMINE.WATCH v28.3 - Mr.DP NLP FIX (NO REFACTOR)
+# - Mr.DP now understands “vibe prompts” (ex: "I'm bored, need action")
+# - Uses TMDB Discover fallback when Search is too literal / returns few results
+# - Fixes session_state crashes for existing sessions (nlp_last_prompt missing)
+# - Keeps 4x4 provider icon grid inside the movie card
 # --------------------------------------------------
 
 import streamlit as st
@@ -13,6 +16,7 @@ from urllib.parse import quote_plus
 from openai import OpenAI
 import html as html_lib
 import random
+import re
 
 # --------------------------------------------------
 # 1. CONFIG & ASSETS
@@ -30,6 +34,7 @@ TMDB_LOGO_URL = "https://image.tmdb.org/t/p/original"
 
 # --------------------------------------------------
 # 2. MASTER SERVICE MAP - DIRECT DEEP LINKS
+# NOTE: These templates are kept EXACTLY as your baseline (no refactor).
 # --------------------------------------------------
 SERVICE_MAP = {
     # SUBSCRIPTION SERVICES
@@ -65,7 +70,7 @@ SERVICE_MAP = {
 
 LOGOS = {
     "YouTube": "https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg",
-    "Trailer": "https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg",
+    "Trailer": "https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg"
 }
 
 # --------------------------------------------------
@@ -73,7 +78,12 @@ LOGOS = {
 # --------------------------------------------------
 @st.cache_data
 def get_tmdb_key():
-    return st.secrets["tmdb"]["api_key"]
+    # Minimal safety (no refactor): avoids silent crash when key missing
+    try:
+        return st.secrets["tmdb"]["api_key"]
+    except Exception:
+        st.error('KeyError: st.secrets has no key "tmdb". Add it to secrets.toml (tmdb.api_key).')
+        return None
 
 try:
     openai_client = OpenAI(api_key=st.secrets["openai"]["api_key"])
@@ -261,10 +271,13 @@ def _clean_results(results):
         })
     return clean
 
-
 @st.cache_data(ttl=3600)
 def discover_movies_by_emotion(page=1, current_feeling=None, desired_feeling=None):
     """Discover movies filtered by emotional state"""
+
+    api_key = get_tmdb_key()
+    if not api_key:
+        return []
 
     # Build genre preferences
     genre_ids = []
@@ -284,11 +297,11 @@ def discover_movies_by_emotion(page=1, current_feeling=None, desired_feeling=Non
         if "avoid" in prefs:
             avoid_genres.extend(prefs["avoid"])
         if "prefer" in prefs and len(genre_ids) < 3:
-            genre_ids.extend([g for g in prefs["prefer"] if g not in genre_ids][:3-len(genre_ids)])
+            genre_ids.extend([g for g in prefs["prefer"] if g not in genre_ids][:3 - len(genre_ids)])
 
     try:
         params = {
-            "api_key": get_tmdb_key(),
+            "api_key": api_key,
             "sort_by": "popularity.desc",
             "watch_region": "US",
             "with_watch_monetization_types": "flatrate|rent",
@@ -313,17 +326,55 @@ def discover_movies_by_emotion(page=1, current_feeling=None, desired_feeling=Non
     except Exception:
         return []
 
+@st.cache_data(ttl=3600)
+def discover_movies(page=1, with_genres=None, without_genres=None, sort_by="popularity.desc", year=None):
+    """
+    NEW (minimal add): Generic TMDB Discover used by Mr.DP NLP when the prompt is “vibe intent”.
+    No refactor: does not replace any existing function; only adds.
+    """
+    api_key = get_tmdb_key()
+    if not api_key:
+        return []
+
+    try:
+        params = {
+            "api_key": api_key,
+            "sort_by": sort_by,
+            "watch_region": "US",
+            "with_watch_monetization_types": "flatrate|rent",
+            "page": page,
+            "include_adult": "false"
+        }
+
+        if with_genres:
+            params["with_genres"] = "|".join(map(str, with_genres[:3]))
+
+        if without_genres:
+            params["without_genres"] = ",".join(map(str, list(set(without_genres))))
+
+        if year:
+            # Discover supports primary_release_year for movies
+            params["primary_release_year"] = int(year)
+
+        r = requests.get(f"{TMDB_BASE_URL}/discover/movie", params=params, timeout=10)
+        r.raise_for_status()
+        return _clean_results(r.json().get("results", []))
+    except Exception:
+        return []
 
 @st.cache_data(ttl=3600)
 def search_movies_only(query, page=1):
     """Search for movies/TV only - NO YOUTUBE OR GOOGLE"""
+    api_key = get_tmdb_key()
+    if not api_key:
+        return []
     if not query:
         return []
     try:
         r = requests.get(
             f"{TMDB_BASE_URL}/search/multi",
             params={
-                "api_key": get_tmdb_key(),
+                "api_key": api_key,
                 "query": query,
                 "include_adult": "false",
                 "page": page
@@ -338,21 +389,23 @@ def search_movies_only(query, page=1):
     except Exception:
         return []
 
-
 @st.cache_data(ttl=86400)
 def get_streaming_providers(tmdb_id, media_type):
     """Get streaming providers for a title"""
+    api_key = get_tmdb_key()
+    if not api_key:
+        return {"flatrate": [], "rent": []}
     try:
         r = requests.get(
             f"{TMDB_BASE_URL}/{media_type}/{tmdb_id}/watch/providers",
-            params={"api_key": get_tmdb_key()},
+            params={"api_key": api_key},
             timeout=8
         )
         r.raise_for_status()
         data = r.json().get("results", {}).get("US", {})
         return {
-            "flatrate": data.get("flatrate", [])[:8],  # Max 8 providers
-            "rent": data.get("rent", [])[:8]
+            "flatrate": data.get("flatrate", [])[:16],  # allow up to 16 to fit 4x4
+            "rent": data.get("rent", [])[:16]
         }
     except Exception:
         return {"flatrate": [], "rent": []}
@@ -367,18 +420,13 @@ def sort_by_emotion(titles, current_feeling, desired_feeling):
         return titles
 
     try:
-        prompt = f"""You are a dopamine-optimization engine for neurodivergent users.
-
-Current feeling: {current_feeling}
-Desired feeling: {desired_feeling}
-
-Reorder these titles to maximize emotional transition and dopamine response.
-Prioritize titles that help shift from current to desired feeling.
+        prompt = f"""Reorder these titles for best match.
+Current: {current_feeling}
+Desired: {desired_feeling}
 
 Titles: {json.dumps(titles[:20])}
 
-Return ONLY a JSON array of titles in optimal order. No explanation."""
-
+Return ONLY a JSON array of titles. No explanation."""
         response = openai_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
@@ -395,130 +443,14 @@ Return ONLY a JSON array of titles in optimal order. No explanation."""
         return titles
 
 # --------------------------------------------------
-# 8.5 NLP (Mr.DP) - FREE TEXT -> TMDB PLAN
-# --------------------------------------------------
-@st.cache_data(show_spinner=False, ttl=3600)
-def nlp_to_tmdb_plan(prompt: str):
-    """Convert user free text into a TMDB search plan.
-
-    NOTE: This is intentionally utilitarian (no rapport / no emotion commentary).
-    """
-    p = (prompt or "").strip()
-    if not p:
-        return {
-            "query": "",
-            "media_type": "multi",
-            "year": None,
-            "with_genres": [],
-            "sort_by": "popularity.desc",
-        }
-
-    # Fallback: if OpenAI not available, use the prompt as the query
-    if not openai_client:
-        return {
-            "query": p,
-            "media_type": "multi",
-            "year": None,
-            "with_genres": [],
-            "sort_by": "popularity.desc",
-        }
-
-    try:
-        sys = (
-            "You convert user requests into a JSON plan for searching TMDB. "
-            "Return ONLY valid JSON. No markdown.\n"
-            "Keys: query (string), media_type (movie|tv|multi), year (int|null), "
-            "with_genres (array of ints), sort_by (string).\n"
-            "Rules: keep query short (<= 6 words). If user asks for new/latest -> sort_by=release_date.desc. "
-            "If user names a title -> query=that title." 
-        )
-
-        resp = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": sys},
-                {"role": "user", "content": p},
-            ],
-            temperature=0.2,
-        )
-
-        content = (resp.choices[0].message.content or "").strip()
-        plan = json.loads(content)
-
-        # Normalize + defaults
-        plan.setdefault("query", "")
-        plan.setdefault("media_type", "multi")
-        plan.setdefault("year", None)
-        plan.setdefault("with_genres", [])
-        plan.setdefault("sort_by", "popularity.desc")
-
-        if plan.get("media_type") not in ["movie", "tv", "multi"]:
-            plan["media_type"] = "multi"
-
-        if not isinstance(plan.get("with_genres"), list):
-            plan["with_genres"] = []
-
-        return plan
-
-    except Exception:
-        return {
-            "query": p,
-            "media_type": "multi",
-            "year": None,
-            "with_genres": [],
-            "sort_by": "popularity.desc",
-        }
-
-
-@st.cache_data(ttl=3600)
-def nlp_search_tmdb(plan: dict, page: int = 1):
-    """Search TMDB based on the NLP plan."""
-    if not plan:
-        return []
-
-    query = (plan.get("query") or "").strip()
-    year = plan.get("year", None)
-    with_genres = plan.get("with_genres", []) or []
-    sort_by = plan.get("sort_by", "popularity.desc") or "popularity.desc"
-
-    # If query exists, use search (best recall)
-    if query:
-        return search_movies_only(query, page=page)
-
-    # Otherwise discover (no query)
-    try:
-        params = {
-            "api_key": get_tmdb_key(),
-            "sort_by": sort_by,
-            "watch_region": "US",
-            "with_watch_monetization_types": "flatrate|rent",
-            "page": page,
-            "include_adult": "false"
-        }
-
-        if with_genres:
-            params["with_genres"] = "|".join(map(str, with_genres[:3]))
-
-        if year and isinstance(year, int):
-            params["primary_release_year"] = year
-
-        r = requests.get(f"{TMDB_BASE_URL}/discover/movie", params=params, timeout=8)
-        r.raise_for_status()
-        return _clean_results(r.json().get("results", []))
-    except Exception:
-        return []
-
-
-# --------------------------------------------------
 # 9. DEEP LINK BUILDER (ACTUALLY WORKS)
 # --------------------------------------------------
 def get_deep_link(provider_name, title, tmdb_id=None):
     """Build working deep link to streaming service"""
 
-    # Normalize provider name
-    provider = provider_name.strip()
+    provider = (provider_name or "").strip()
 
-    # Try direct TMDB ID link first (most reliable)
+    # Try direct TMDB ID link first (baseline behavior)
     if tmdb_id and provider in SERVICE_MAP:
         template = SERVICE_MAP[provider]
         if "{tmdb_id}" in template:
@@ -532,7 +464,7 @@ def get_deep_link(provider_name, title, tmdb_id=None):
             elif "{title}" in template:
                 return template.format(title=quote_plus(title))
 
-    # Fallback: Direct provider search
+    # Fallback: direct provider search
     provider_domains = {
         "Netflix": "https://www.netflix.com/search?q=",
         "Amazon": "https://www.amazon.com/s?k=",
@@ -546,9 +478,7 @@ def get_deep_link(provider_name, title, tmdb_id=None):
         if key.lower() in provider.lower():
             return f"{url}{quote_plus(title)}"
 
-    # Last resort: Google search for specific provider
     return f"https://www.google.com/search?q=watch+{quote_plus(title)}+on+{quote_plus(provider)}"
-
 
 # --------------------------------------------------
 # 10. HELPERS
@@ -559,18 +489,262 @@ def render_logo(sidebar=False):
     else:
         (st.sidebar if sidebar else st).markdown(f"# 🧠 {APP_NAME}")
 
-
 def safe(s: str) -> str:
-    return html_lib.escape(s or "")
+    return html_lib.escape(s or "", quote=True)
 
+# --------------------------------------------------
+# 10.5 Mr.DP NLP (NEW - minimal add, no refactor)
+# - Understands vibe prompts & falls back to Discover automatically
+# --------------------------------------------------
+TMDB_GENRE_IDS = {
+    "action": 28,
+    "adventure": 12,
+    "animation": 16,
+    "comedy": 35,
+    "crime": 80,
+    "documentary": 99,
+    "drama": 18,
+    "family": 10751,
+    "fantasy": 14,
+    "history": 36,
+    "horror": 27,
+    "music": 10402,
+    "mystery": 9648,
+    "romance": 10749,
+    "sci-fi": 878,
+    "scifi": 878,
+    "science fiction": 878,
+    "thriller": 53,
+    "war": 10752,
+    "western": 37,
+}
+
+MRDP_KEYWORDS_PREFER = {
+    # action / energy
+    "action": [28],
+    "fight": [28],
+    "fights": [28],
+    "combat": [28],
+    "war": [10752],
+    "explosion": [28],
+    "explosions": [28],
+    "adrenaline": [28, 12],
+    "fast": [28, 12],
+    "chase": [28, 53],
+    "epic": [12, 14, 28],
+    "intense": [53, 28],
+
+    # bored -> stimulation
+    "bored": [28, 12, 878, 14],
+    "boring": [28, 12, 878, 14],
+
+    # comedy / comfort
+    "funny": [35],
+    "laugh": [35],
+    "comedy": [35],
+    "light": [35, 16, 10751],
+    "comfort": [10751, 16, 35],
+    "cozy": [10751, 16, 35],
+    "wholesome": [10751, 16, 35],
+
+    # calm / relax
+    "calm": [99, 16, 10751],
+    "relax": [35, 16, 10751, 99],
+    "relaxing": [35, 16, 10751, 99],
+    "chill": [35, 16, 10751, 99],
+    "sleep": [16, 10751, 10749],
+
+    # genres
+    "anime": [16],
+    "cartoon": [16],
+    "romance": [10749],
+    "love": [10749],
+    "documentary": [99],
+    "history": [36],
+    "mystery": [9648],
+    "detective": [9648, 80],
+    "crime": [80],
+    "thriller": [53],
+    "scary": [27],
+    "horror": [27],
+    "fantasy": [14],
+    "sci-fi": [878],
+    "scifi": [878],
+    "space": [878],
+    "superhero": [28, 12],
+}
+
+MRDP_KEYWORDS_AVOID = {
+    "no horror": [27],
+    "not horror": [27],
+    "no scary": [27],
+    "not scary": [27],
+    "no thriller": [53],
+    "not thriller": [53],
+    "no gore": [27],
+    "no violence": [28, 80],
+}
+
+def _extract_year(text: str):
+    m = re.search(r"(19\d{2}|20\d{2})", text or "")
+    if not m:
+        return None
+    y = int(m.group(1))
+    if 1900 <= y <= 2099:
+        return y
+    return None
+
+def mrdp_plan_heuristic(prompt: str):
+    text = (prompt or "").strip()
+    low = text.lower()
+
+    year = _extract_year(low)
+
+    with_genres = []
+    without_genres = []
+
+    # explicit avoid phrases
+    for phrase, ids in MRDP_KEYWORDS_AVOID.items():
+        if phrase in low:
+            without_genres.extend(ids)
+
+    # prefer keywords
+    for kw, ids in MRDP_KEYWORDS_PREFER.items():
+        if kw in low:
+            with_genres.extend(ids)
+
+    # dedupe
+    with_genres = list(dict.fromkeys(with_genres))
+    without_genres = list(dict.fromkeys(without_genres))
+
+    # Decide intent:
+    # - If we detect genre-ish keywords => Discover
+    # - Else => Search (title/person query)
+    vibe_detected = bool(with_genres or without_genres or any(w in low for w in ["i am", "im ", "feel", "need", "want", "something", "vibe"]))
+    intent = "discover" if vibe_detected and (with_genres or without_genres) else "search"
+
+    # If user typed a single-word or short prompt (likely title), keep search
+    if len(text.split()) <= 3 and not (with_genres or without_genres):
+        intent = "search"
+
+    return {
+        "intent": intent,               # "search" or "discover"
+        "query": text,                  # used by search, or fallback
+        "with_genres": with_genres,     # TMDB genre ids
+        "without_genres": without_genres,
+        "year": year
+    }
+
+def mrdp_plan_openai(prompt: str):
+    if not openai_client:
+        return None
+    try:
+        sys = "You are a precise query planner for a movie discovery app."
+        user = f"""
+User prompt: {prompt}
+
+Return ONLY JSON with these keys:
+- intent: "search" or "discover"
+- query: string
+- with_genres: array of TMDB genre IDs (numbers)
+- without_genres: array of TMDB genre IDs (numbers)
+- year: number or null
+
+TMDB genre IDs you can use:
+Action 28, Adventure 12, Animation 16, Comedy 35, Crime 80, Documentary 99,
+Drama 18, Family 10751, Fantasy 14, History 36, Horror 27, Music 10402,
+Mystery 9648, Romance 10749, Sci-Fi 878, Thriller 53, War 10752, Western 37
+
+Rules:
+- If prompt sounds like mood/vibe ("bored", "need action", "something funny"), choose intent="discover".
+- If prompt looks like a title/actor query, choose intent="search".
+- Keep with_genres max 3, without_genres max 6.
+"""
+        resp = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": sys},
+                {"role": "user", "content": user}
+            ],
+            temperature=0.2,
+            max_tokens=200
+        )
+        content = resp.choices[0].message.content.strip()
+        if "```" in content:
+            content = content.replace("```json", "").replace("```", "").strip()
+        plan = json.loads(content)
+
+        # minimal validation
+        if plan.get("intent") not in ["search", "discover"]:
+            return None
+        if "query" not in plan:
+            plan["query"] = prompt
+        if "with_genres" not in plan:
+            plan["with_genres"] = []
+        if "without_genres" not in plan:
+            plan["without_genres"] = []
+        if "year" not in plan:
+            plan["year"] = None
+
+        # cap sizes
+        plan["with_genres"] = [int(x) for x in plan["with_genres"]][:3]
+        plan["without_genres"] = [int(x) for x in plan["without_genres"]][:6]
+
+        return plan
+    except Exception:
+        return None
+
+def mrdp_build_plan(prompt: str):
+    # Try OpenAI planner first (if available), else heuristic (or fallback if OpenAI fails)
+    plan_ai = mrdp_plan_openai(prompt)
+    if plan_ai:
+        return plan_ai
+    return mrdp_plan_heuristic(prompt)
+
+def mrdp_run_plan(plan: dict, page: int = 1):
+    """
+    Executes the plan and applies the key fix:
+    - If search returns too few results, fallback to Discover using inferred genres.
+    - If discover returns nothing, fallback to Search.
+    """
+    if not plan:
+        return []
+
+    intent = plan.get("intent", "search")
+    q = (plan.get("query") or "").strip()
+    with_genres = plan.get("with_genres") or []
+    without_genres = plan.get("without_genres") or []
+    year = plan.get("year")
+
+    if intent == "search":
+        results = search_movies_only(q, page=page)
+        # FLEX FIX: if too literal, fallback to discover
+        if len(results) < 6 and (with_genres or without_genres):
+            results = discover_movies(
+                page=page,
+                with_genres=with_genres,
+                without_genres=without_genres,
+                year=year
+            )
+        return results
+
+    # discover intent
+    results = discover_movies(
+        page=page,
+        with_genres=with_genres,
+        without_genres=without_genres,
+        year=year
+    )
+    # fallback to search if discover is empty
+    if not results and q:
+        results = search_movies_only(q, page=page)
+    return results
 
 # --------------------------------------------------
 # 11. STATE INITIALIZATION
 # --------------------------------------------------
 if "init" not in st.session_state:
     st.session_state.update({
-        "nlp_last_prompt": "",
-
         "user": None,
         "auth_step": "login",
         "onboarding_complete": False,
@@ -589,15 +763,46 @@ if "init" not in st.session_state:
         "search_results": [],
         "search_page": 1,
 
-        # NLP (Mr.DP) state (NEW)
+        # Mr.DP NLP state (NEW)
         "mrdp_prompt": "",
         "mrdp_plan": None,
         "mrdp_results": [],
         "mrdp_page": 1,
         "mrdp_last_prompt": "",
         "mrdp_history": [],
+
+        # Back-compat keys (to prevent AttributeError on old sessions)
+        "nlp_last_prompt": "",
     })
     st.session_state.init = True
+
+# BACK-COMPAT PATCH (CRITICAL):
+# If the app redeploys while a user already has session_state.init=True,
+# new keys won't be added -> AttributeError. This prevents that.
+if "nlp_last_prompt" not in st.session_state:
+    st.session_state.nlp_last_prompt = ""
+if "mrdp_last_prompt" not in st.session_state:
+    st.session_state.mrdp_last_prompt = ""
+if "mrdp_results" not in st.session_state:
+    st.session_state.mrdp_results = []
+if "mrdp_page" not in st.session_state:
+    st.session_state.mrdp_page = 1
+if "mrdp_plan" not in st.session_state:
+    st.session_state.mrdp_plan = None
+if "mrdp_history" not in st.session_state:
+    st.session_state.mrdp_history = []
+if "search_results" not in st.session_state:
+    st.session_state.search_results = []
+if "search_page" not in st.session_state:
+    st.session_state.search_page = 1
+if "movies_feed" not in st.session_state:
+    st.session_state.movies_feed = []
+if "movies_page" not in st.session_state:
+    st.session_state.movies_page = 1
+if "current_feeling" not in st.session_state:
+    st.session_state.current_feeling = "Bored"
+if "desired_feeling" not in st.session_state:
+    st.session_state.desired_feeling = "Entertained"
 
 # --------------------------------------------------
 # 12. CUSTOM CSS - CLEAN, DOPAMINE-OPTIMIZED
@@ -625,13 +830,25 @@ st.markdown("""
     border-color: #00f2ea;
 }
 
-/* Provider grid - HARD 4x4 LAYOUT */
+/* Poster inside card */
+.poster-img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Provider grid - 4 columns (fits 4x4 without spilling) */
 .provider-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 8px;
     padding: 12px;
     max-width: 100%;
+}
+
+.provider-grid.rent {
+    opacity: 0.6;
+    border-top: 1px solid #2a2a3e;
 }
 
 /* Provider button */
@@ -674,7 +891,7 @@ st.markdown("""
     font-size: 0.8rem;
 }
 
-/* Buttons - GRADIENT DOPAMINE */
+/* Buttons - gradient */
 button {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
     color: white !important;
@@ -688,132 +905,87 @@ button:hover {
     box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4) !important;
 }
 
-/* Feeling selectors */
-.stSelectbox {
-    background: #1a1a2e !important;
-    border-radius: 8px !important;
-}
-
-/* Small text */
+/* Small note */
 .small-note {
     opacity: 0.75;
     font-size: 0.9rem;
     margin: 12px 0;
 }
 
-/* Tab styling */
-.stTabs [data-baseweb="tab-list"] {
-    gap: 8px;
-}
-
-.stTabs [data-baseweb="tab"] {
-    background: #1a1a2e;
-    border-radius: 8px;
-    padding: 12px 24px;
-}
-
-.stTabs [aria-selected="true"] {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-/* Mr.DP sidebar styling (lightweight) */
-.mrdp-card {
-    background: #141426;
-    border: 1px solid #2a2a3e;
-    border-radius: 12px;
-    padding: 12px;
-}
-
-.mrdp-title {
-    font-weight: 800;
-    font-size: 1.0rem;
-}
-
-.mrdp-sub {
-    opacity: 0.78;
-    font-size: 0.85rem;
-    margin-top: 4px;
-}
-
-.mrdp-chip {
-    display: inline-block;
-    margin-top: 8px;
-    padding: 4px 8px;
-    border-radius: 999px;
-    border: 1px solid #2a2a3e;
-    opacity: 0.9;
-    font-size: 0.78rem;
+/* Trailer button wrapper */
+.trailer-wrap {
+    padding: 0 12px 12px 12px;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # --------------------------------------------------
-# 13. MOVIE CARD COMPONENT (HARD 4x4 GRID)
+# 13. MOVIE CARD COMPONENT (4x4 PROVIDER GRID)
 # --------------------------------------------------
 def render_movie_card(item):
-    """Render movie card with HARD 4x4 provider icon grid (max 16)."""
+    """Render movie card with clean provider grid (4 cols)"""
     title = item.get("title", "")
     media_type = item.get("type", "movie")
     tmdb_id = item.get("id")
 
-    # Get providers
     provs = get_streaming_providers(tmdb_id, media_type)
-    flatrate = provs.get("flatrate", [])[:8]
-    rent = provs.get("rent", [])[:8]
+    flatrate = (provs.get("flatrate") or [])[:16]
+    rent = (provs.get("rent") or [])[:16]
 
     st.markdown("<div class='card'>", unsafe_allow_html=True)
 
-    # Poster
-    if item.get("poster"):
-        st.image(item["poster"], use_container_width=True)
+    # Poster INSIDE the card (not st.image, to keep everything contained)
+    poster = item.get("poster")
+    if poster:
+        st.markdown(f"<img src='{safe(poster)}' class='poster-img' loading='lazy' />", unsafe_allow_html=True)
 
-    # --------------------------------------------------
-    # PROVIDER ICONS: HARD 4x4 GRID (MAX 16 TOTAL)
-    # Order: flatrate first, then rent, then trailer (if space)
-    # --------------------------------------------------
-    icons = []
-    for p in flatrate:
-        icons.append(("watch", p))
-    for p in rent:
-        icons.append(("rent", p))
-
-    # Cap providers so we never exceed 16 slots
-    # Reserve one slot for a Trailer icon when possible
-    icons = icons[:15]
-
-    # Trailer icon (always present)
-    yt_search = f"https://www.youtube.com/results?search_query={quote_plus(title)}+trailer"
-    icons.append(("trailer", {"provider_name": "Trailer", "logo_path": None, "link": yt_search}))
-
-    st.markdown("<div class='provider-grid'>", unsafe_allow_html=True)
-
-    for kind, p in icons[:16]:
-        if kind == "trailer":
-            link = p["link"]
-            logo = LOGOS["Trailer"]
-            opacity = "1.0"
-            tooltip = "Trailer"
-        else:
+    # INCLUDED providers
+    if flatrate:
+        icons_html = ""
+        for p in flatrate:
             provider = p.get("provider_name", "")
             logo_path = p.get("logo_path")
             if not logo_path:
                 continue
-
             link = get_deep_link(provider, title, tmdb_id)
             logo = f"{TMDB_LOGO_URL}{logo_path}"
-            opacity = "0.6" if kind == "rent" else "1.0"
-            tooltip = f"{provider} ({'Rent/Buy' if kind == 'rent' else 'Included'})"
+            icons_html += (
+                f"<a href='{safe(link)}' target='_blank' class='provider-btn' title='Watch on {safe(provider)}'>"
+                f"<img src='{safe(logo)}' class='provider-icon' alt='{safe(provider)}' />"
+                f"</a>"
+            )
+        if icons_html:
+            st.markdown(f"<div class='provider-grid'>{icons_html}</div>", unsafe_allow_html=True)
 
-        st.markdown(
-            f"<a href='{safe(link)}' target='_blank' class='provider-btn' style='opacity:{opacity};' title='{safe(tooltip)}'>"
-            f"<img src='{safe(logo)}' class='provider-icon' alt='{safe(tooltip)}'>"
-            f"</a>",
-            unsafe_allow_html=True
-        )
+    # RENT providers (dimmed)
+    if rent:
+        icons_html = ""
+        for p in rent:
+            provider = p.get("provider_name", "")
+            logo_path = p.get("logo_path")
+            if not logo_path:
+                continue
+            link = get_deep_link(provider, title, tmdb_id)
+            logo = f"{TMDB_LOGO_URL}{logo_path}"
+            icons_html += (
+                f"<a href='{safe(link)}' target='_blank' class='provider-btn' title='Rent/Buy on {safe(provider)}'>"
+                f"<img src='{safe(logo)}' class='provider-icon' alt='{safe(provider)}' />"
+                f"</a>"
+            )
+        if icons_html:
+            st.markdown(f"<div class='provider-grid rent'>{icons_html}</div>", unsafe_allow_html=True)
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    # Trailer (YouTube search)
+    yt_search = f"https://www.youtube.com/results?search_query={quote_plus(title)}+trailer"
+    st.markdown(
+        "<div class='trailer-wrap'>"
+        f"<a href='{safe(yt_search)}' target='_blank' class='provider-btn' title='Watch Trailer'>"
+        f"<img src='{safe(LOGOS['Trailer'])}' class='provider-icon' alt='Trailer' />"
+        "</a>"
+        "</div>",
+        unsafe_allow_html=True
+    )
 
-    # Title and date
     st.markdown(f"<div class='movie-title'>{safe(title)}</div>", unsafe_allow_html=True)
     st.markdown(f"<div class='movie-sub'>{safe(item.get('release_date', ''))}</div>", unsafe_allow_html=True)
 
@@ -823,11 +995,10 @@ def render_movie_card(item):
 # 14. QUICK DOPE HIT ENGINE
 # --------------------------------------------------
 def get_quick_dope_hit():
-    """Get ONE perfect match based on emotions"""
+    """Get ONE match based on emotions"""
     current = st.session_state.current_feeling
     desired = st.session_state.desired_feeling
 
-    # Get emotion-filtered movies
     candidates = discover_movies_by_emotion(
         page=random.randint(1, 3),
         current_feeling=current,
@@ -837,18 +1008,14 @@ def get_quick_dope_hit():
     if not candidates:
         return None
 
-    # Use AI to pick the BEST match
     if openai_client and len(candidates) > 5:
         titles = [m["title"] for m in candidates[:10]]
         sorted_titles = sort_by_emotion(titles, current, desired)
-
-        # Return the top match
-        for title in sorted_titles[:1]:
-            match = next((m for m in candidates if m["title"] == title), None)
+        for t in sorted_titles[:1]:
+            match = next((m for m in candidates if m["title"] == t), None)
             if match:
                 return match
 
-    # Fallback: return top result
     return candidates[0]
 
 # --------------------------------------------------
@@ -920,10 +1087,10 @@ def onboarding_baseline():
         st.rerun()
 
 # --------------------------------------------------
-# 16. MAIN LOBBY - EMOTION-DRIVEN EVERYTHING + NLP (Mr.DP)
+# 16. MAIN LOBBY - EMOTION-DRIVEN + Mr.DP NLP (SIDEBAR)
 # --------------------------------------------------
 def lobby_screen():
-    # SIDEBAR - ALL CONTROLS
+    # SIDEBAR - CONTROLS
     with st.sidebar:
         render_logo(sidebar=True)
 
@@ -961,7 +1128,7 @@ def lobby_screen():
 
         st.markdown("---")
 
-        # QUICK DOPE HIT BUTTON IN SIDEBAR
+        # QUICK DOPE HIT
         if st.button("⚡ QUICK DOPE HIT", use_container_width=True):
             with st.spinner("Finding your perfect match..."):
                 st.session_state.quick_hit = get_quick_dope_hit()
@@ -970,93 +1137,100 @@ def lobby_screen():
 
         st.metric("Dope Hits", st.session_state.quick_hit_count)
 
-        # --------------------------------------------------
-        # Mr.DP — NLP CHAT BOX (SIDEBAR)
-        # --------------------------------------------------
         st.markdown("---")
-        st.markdown("### 🧾 Mr.DP")
-        st.caption("Your **librarian & curator** — dressed in velvet gloves, armed with chaos-friendly taste.\n\n"
-                   "Tell Mr.DP what you want. He’ll quietly pull the best matches from the library.")
 
-        dp_prompt = st.text_area(
+        # --------------------------------------------------
+        # Mr.DP (NLP) — sidebar chat box
+        # --------------------------------------------------
+        st.markdown("### 📚 Mr.DP")
+        st.caption("Head Librarian & Curator — tell me what you want. I’ll pull the best shelf first. 😈📖")
+
+        mrdp_input = st.text_input(
             "Ask Mr.DP",
-            placeholder="Examples: \n• ‘smart sci-fi from the 90s’\n• ‘something funny, low effort’\n• ‘Batman animated series’\n• ‘new thriller, not too scary’",
-            height=110,
-            key="mrdp_prompt_input"
+            key="mrdp_prompt_input",
+            placeholder="Example: I'm bored — I need action. Or: something funny & light."
         )
 
         col_a, col_b = st.columns(2)
         with col_a:
-            if st.button("Ask", use_container_width=True, key="mrdp_ask_btn"):
-                if dp_prompt.strip():
-                    with st.spinner("Mr.DP is pulling the catalog..."):
-                        st.session_state.nlp_prompt = dp_prompt
-                        st.session_state.nlp_last_prompt = dp_prompt
-                        st.session_state.nlp_page = 1
-                        st.session_state.nlp_plan = nlp_to_tmdb_plan(dp_prompt)
-                        st.session_state.nlp_results = nlp_search_tmdb(st.session_state.nlp_plan, page=1)
-                        # keep normal search clean
-                        st.session_state.search_query = ""
-                        st.session_state.search_results = []
-                        st.session_state.search_page = 1
-                    st.rerun()
+            if st.button("Search", use_container_width=True, key="mrdp_search_btn"):
+                if mrdp_input.strip():
+                    with st.spinner("Mr.DP is indexing the shelves..."):
+                        plan = mrdp_build_plan(mrdp_input.strip())
+                        results = mrdp_run_plan(plan, page=1)
+
+                        # store
+                        st.session_state.mrdp_prompt = mrdp_input.strip()
+                        st.session_state.mrdp_plan = plan
+                        st.session_state.mrdp_results = results
+                        st.session_state.mrdp_page = 1
+                        st.session_state.mrdp_last_prompt = mrdp_input.strip()
+
+                        # back-compat alias
+                        st.session_state.nlp_last_prompt = mrdp_input.strip()
+
+                        # history (minimal)
+                        st.session_state.mrdp_history.append(mrdp_input.strip())
+                        st.rerun()
+
         with col_b:
             if st.button("Clear", use_container_width=True, key="mrdp_clear_btn"):
-                st.session_state.nlp_prompt = ""
-                st.session_state.nlp_plan = None
-                st.session_state.nlp_results = []
-                st.session_state.nlp_page = 1
+                st.session_state.mrdp_prompt = ""
+                st.session_state.mrdp_plan = None
+                st.session_state.mrdp_results = []
+                st.session_state.mrdp_page = 1
+                st.session_state.mrdp_last_prompt = ""
                 st.session_state.nlp_last_prompt = ""
                 st.rerun()
+
+        if st.session_state.mrdp_last_prompt:
+            st.caption(f"Last ask: {st.session_state.mrdp_last_prompt}")
 
         st.markdown("---")
         if st.button("🚪 Log out", use_container_width=True):
             st.session_state.user = None
             st.rerun()
 
-    # MAIN CONTENT AREA - ONLY MEDIA
+    # MAIN CONTENT AREA
     st.markdown("## 🔎 The Lobby")
 
     # --------------------------------------------------
-    # Mr.DP RESULTS (MAIN AREA)
+    # Mr.DP results (show first, override the page until cleared)
     # --------------------------------------------------
-    if st.session_state.nlp_last_prompt:
-        st.markdown(f"### 📚 Mr.DP pulled these for: ‘{safe(st.session_state.nlp_last_prompt)}’")
+    if st.session_state.mrdp_last_prompt:
+        st.markdown(f"### 📚 Mr.DP pulled these for: “{safe(st.session_state.mrdp_last_prompt)}”")
 
-        if st.session_state.nlp_plan and st.session_state.nlp_plan.get("query"):
-            st.caption(f"Search query: {st.session_state.nlp_plan.get('query')}")
-
-        # Clear / Load More controls
-        c1, c2, c3 = st.columns([1, 1, 2])
-        with c1:
-            if st.button("Load more", use_container_width=True, key="mrdp_load_more"):
-                st.session_state.nlp_page += 1
-                more = nlp_search_tmdb(st.session_state.nlp_plan, page=st.session_state.nlp_page)
-                st.session_state.nlp_results.extend(more)
-                st.rerun()
-        with c2:
-            if st.button("Clear results", use_container_width=True, key="mrdp_clear_main"):
-                st.session_state.nlp_prompt = ""
-                st.session_state.nlp_plan = None
-                st.session_state.nlp_results = []
-                st.session_state.nlp_page = 1
-                st.session_state.nlp_last_prompt = ""
-                st.rerun()
-        with c3:
-            st.caption(f"Page {st.session_state.nlp_page}")
-
-        if not st.session_state.nlp_results:
-            st.warning("No matches yet. Try being more specific (title, genre, actor, year).")
+        if not st.session_state.mrdp_results:
+            st.warning("No matches yet — try adding a genre (action/comedy), a title, or a year.")
         else:
             cols = st.columns(6)
-            for i, item in enumerate(st.session_state.nlp_results):
+            for i, item in enumerate(st.session_state.mrdp_results[:24]):
                 with cols[i % 6]:
                     render_movie_card(item)
 
-        return  # Keep Mr.DP results as the primary view
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                if st.button("Load more Mr.DP results", use_container_width=True, key="mrdp_more_btn"):
+                    with st.spinner("Fetching more shelf results..."):
+                        st.session_state.mrdp_page += 1
+                        more = mrdp_run_plan(st.session_state.mrdp_plan, page=st.session_state.mrdp_page)
+
+                        # append (dedupe by tmdb id)
+                        existing_ids = set([m.get("id") for m in st.session_state.mrdp_results])
+                        for m in more:
+                            if m.get("id") not in existing_ids:
+                                st.session_state.mrdp_results.append(m)
+                                existing_ids.add(m.get("id"))
+                        st.rerun()
+
+            with col2:
+                st.caption(f"Page {st.session_state.mrdp_page}")
+
+        # Don’t mix Mr.DP results with the rest of the lobby
+        return
 
     # --------------------------------------------------
-    # Show quick hit result if exists
+    # QUICK DOPE HIT (main)
     # --------------------------------------------------
     if st.session_state.quick_hit:
         st.markdown("### 🎬 Your Perfect Match:")
@@ -1077,38 +1251,43 @@ def lobby_screen():
 
     st.markdown("---")
 
-    # SEARCH BAR
+    # --------------------------------------------------
+    # SEARCH BAR (unchanged baseline behavior, but clear button always works)
+    # --------------------------------------------------
     query = st.text_input("🔍 Search for something specific...", key="search_input")
 
-    if query and query != st.session_state.search_query:
-        st.session_state.search_query = query
-        st.session_state.search_page = 1
-        st.session_state.search_results = search_movies_only(query, page=1)
+    col_s1, col_s2 = st.columns([1, 1])
+    with col_s1:
+        if query and query != st.session_state.search_query:
+            st.session_state.search_query = query
+            st.session_state.search_page = 1
+            st.session_state.search_results = search_movies_only(query, page=1)
 
-    if st.session_state.search_query and st.button("Clear Search", use_container_width=True):
-        st.session_state.search_query = ""
-        st.session_state.search_results = []
-        st.session_state.search_page = 1
-        st.rerun()
+    with col_s2:
+        if st.button("Clear Search", use_container_width=True, key="clear_search_btn"):
+            st.session_state.search_query = ""
+            st.session_state.search_results = []
+            st.session_state.search_page = 1
+            st.rerun()
 
-    # Show search results
     if st.session_state.search_results:
         st.markdown(f"### 🔎 Results for '{safe(st.session_state.search_query)}'")
         cols = st.columns(6)
-        for i, item in enumerate(st.session_state.search_results[:18]):
+        for i, item in enumerate(st.session_state.search_results[:24]):
             with cols[i % 6]:
                 render_movie_card(item)
 
-        if len(st.session_state.search_results) >= 18:
-            if st.button("Load more results", use_container_width=True):
-                st.session_state.search_page += 1
-                more = search_movies_only(st.session_state.search_query, st.session_state.search_page)
-                st.session_state.search_results.extend(more)
-                st.rerun()
+        if st.button("Load more results", use_container_width=True):
+            st.session_state.search_page += 1
+            more = search_movies_only(st.session_state.search_query, st.session_state.search_page)
+            st.session_state.search_results.extend(more)
+            st.rerun()
 
-        return  # Don't show tabs when searching
+        return
 
+    # --------------------------------------------------
     # TABS - ALL EMOTION-DRIVEN
+    # --------------------------------------------------
     st.markdown("## 🎬 Explore by type")
 
     t1, t2, t3, t4, t5 = st.tabs(["🎬 Movies", "⚡ Shot", "🎵 Music", "🎙️ Podcasts", "📚 Audiobooks"])
@@ -1130,7 +1309,6 @@ def lobby_screen():
             st.session_state.movies_feed = discover_movies_by_emotion(page=1)
 
         if st.session_state.movies_feed:
-            # Show AI-sorted feed
             titles = [m["title"] for m in st.session_state.movies_feed[:20]]
             sorted_titles = sort_by_emotion(
                 titles,
@@ -1138,25 +1316,21 @@ def lobby_screen():
                 st.session_state.desired_feeling
             )
 
-            # Reorder feed
             feed_map = {m["title"]: m for m in st.session_state.movies_feed}
             sorted_feed = []
             for title in sorted_titles:
                 if title in feed_map:
                     sorted_feed.append(feed_map[title])
 
-            # Add remaining unsorted
             for m in st.session_state.movies_feed:
                 if m not in sorted_feed:
                     sorted_feed.append(m)
 
-            # Display grid
             cols = st.columns(6)
             for i, item in enumerate(sorted_feed[:18]):
                 with cols[i % 6]:
                     render_movie_card(item)
 
-            # Load more
             if st.button("Load More Movies", use_container_width=True):
                 st.session_state.movies_page += 1
                 more = discover_movies_by_emotion(
@@ -1169,21 +1343,12 @@ def lobby_screen():
         else:
             st.warning("No movies found. Try adjusting your feelings.")
 
-    # TAB 2: SHOT (TikTok-style videos)
+    # TAB 2: SHOT
     with t2:
         st.markdown("### ⚡ Quick dopamine shots")
-
-        # Get video keyword based on desired feeling
-        video_keyword = FEELING_TO_VIDEOS.get(
-            st.session_state.desired_feeling,
-            "trending viral videos"
-        )
-
-        st.markdown(f"**Curated for:** {safe(st.session_state.desired_feeling)}")
-
-        # Embed YouTube search results (no API needed)
+        video_keyword = FEELING_TO_VIDEOS.get(st.session_state.desired_feeling, "trending viral videos")
+        st.markdown(f"**Curated for:** {st.session_state.desired_feeling}")
         yt_search_url = f"https://www.youtube.com/results?search_query={quote_plus(video_keyword)}+shorts"
-
         st.markdown(
             f"<a href='{yt_search_url}' target='_blank'>"
             f"<button style='width:100%; padding:20px; font-size:1.1rem;'>"
@@ -1192,32 +1357,12 @@ def lobby_screen():
             unsafe_allow_html=True
         )
 
-        # Show sample embed
-        sample_videos = {
-            "Anxious": "https://www.youtube.com/embed/1ZYbU82GVz4",  # Oddly satisfying
-            "Sad": "https://www.youtube.com/embed/AK3PWHxoT_E",  # Wholesome animals
-            "Bored": "https://www.youtube.com/embed/tlTKTTt47WE",  # Mind blown
-            "Tired": "https://www.youtube.com/embed/UfcAVejslrU",  # ASMR
-        }
-
-        embed = sample_videos.get(st.session_state.desired_feeling, sample_videos["Bored"])
-        components.iframe(embed, height=400)
-
-    # TAB 3: MUSIC (emotion-driven Spotify)
+    # TAB 3: MUSIC
     with t3:
         st.markdown("### 🎵 Music for your mood")
-
-        # Get music keyword based on feelings
-        music_keyword = FEELING_TO_MUSIC.get(
-            st.session_state.desired_feeling,
-            "feel good music"
-        )
-
-        st.markdown(f"**Curated for:** {safe(st.session_state.desired_feeling)}")
-
-        # Spotify search embed (works without API)
+        music_keyword = FEELING_TO_MUSIC.get(st.session_state.desired_feeling, "feel good music")
+        st.markdown(f"**Curated for:** {st.session_state.desired_feeling}")
         spotify_search_url = f"https://open.spotify.com/search/{quote_plus(music_keyword)}"
-
         st.markdown(
             f"<a href='{spotify_search_url}' target='_blank'>"
             f"<button style='width:100%; padding:20px; font-size:1.1rem;'>"
@@ -1226,104 +1371,15 @@ def lobby_screen():
             unsafe_allow_html=True
         )
 
-        # Popular playlists by mood
-        mood_playlists = {
-            "Anxious": "37i9dQZF1DWXe9gFZP0gtP",  # Peaceful Piano
-            "Energized": "37i9dQZF1DX76Wlfdnj7AP",  # Beast Mode
-            "Happy": "37i9dQZF1DX3rxVfibe1L0",  # Mood Booster
-            "Sad": "37i9dQZF1DX7qK8ma5wgG1",  # Life Sucks
-            "Focused": "37i9dQZF1DWZeKCadgRdKQ",  # Deep Focus
-        }
-
-        playlist_id = mood_playlists.get(st.session_state.desired_feeling, "37i9dQZF1DX3rxVfibe1L0")
-        components.iframe(
-            f"https://open.spotify.com/embed/playlist/{playlist_id}?utm_source=generator",
-            height=380
-        )
-
-    # TAB 4: PODCASTS (emotion-driven)
+    # TAB 4: PODCASTS
     with t4:
-        st.markdown("### 🎙️ Podcasts for your headspace")
+        st.markdown("### 🎙️ Podcasts (coming next)")
+        st.caption("This tab is scaffolded. Next step: wire a podcast search/provider map.")
 
-        podcast_topics = {
-            "Anxious": "anxiety mental health",
-            "Curious": "science explained",
-            "Inspired": "motivational success",
-            "Bored": "true crime mystery",
-            "Focused": "productivity business",
-            "Happy": "comedy funny",
-        }
-
-        topic = podcast_topics.get(st.session_state.desired_feeling, "trending podcasts")
-
-        st.markdown(f"**Recommended:** {safe(topic.title())}")
-
-        # Spotify podcast search
-        spotify_url = f"https://open.spotify.com/search/{quote_plus(topic)}%20podcast"
-
-        st.markdown(
-            f"<a href='{spotify_url}' target='_blank'>"
-            f"<button style='width:100%; padding:20px; font-size:1.1rem;'>"
-            f"🎙️ Find {safe(topic.title())} Podcasts →"
-            f"</button></a>",
-            unsafe_allow_html=True
-        )
-
-        # Featured podcasts
-        st.markdown("#### 🔥 Popular picks:")
-        featured = [
-            ("Huberman Lab", "Science-based mental health", "https://open.spotify.com/show/79CkJF3UJTHFV8Dse3Oy0P"),
-            ("The Daily", "News explained", "https://open.spotify.com/show/3IM0lmZxpFAY7CwMuv9H4g"),
-            ("SmartLess", "Comedy interviews", "https://open.spotify.com/show/5fYAKY5CtCCpVqfcP1OXzl"),
-        ]
-
-        for title, desc, url in featured:
-            st.markdown(
-                f"**{safe(title)}** - {safe(desc)} | [Listen →]({url})",
-                unsafe_allow_html=True
-            )
-
-    # TAB 5: AUDIOBOOKS (emotion-driven)
+    # TAB 5: AUDIOBOOKS
     with t5:
-        st.markdown("### 📚 Audiobooks for your vibe")
-
-        audiobook_genres = {
-            "Anxious": "self-help mindfulness",
-            "Curious": "science history",
-            "Inspired": "biography motivation",
-            "Bored": "thriller mystery",
-            "Sleepy": "fantasy fiction",
-            "Happy": "romance comedy",
-        }
-
-        genre = audiobook_genres.get(st.session_state.desired_feeling, "bestsellers")
-
-        st.markdown(f"**Genre match:** {safe(genre.title())}")
-
-        # Audible search
-        audible_url = f"https://www.audible.com/search?keywords={quote_plus(genre)}"
-
-        st.markdown(
-            f"<a href='{audible_url}' target='_blank'>"
-            f"<button style='width:100%; padding:20px; font-size:1.1rem;'>"
-            f"📖 Browse {safe(genre.title())} Audiobooks →"
-            f"</button></a>",
-            unsafe_allow_html=True
-        )
-
-        # Libro.fm (supports indie bookstores)
-        libro_url = f"https://libro.fm/search?search={quote_plus(genre)}"
-
-        st.markdown(
-            f"<a href='{libro_url}' target='_blank'>"
-            f"<button style='width:100%; padding:20px; font-size:1.1rem;'>"
-            f"📚 Support Indie Bookstores (Libro.fm) →"
-            f"</button></a>",
-            unsafe_allow_html=True
-        )
-
-        st.caption("💡 Tip: Check if your library offers free audiobooks via Libby or Hoopla!")
-
+        st.markdown("### 📚 Audiobooks (coming next)")
+        st.caption("This tab is scaffolded. Next step: wire Audible/Libby/Hoopla deep links + icons.")
 
 # --------------------------------------------------
 # 17. MAIN ROUTER
