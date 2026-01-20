@@ -582,6 +582,36 @@ def get_movie_deep_link(provider_name, title):
             return template.format(title=safe_title)
     return None
 
+def get_movie_trailer(tmdb_id, media_type="movie"):
+    """Fetch YouTube trailer key from TMDB."""
+    api_key = get_tmdb_key()
+    if not api_key or not tmdb_id:
+        return None
+    try:
+        r = requests.get(
+            f"{TMDB_BASE_URL}/{media_type}/{tmdb_id}/videos",
+            params={"api_key": api_key},
+            timeout=8
+        )
+        r.raise_for_status()
+        videos = r.json().get("results", [])
+        # Prioritize: Official Trailer > Trailer > Teaser
+        for video in videos:
+            if video.get("site") == "YouTube" and video.get("type") == "Trailer" and "official" in video.get("name", "").lower():
+                return video.get("key")
+        for video in videos:
+            if video.get("site") == "YouTube" and video.get("type") == "Trailer":
+                return video.get("key")
+        for video in videos:
+            if video.get("site") == "YouTube" and video.get("type") == "Teaser":
+                return video.get("key")
+        for video in videos:
+            if video.get("site") == "YouTube":
+                return video.get("key")
+        return None
+    except:
+        return None
+
 # --------------------------------------------------
 # 9. MR.DP - CONVERSATIONAL AI CURATOR 🧾
 # --------------------------------------------------
@@ -2142,14 +2172,63 @@ def render_hero(movie):
     overview = movie.get("overview", "")
     year = movie.get("release_date", "")[:4]
     rating = movie.get("vote_average", 0)
+    tmdb_id = movie.get("id")
+    media_type = movie.get("media_type", "movie")
+    
+    # Try to get trailer
+    trailer_key = get_movie_trailer(tmdb_id, media_type) if tmdb_id else None
+    
+    # Trailer button HTML
+    trailer_btn = ""
+    if trailer_key:
+        trailer_btn = f'''
+        <a href="https://www.youtube.com/watch?v={trailer_key}" target="_blank" class="hero-trailer-btn" title="Watch Trailer">
+            <span class="hero-play-icon">▶</span>
+            <span>Watch Trailer</span>
+        </a>
+        '''
     
     st.markdown(f"""
+    <style>
+    .hero-trailer-btn {{
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 16px;
+        padding: 12px 24px;
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.9), rgba(6, 182, 212, 0.9));
+        border-radius: 30px;
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+    }}
+    .hero-trailer-btn:hover {{
+        transform: scale(1.05);
+        box-shadow: 0 6px 30px rgba(139, 92, 246, 0.6);
+    }}
+    .hero-play-icon {{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        background: white;
+        border-radius: 50%;
+        color: #8b5cf6;
+        font-size: 0.9rem;
+        padding-left: 3px;
+    }}
+    </style>
     <div class="hero-container">
         <img src="{safe(backdrop)}" class="hero-backdrop" onerror="this.style.opacity='0.3'">
         <div class="hero-content">
             <div class="hero-title">{safe(title)}</div>
             <div class="hero-meta">{year} {'• ⭐ ' + f'{rating:.1f}' if rating else ''}</div>
             <p class="hero-overview">{safe(overview)}</p>
+            {trailer_btn}
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -2785,8 +2864,9 @@ def render_main():
         desired_f = response.get("desired_feeling", "")
         genres = response.get("genres", "")
         
-        # Header with mood info
+        # Anchor for auto-scroll + Header with mood info
         st.markdown(f"""
+        <div id="mr-dp-results"></div>
         <div class="section-header" style="margin-bottom: 8px;">
             <span class="section-icon">🧠</span>
             <h2 class="section-title">Mr.DP's Picks</h2>
@@ -2796,6 +2876,20 @@ def render_main():
             {f'<span style="padding:6px 14px;background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.2);border-radius:20px;font-size:0.85rem;color:var(--text-primary);">→ {MOOD_EMOJIS.get(desired_f, "✨")} {desired_f}</span>' if desired_f else ''}
             {f'<span style="padding:6px 14px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:20px;font-size:0.85rem;color:var(--text-primary);">🎬 {genres}</span>' if genres else ''}
         </div>
+        <script>
+            // Auto-scroll to TOP of page to see results
+            setTimeout(function() {{
+                // Try multiple scroll methods for Streamlit compatibility
+                window.scrollTo({{ top: 0, behavior: 'smooth' }});
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+                // Streamlit's main container
+                var main = document.querySelector('[data-testid="stAppViewContainer"]');
+                if (main) main.scrollTop = 0;
+                var mainBlock = document.querySelector('.main');
+                if (mainBlock) mainBlock.scrollTop = 0;
+            }}, 200);
+        </script>
         """, unsafe_allow_html=True)
         
         # Movie grid
