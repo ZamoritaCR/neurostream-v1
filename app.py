@@ -582,100 +582,263 @@ def get_movie_deep_link(provider_name, title):
     return None
 
 # --------------------------------------------------
-# 9. NLP ENGINE (Mr.DP) - ENHANCED
+# 9. MR.DP - CONVERSATIONAL AI CURATOR 🧾
 # --------------------------------------------------
-def nlp_infer_feelings(prompt):
-    """Enhanced feeling detection with more keywords and smart inference"""
+MR_DP_SYSTEM_PROMPT = """You are Mr.DP (Mr. Dopamine), the world's most empathetic movie curator designed specifically for ADHD and neurodivergent brains. You understand decision fatigue, emotional dysregulation, and the need for the RIGHT content at the RIGHT time.
+
+Your personality:
+- Warm, friendly, and understanding (like a cool older sibling who loves movies)
+- You get ADHD struggles - no judgment, only support
+- You're enthusiastic about helping people find their dopamine fix
+- You use casual language, occasional emojis, but not over the top
+- You're concise (2-3 sentences max for your response)
+
+Your job:
+1. Understand what the user is feeling and what they NEED to feel
+2. Respond with empathy and explain your recommendation approach
+3. Return structured data for the app to use
+
+ALWAYS respond in this exact JSON format:
+{
+    "message": "Your friendly 1-3 sentence response to the user",
+    "current_feeling": "one of: Sad, Lonely, Anxious, Overwhelmed, Angry, Stressed, Bored, Tired, Numb, Confused, Restless, Focused, Calm, Happy, Excited, Curious (or null)",
+    "desired_feeling": "one of: Comforted, Calm, Relaxed, Focused, Energized, Stimulated, Happy, Entertained, Inspired, Grounded, Curious, Sleepy, Connected (or null)",
+    "mode": "discover or search",
+    "search_query": "specific search terms if mode is search, empty string otherwise",
+    "genres": "brief description of what kind of content you're recommending"
+}
+
+Examples:
+
+User: "I'm so bored"
+{
+    "message": "Ugh, the boredom spiral is REAL. Let me shake things up with some high-energy adventures and mind-bending sci-fi that'll actually hold your attention! 🚀",
+    "current_feeling": "Bored",
+    "desired_feeling": "Entertained",
+    "mode": "discover",
+    "search_query": "",
+    "genres": "action-adventures, sci-fi thrillers, engaging comedies"
+}
+
+User: "feeling anxious, need something calming"
+{
+    "message": "I got you. When anxiety hits, you need gentle, predictable comfort. I'm pulling up some cozy feel-good films - nothing stressful, just warm vibes. 💫",
+    "current_feeling": "Anxious",
+    "desired_feeling": "Calm",
+    "mode": "discover",
+    "search_query": "",
+    "genres": "heartwarming comedies, gentle animations, comfort films"
+}
+
+User: "Christopher Nolan movies"
+{
+    "message": "Ah, a person of culture! Nolan's mind-benders are perfect for when you want to feel intellectually stimulated. Bringing up his filmography! 🎬",
+    "current_feeling": null,
+    "desired_feeling": "Stimulated",
+    "mode": "search",
+    "search_query": "Christopher Nolan",
+    "genres": "cerebral thrillers, mind-bending sci-fi"
+}
+
+User: "sad and need comfort"
+{
+    "message": "Sending you a virtual hug first 🫂 On tough days, you deserve movies that feel like a warm blanket. I've got wholesome picks that'll lift you up gently.",
+    "current_feeling": "Sad",
+    "desired_feeling": "Comforted",
+    "mode": "discover",
+    "search_query": "",
+    "genres": "heartwarming dramas, uplifting animations, feel-good films"
+}
+
+User: "make me laugh"
+{
+    "message": "Say no more! Laughter is the best dopamine hit. Loading up comedies that'll actually make you LOL, not just exhale slightly harder 😂",
+    "current_feeling": "Bored",
+    "desired_feeling": "Entertained",
+    "mode": "discover",
+    "search_query": "",
+    "genres": "comedies, funny adventures, witty films"
+}
+
+Remember: Be genuine, warm, and helpful. You're not just finding movies - you're helping someone feel better."""
+
+def ask_mr_dp(user_prompt):
+    """
+    Full conversational AI response from Mr.DP using GPT-4.
+    Returns structured response with message, feelings, and search parameters.
+    """
+    if not user_prompt or not user_prompt.strip():
+        return None
+    
+    # Try GPT first for natural conversation
+    if openai_client:
+        try:
+            response = openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": MR_DP_SYSTEM_PROMPT},
+                    {"role": "user", "content": user_prompt}
+                ],
+                temperature=0.7,
+                max_tokens=300
+            )
+            
+            content = response.choices[0].message.content.strip()
+            
+            # Parse JSON from response
+            # Handle potential markdown code blocks
+            if "```json" in content:
+                content = content.split("```json")[1].split("```")[0].strip()
+            elif "```" in content:
+                content = content.split("```")[1].split("```")[0].strip()
+            
+            result = json.loads(content)
+            
+            # Validate and set defaults
+            result.setdefault("message", "Let me find something perfect for you!")
+            result.setdefault("current_feeling", None)
+            result.setdefault("desired_feeling", None)
+            result.setdefault("mode", "discover")
+            result.setdefault("search_query", "")
+            result.setdefault("genres", "")
+            
+            # Validate feelings are in our list
+            if result["current_feeling"] not in CURRENT_FEELINGS:
+                result["current_feeling"] = None
+            if result["desired_feeling"] not in DESIRED_FEELINGS:
+                result["desired_feeling"] = None
+            
+            return result
+            
+        except Exception as e:
+            print(f"GPT error: {e}")
+            # Fall through to heuristic
+    
+    # Fallback: Heuristic-based response
+    return heuristic_mr_dp(user_prompt)
+
+def heuristic_mr_dp(prompt):
+    """
+    Fallback heuristic when GPT is unavailable.
+    Still provides conversational responses based on keyword matching.
+    """
     t = (prompt or "").lower()
-    current, desired = None, None
     
-    # CURRENT FEELING DETECTION (expanded keywords)
-    current_map = {
-        "Bored": ["bored", "boring", "nothing to watch", "meh", "blah", "dull", "uninterested", "nothing good", "same old", "monoton"],
-        "Stressed": ["stress", "burnout", "overwhelm", "too much", "pressure", "tense", "wound up", "frazzled", "overwork"],
-        "Anxious": ["anxious", "anxiety", "panic", "nervous", "worried", "uneasy", "on edge", "jittery", "freaking out", "scared"],
-        "Sad": ["sad", "down", "depressed", "blue", "crying", "upset", "unhappy", "miserable", "low", "bummed", "heartbr", "grief"],
-        "Lonely": ["lonely", "alone", "isolated", "nobody", "no one", "by myself", "disconnected", "miss people"],
-        "Angry": ["angry", "mad", "pissed", "furious", "rage", "annoyed", "irritated", "frustrated", "aggravat"],
-        "Tired": ["tired", "exhaust", "drained", "sleepy", "fatigue", "worn out", "wiped", "no energy", "beat", "weary"],
-        "Numb": ["numb", "empty", "void", "nothing", "hollow", "dead inside", "flat", "detached"],
-        "Confused": ["confus", "lost", "uncertain", "don't know", "unsure", "unclear", "what to watch"],
-        "Restless": ["restless", "antsy", "fidget", "can't sit still", "agitated", "edgy"],
-        "Happy": ["happy", "good mood", "great day", "wonderful", "cheerful", "joyful", "feeling good"],
-        "Excited": ["excited", "pumped", "hyped", "thrilled", "stoked", "can't wait", "amped"],
-        "Calm": ["calm", "peaceful", "serene", "tranquil", "at ease", "relaxed already"],
-        "Focused": ["focused", "productive", "in the zone", "concentrating", "working"],
+    current, desired, message, mode, query, genres = None, None, "", "discover", "", ""
+    
+    # Detect current feeling
+    feeling_responses = {
+        "Bored": {
+            "keywords": ["bored", "boring", "nothing to watch", "meh", "blah", "dull"],
+            "message": "The boredom struggle is real! Let me find something that'll actually grab your attention 🎬",
+            "desired": "Entertained",
+            "genres": "action, adventure, engaging comedies"
+        },
+        "Stressed": {
+            "keywords": ["stress", "overwhelm", "too much", "burnout", "pressure"],
+            "message": "Deep breath - I've got you. Time for some gentle, relaxing vibes to help you decompress 🌿",
+            "desired": "Relaxed",
+            "genres": "calming films, light comedies, nature docs"
+        },
+        "Anxious": {
+            "keywords": ["anxious", "anxiety", "nervous", "worried", "panic", "scared"],
+            "message": "Anxiety is tough. Let me find something comforting and predictable - no jump scares, I promise 💫",
+            "desired": "Calm",
+            "genres": "feel-good movies, gentle animations, comfort films"
+        },
+        "Sad": {
+            "keywords": ["sad", "down", "depressed", "crying", "upset", "heartbr", "grief"],
+            "message": "Sending virtual hugs 🫂 I'll find something warm and uplifting to help you feel a bit better.",
+            "desired": "Comforted",
+            "genres": "heartwarming stories, uplifting dramas, wholesome films"
+        },
+        "Lonely": {
+            "keywords": ["lonely", "alone", "isolated", "miss people"],
+            "message": "Feeling lonely sucks. How about some movies with beautiful friendships and connections? ❤️",
+            "desired": "Connected",
+            "genres": "friendship stories, heartfelt dramas, romantic comedies"
+        },
+        "Angry": {
+            "keywords": ["angry", "mad", "pissed", "furious", "frustrated", "annoyed"],
+            "message": "I feel you! Sometimes you need to watch stuff blow up, or maybe something to calm that fire 🔥",
+            "desired": "Calm",
+            "genres": "action catharsis, calming films"
+        },
+        "Tired": {
+            "keywords": ["tired", "exhaust", "drained", "sleepy", "no energy", "wiped"],
+            "message": "Running on empty? I've got easy-watching picks that won't require much brainpower 😴",
+            "desired": "Relaxed",
+            "genres": "light comedies, feel-good films, easy watches"
+        },
     }
     
-    # DESIRED FEELING DETECTION (expanded keywords)
-    desired_map = {
-        "Comforted": ["comfort", "cozy", "warm", "safe", "wholesome", "soft", "soothing", "hug", "feel better", "healing"],
-        "Relaxed": ["relax", "unwind", "chill", "easy", "calm down", "de-stress", "mellow", "peaceful", "zen"],
-        "Energized": ["action", "energy", "pump", "hype", "adrenaline", "intense", "exciting", "thrilling", "wild", "rush"],
-        "Entertained": ["fun", "funny", "comedy", "laugh", "humor", "entertain", "amusing", "hilarious", "silly", "light", "enjoyable"],
-        "Inspired": ["inspir", "motivat", "uplift", "meaning", "powerful", "moving", "profound", "thought-provok"],
-        "Curious": ["curious", "learn", "discover", "documentary", "interesting", "fascinating", "intriguing", "mind-blowing", "educational"],
-        "Sleepy": ["sleep", "bed", "wind down", "night", "drowsy", "ready for bed", "knock out"],
-        "Connected": ["connect", "romance", "love", "relationship", "feel something", "emotional", "touching", "heartfelt", "romantic"],
-        "Stimulated": ["thrill", "suspense", "edge", "twist", "mind", "think", "smart", "clever", "cerebral", "mystery", "puzzle"],
-        "Happy": ["happy", "joy", "cheer", "good mood", "smile", "upbeat", "positive", "feel-good", "uplifting", "bright"],
-        "Focused": ["focus", "concentrate", "study", "work", "productive", "get stuff done", "background"],
-        "Grounded": ["grounded", "centered", "balanced", "stable", "rooted", "real"],
-        "Calm": ["calm", "peace", "tranquil", "serene", "quiet", "still", "seren"],
-    }
-    
-    # Find current feeling
-    for feeling, keywords in current_map.items():
-        if any(k in t for k in keywords):
+    # Check for feeling matches
+    for feeling, data in feeling_responses.items():
+        if any(k in t for k in data["keywords"]):
             current = feeling
+            desired = data["desired"]
+            message = data["message"]
+            genres = data["genres"]
             break
     
-    # Find desired feeling
-    for feeling, keywords in desired_map.items():
-        if any(k in t for k in keywords):
-            desired = feeling
+    # Check for desired feeling keywords
+    desire_responses = {
+        "laugh": ("Entertained", "Say no more! Comedy incoming - the good stuff that actually makes you LOL 😂", "comedies, funny films"),
+        "funny": ("Entertained", "Let's get those laughs going! I've got comedies that'll hit different 🎭", "comedies, witty films"),
+        "action": ("Energized", "Time to get that adrenaline pumping! Action-packed picks coming up 💥", "action, thrillers, adventure"),
+        "scary": ("Stimulated", "Ooh, feeling brave! Let me find some quality scares for you 👻", "horror, thrillers"),
+        "romance": ("Connected", "Aww, in the mood for love? I've got swoon-worthy picks! 💕", "romantic films, love stories"),
+        "romantic": ("Connected", "Love is in the air! Here come the butterflies 🦋", "romance, romantic comedies"),
+        "think": ("Stimulated", "Big brain time! Let me find something that'll make you go 'whoa' 🧠", "cerebral thrillers, mind-benders"),
+        "smart": ("Stimulated", "Intellectual stimulation coming right up! 🎯", "thought-provoking films, clever stories"),
+        "relax": ("Relaxed", "Chill mode activated. Easy, breezy content incoming ✨", "calming films, gentle stories"),
+        "comfort": ("Comforted", "Comfort content is my specialty! Warm blanket vibes only 🧸", "feel-good, heartwarming films"),
+        "inspired": ("Inspired", "Let's get those motivation juices flowing! 🌟", "inspiring true stories, uplifting dramas"),
+        "motivat": ("Inspired", "Ready to feel like you can conquer the world? Let's go! 💪", "motivational films, success stories"),
+    }
+    
+    for keyword, (des_feeling, des_message, des_genres) in desire_responses.items():
+        if keyword in t:
+            if not desired:
+                desired = des_feeling
+            if not message:
+                message = des_message
+            if not genres:
+                genres = des_genres
+            if not current:
+                current = "Bored"  # Default
             break
     
-    # SMART INFERENCE: If only current detected, infer desired
-    if current and not desired:
-        inference_map = {
-            "Bored": "Entertained",
-            "Stressed": "Relaxed",
-            "Anxious": "Calm",
-            "Sad": "Comforted",
-            "Lonely": "Connected",
-            "Angry": "Calm",
-            "Tired": "Energized",
-            "Numb": "Stimulated",
-            "Confused": "Curious",
-            "Restless": "Calm",
-            "Happy": "Entertained",
-            "Excited": "Energized",
-            "Calm": "Relaxed",
-            "Focused": "Focused",
-        }
-        desired = inference_map.get(current, "Entertained")
+    # Check for search mode (specific titles, actors, directors)
+    search_indicators = ["movie", "film", "show", "series", "directed by", "starring", "with", "called"]
+    names_pattern = r'\b[A-Z][a-z]+ [A-Z][a-z]+\b'  # Matches "Christopher Nolan" etc
     
-    # If no current but desired, infer current
-    if desired and not current:
-        reverse_inference = {
-            "Comforted": "Sad",
-            "Relaxed": "Stressed",
-            "Calm": "Anxious",
-            "Energized": "Tired",
-            "Entertained": "Bored",
-            "Stimulated": "Numb",
-            "Connected": "Lonely",
-            "Curious": "Bored",
-            "Inspired": "Numb",
-            "Happy": "Sad",
-            "Focused": "Confused",
-            "Grounded": "Anxious",
-            "Sleepy": "Tired",
-        }
-        current = reverse_inference.get(desired, "Bored")
+    import re
+    names = re.findall(names_pattern, prompt)
     
-    return current, desired
+    if names or any(ind in t for ind in ["nolan", "spielberg", "tarantino", "scorsese", "kubrick", "villeneuve"]):
+        mode = "search"
+        query = prompt
+        message = message or f"Great choice! Let me search for that 🔍"
+    
+    # Default fallback
+    if not message:
+        message = "Let me find something perfect for your current vibe! 🎬"
+    if not current:
+        current = "Bored"
+    if not desired:
+        desired = "Entertained"
+    if not genres:
+        genres = "popular films, crowd-pleasers"
+    
+    return {
+        "message": message,
+        "current_feeling": current,
+        "desired_feeling": desired,
+        "mode": mode,
+        "search_query": query,
+        "genres": genres
+    }
 
 def discover_movies_fresh(current_feeling=None, desired_feeling=None):
     """
@@ -736,95 +899,27 @@ def discover_movies_fresh(current_feeling=None, desired_feeling=None):
         return []
 
 
-@st.cache_data(show_spinner=False, ttl=3600)
-def nlp_to_tmdb_plan(prompt):
-    p = (prompt or "").strip()
-    if not p:
-        return {"mode": "search", "query": "", "current_feeling": None, "desired_feeling": None, "raw_prompt": ""}
-    
-    h_current, h_desired = nlp_infer_feelings(p)
-    mood_indicators = ["feel", "mood", "vibe", "something", "anything", "i'm", "i am", "need"]
-    is_mood = any(k in p.lower() for k in mood_indicators) or h_current or h_desired
-    heuristic_mode = "discover" if is_mood and (h_current or h_desired) else "search"
-    
-    if not openai_client:
-        return {
-            "mode": heuristic_mode,
-            "query": p if heuristic_mode == "search" else "",
-            "current_feeling": h_current,
-            "desired_feeling": h_desired,
-            "raw_prompt": p
-        }
-    
-    try:
-        sys = f"""Convert user request to JSON for movie/TV recommendations.
-Return ONLY valid JSON with these keys:
-- mode: "search" (specific title/actor/director) or "discover" (mood/vibe based)
-- query: search keywords if mode=search, empty if discover
-- current_feeling: one of {CURRENT_FEELINGS} or null
-- desired_feeling: one of {DESIRED_FEELINGS} or null"""
-
-        resp = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "system", "content": sys}, {"role": "user", "content": p}],
-            temperature=0.2
-        )
-        content = (resp.choices[0].message.content or "").strip()
-        content = content.replace("```json", "").replace("```", "").strip()
-        plan = json.loads(content)
-        
-        plan.setdefault("mode", heuristic_mode)
-        plan.setdefault("query", "")
-        plan.setdefault("current_feeling", h_current)
-        plan.setdefault("desired_feeling", h_desired)
-        plan["raw_prompt"] = p
-        
-        if plan.get("current_feeling") not in CURRENT_FEELINGS:
-            plan["current_feeling"] = h_current
-        if plan.get("desired_feeling") not in DESIRED_FEELINGS:
-            plan["desired_feeling"] = h_desired
-            
-        return plan
-    except:
-        return {
-            "mode": heuristic_mode,
-            "query": p if heuristic_mode == "search" else "",
-            "current_feeling": h_current,
-            "desired_feeling": h_desired,
-            "raw_prompt": p
-        }
-
-def nlp_search_tmdb(plan, page=1):
+def mr_dp_search(response):
     """
-    Execute NLP search plan - uses FRESH results (not cached) for variety.
+    Execute Mr.DP's recommendation based on his analysis.
+    Uses fresh (non-cached) results for variety.
     """
-    if not plan:
+    if not response:
         return []
     
-    mode = (plan.get("mode") or "search").lower()
-    query = (plan.get("query") or "").strip()
-    current_feeling = plan.get("current_feeling")
-    desired_feeling = plan.get("desired_feeling")
+    mode = response.get("mode", "discover")
+    query = response.get("search_query", "").strip()
+    current_feeling = response.get("current_feeling")
+    desired_feeling = response.get("desired_feeling")
     
-    # DISCOVER MODE: Use fresh (non-cached) results for variety
-    if mode == "discover" and (current_feeling or desired_feeling):
-        return discover_movies_fresh(current_feeling=current_feeling, desired_feeling=desired_feeling)
-    
-    # SEARCH MODE: Search by title/actor/director
-    if query:
-        results = search_movies(query, page=page)
+    # SEARCH MODE: Specific title/actor/director
+    if mode == "search" and query:
+        results = search_movies(query)
         if results:
             return results
-        # Fallback to discover if search fails
-        h_current, h_desired = nlp_infer_feelings(plan.get("raw_prompt", ""))
-        if h_current or h_desired:
-            return discover_movies_fresh(current_feeling=h_current, desired_feeling=h_desired)
     
-    # FALLBACK: If nothing else works, use feelings from plan
-    if current_feeling or desired_feeling:
-        return discover_movies_fresh(current_feeling=current_feeling, desired_feeling=desired_feeling)
-    
-    return []
+    # DISCOVER MODE: Mood-based discovery with fresh results
+    return discover_movies_fresh(current_feeling=current_feeling, desired_feeling=desired_feeling)
 
 # --------------------------------------------------
 # 10. GAMIFICATION ENGINE
@@ -943,12 +1038,11 @@ if "init" not in st.session_state:
         "search_results": [],
         "search_page": 1,
         
-        # NLP
-        "nlp_prompt": "",
-        "nlp_plan": None,
-        "nlp_results": [],
-        "nlp_page": 1,
-        "nlp_last_prompt": "",
+        # Mr.DP (NLP)
+        "mr_dp_prompt": "",
+        "mr_dp_response": None,  # Full response including message
+        "mr_dp_results": [],
+        "mr_dp_page": 1,
         
         # Quick Hit
         "quick_hit": None,
@@ -1581,6 +1675,82 @@ section[data-testid="stSidebar"] .stTextArea textarea {
     color: var(--success);
     font-size: 0.8rem;
 }
+
+/* Mr.DP Chat Bubble */
+.mr-dp-bubble {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%);
+    border: 1px solid var(--accent-primary);
+    border-radius: 20px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    position: relative;
+}
+
+.mr-dp-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.mr-dp-avatar {
+    width: 48px;
+    height: 48px;
+    background: var(--accent-gradient);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.mr-dp-name {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+}
+
+.mr-dp-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.mr-dp-message {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+}
+
+.mr-dp-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--glass-border);
+}
+
+.mr-dp-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--glass);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.mr-dp-tag-icon {
+    font-size: 1rem;
+}
+
+.mr-dp-user-query {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    margin-bottom: 8px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -2148,7 +2318,8 @@ def render_sidebar():
                 st.session_state.active_page = full_label
                 st.session_state.search_results = []
                 st.session_state.search_query = ""
-                st.session_state.nlp_results = []
+                st.session_state.mr_dp_results = []
+                st.session_state.mr_dp_response = None
                 st.session_state.quick_hit = None
                 st.rerun()
         
@@ -2199,46 +2370,49 @@ def render_sidebar():
         
         # MR.DP NLP
         st.markdown("#### 🧾 Mr.DP")
-        st.caption("Your AI curator — describe what you want!")
+        st.caption("Your AI curator — just tell me how you feel!")
         
-        nlp_prompt = st.text_area(
+        mr_dp_prompt = st.text_area(
             "Ask Mr.DP",
-            placeholder="Examples:\n• 'smart sci-fi from the 90s'\n• 'I'm sad, need comfort'\n• 'Christopher Nolan films'",
+            placeholder="Try:\n• 'I'm bored'\n• 'feeling anxious, need calm'\n• 'make me laugh'\n• 'Christopher Nolan movies'",
             height=100,
-            key="nlp_input",
+            key="mr_dp_input",
             label_visibility="collapsed"
         )
         
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("🔮 Ask", use_container_width=True, key="nlp_ask"):
-                if nlp_prompt.strip():
+            if st.button("🔮 Ask", use_container_width=True, key="mr_dp_ask"):
+                if mr_dp_prompt.strip():
                     with st.spinner("Mr.DP is thinking..."):
-                        st.session_state.nlp_last_prompt = nlp_prompt
-                        st.session_state.nlp_plan = nlp_to_tmdb_plan(nlp_prompt)
+                        # Get conversational response from Mr.DP
+                        response = ask_mr_dp(mr_dp_prompt)
                         
-                        # Update sidebar moods based on NLP detection
-                        plan = st.session_state.nlp_plan
-                        if plan.get("current_feeling"):
-                            st.session_state.current_feeling = plan["current_feeling"]
-                        if plan.get("desired_feeling"):
-                            st.session_state.desired_feeling = plan["desired_feeling"]
-                        
-                        # Clear old movies feed so it updates
-                        st.session_state.movies_feed = []
-                        
-                        # Get fresh results (not cached!)
-                        st.session_state.nlp_results = nlp_search_tmdb(st.session_state.nlp_plan, page=1)
-                        st.session_state.nlp_page = 1
-                        st.session_state.quick_hit = None
-                        st.session_state.search_results = []
-                        add_dopamine_points(10, "Asked Mr.DP!")
+                        if response:
+                            st.session_state.mr_dp_prompt = mr_dp_prompt
+                            st.session_state.mr_dp_response = response
+                            
+                            # Update sidebar moods based on detection
+                            if response.get("current_feeling"):
+                                st.session_state.current_feeling = response["current_feeling"]
+                            if response.get("desired_feeling"):
+                                st.session_state.desired_feeling = response["desired_feeling"]
+                            
+                            # Clear old movies feed
+                            st.session_state.movies_feed = []
+                            
+                            # Get movie results
+                            st.session_state.mr_dp_results = mr_dp_search(response)
+                            st.session_state.mr_dp_page = 1
+                            st.session_state.quick_hit = None
+                            st.session_state.search_results = []
+                            add_dopamine_points(10, "Asked Mr.DP!")
                     st.rerun()
         with col2:
-            if st.button("✕ Clear", use_container_width=True, key="nlp_clear"):
-                st.session_state.nlp_results = []
-                st.session_state.nlp_last_prompt = ""
-                st.session_state.nlp_plan = None
+            if st.button("✕ Clear", use_container_width=True, key="mr_dp_clear"):
+                st.session_state.mr_dp_results = []
+                st.session_state.mr_dp_prompt = ""
+                st.session_state.mr_dp_response = None
                 st.rerun()
         
         st.markdown("---")
@@ -2347,58 +2521,62 @@ def render_main():
                 render_movie_card(movie)
         st.markdown("---")
     
-    # NLP RESULTS
-    if st.session_state.nlp_last_prompt and st.session_state.nlp_results:
-        plan = st.session_state.nlp_plan or {}
-        mode = plan.get("mode", "search")
-        query = plan.get("query", "")
-        current_f = plan.get("current_feeling", "")
-        desired_f = plan.get("desired_feeling", "")
+    # MR.DP RESULTS - Conversational Display
+    if st.session_state.mr_dp_response and st.session_state.mr_dp_results:
+        response = st.session_state.mr_dp_response
+        message = response.get("message", "Here's what I found!")
+        current_f = response.get("current_feeling", "")
+        desired_f = response.get("desired_feeling", "")
+        genres = response.get("genres", "")
         
-        # Build metadata string
-        meta_parts = [f"Mode: {mode.title()}"]
-        if query:
-            meta_parts.append(f"Query: {query}")
-        if current_f:
-            meta_parts.append(f"Feeling: {MOOD_EMOJIS.get(current_f, '')} {current_f}")
-        if desired_f:
-            meta_parts.append(f"Want: {MOOD_EMOJIS.get(desired_f, '')} {desired_f}")
-        
+        # Mr.DP Chat Bubble
         st.markdown(f"""
-        <div class="nlp-header">
-            <div class="nlp-prompt">🧾 Mr.DP: "{safe(st.session_state.nlp_last_prompt)}"</div>
-            <div class="nlp-meta">{' • '.join(meta_parts)}</div>
+        <div class="mr-dp-bubble">
+            <div class="mr-dp-header">
+                <div class="mr-dp-avatar">🧾</div>
+                <div>
+                    <div class="mr-dp-name">Mr.DP</div>
+                    <div class="mr-dp-subtitle">Your Dopamine Curator</div>
+                </div>
+            </div>
+            <div class="mr-dp-user-query">You asked: "{safe(st.session_state.mr_dp_prompt)}"</div>
+            <div class="mr-dp-message">{safe(message)}</div>
+            <div class="mr-dp-meta">
+                {f'<span class="mr-dp-tag"><span class="mr-dp-tag-icon">{MOOD_EMOJIS.get(current_f, "😊")}</span> Feeling: {current_f}</span>' if current_f else ''}
+                {f'<span class="mr-dp-tag"><span class="mr-dp-tag-icon">{MOOD_EMOJIS.get(desired_f, "✨")}</span> Want: {desired_f}</span>' if desired_f else ''}
+                {f'<span class="mr-dp-tag"><span class="mr-dp-tag-icon">🎬</span> {genres}</span>' if genres else ''}
+            </div>
         </div>
         """, unsafe_allow_html=True)
         
+        # Movie grid
         cols = st.columns(6)
-        for i, movie in enumerate(st.session_state.nlp_results[:24]):
+        for i, movie in enumerate(st.session_state.mr_dp_results[:24]):
             with cols[i % 6]:
                 render_movie_card(movie)
         
-        # Action buttons for NLP results
+        # Action buttons
         btn_cols = st.columns([1, 1, 1])
         with btn_cols[0]:
-            if st.button("🔄 Shuffle Results", key="nlp_shuffle", use_container_width=True):
-                # Get fresh results with same feelings
-                st.session_state.nlp_results = nlp_search_tmdb(st.session_state.nlp_plan, page=1)
+            if st.button("🔄 Different Picks", key="mr_dp_shuffle", use_container_width=True):
+                st.session_state.mr_dp_results = mr_dp_search(st.session_state.mr_dp_response)
                 add_dopamine_points(5, "Shuffled!")
                 st.rerun()
         with btn_cols[1]:
-            if len(st.session_state.nlp_results) >= 20:
-                if st.button("📥 Load More", key="nlp_more", use_container_width=True):
-                    st.session_state.nlp_page += 1
+            if len(st.session_state.mr_dp_results) >= 20:
+                if st.button("📥 More Movies", key="mr_dp_more", use_container_width=True):
                     more = discover_movies_fresh(
-                        current_feeling=st.session_state.nlp_plan.get("current_feeling"),
-                        desired_feeling=st.session_state.nlp_plan.get("desired_feeling")
+                        current_feeling=response.get("current_feeling"),
+                        desired_feeling=response.get("desired_feeling")
                     )
-                    st.session_state.nlp_results.extend(more)
+                    st.session_state.mr_dp_results.extend(more)
                     add_dopamine_points(5, "Exploring!")
                     st.rerun()
         with btn_cols[2]:
-            if st.button("✕ Clear", key="nlp_clear_main", use_container_width=True):
-                st.session_state.nlp_results = []
-                st.session_state.nlp_last_prompt = ""
+            if st.button("✕ Clear", key="mr_dp_clear_main", use_container_width=True):
+                st.session_state.mr_dp_results = []
+                st.session_state.mr_dp_prompt = ""
+                st.session_state.mr_dp_response = None
                 st.rerun()
         
         st.markdown("---")
