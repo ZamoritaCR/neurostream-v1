@@ -1678,67 +1678,140 @@ section[data-testid="stSidebar"] .stTextArea textarea {
 
 /* Mr.DP Chat Bubble */
 .mr-dp-bubble {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%);
-    border: 1px solid var(--accent-primary);
-    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%);
+    border: 2px solid rgba(139, 92, 246, 0.4);
+    border-radius: 24px;
     padding: 20px 24px;
     margin-bottom: 24px;
     position: relative;
+    overflow: visible;
 }
 
 .mr-dp-header {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
     margin-bottom: 12px;
 }
 
-.mr-dp-avatar {
-    width: 48px;
-    height: 48px;
-    background: var(--accent-gradient);
+/* Mr.DP Neuron Character Container */
+.mr-dp-character {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+}
+
+.mr-dp-neuron {
+    width: 64px;
+    height: 64px;
+    animation: neuronBob 3s ease-in-out infinite;
+}
+
+@keyframes neuronBob {
+    0%, 100% { transform: translateY(0) rotate(-2deg); }
+    50% { transform: translateY(-4px) rotate(2deg); }
+}
+
+/* Neuron glow effect */
+.mr-dp-character::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, transparent 70%);
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
+    z-index: -1;
+    animation: glowPulse 2s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+    0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.1); }
+}
+
+/* Speech bubble tail */
+.mr-dp-bubble::before {
+    content: '';
+    position: absolute;
+    left: 28px;
+    top: -12px;
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%);
+    border-left: 2px solid rgba(139, 92, 246, 0.4);
+    border-top: 2px solid rgba(139, 92, 246, 0.4);
+    transform: rotate(45deg);
+    border-radius: 4px 0 0 0;
 }
 
 .mr-dp-name {
     font-weight: 700;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     color: var(--text-primary);
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .mr-dp-subtitle {
     font-size: 0.75rem;
     color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.mr-dp-status {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #10b981;
+    border-radius: 50%;
+    animation: statusPulse 2s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
 }
 
 .mr-dp-message {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     line-height: 1.6;
     color: var(--text-primary);
     margin-bottom: 16px;
+    padding-left: 80px;
 }
 
 .mr-dp-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--glass-border);
+    gap: 10px;
+    padding-top: 14px;
+    padding-left: 80px;
+    border-top: 1px solid rgba(139, 92, 246, 0.2);
 }
 
 .mr-dp-tag {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 12px;
-    background: var(--glass);
+    padding: 6px 14px;
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.2);
     border-radius: 20px;
     font-size: 0.8rem;
-    color: var(--text-secondary);
+    color: var(--text-primary);
+    transition: all 0.2s;
+}
+
+.mr-dp-tag:hover {
+    background: rgba(139, 92, 246, 0.2);
+    transform: translateY(-2px);
 }
 
 .mr-dp-tag-icon {
@@ -1749,7 +1822,65 @@ section[data-testid="stSidebar"] .stTextArea textarea {
     font-size: 0.85rem;
     color: var(--text-secondary);
     font-style: italic;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
+    padding-left: 80px;
+    opacity: 0.8;
+}
+
+/* Thinking animation */
+.mr-dp-thinking {
+    display: flex;
+    gap: 4px;
+    padding-left: 80px;
+}
+
+.mr-dp-thinking span {
+    width: 8px;
+    height: 8px;
+    background: var(--accent-primary);
+    border-radius: 50%;
+    animation: thinking 1.4s ease-in-out infinite;
+}
+
+.mr-dp-thinking span:nth-child(2) { animation-delay: 0.2s; }
+.mr-dp-thinking span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes thinking {
+    0%, 100% { transform: translateY(0); opacity: 0.4; }
+    50% { transform: translateY(-8px); opacity: 1; }
+}
+
+/* Compact sidebar version */
+.mr-dp-mini {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 14px;
+    margin-bottom: 12px;
+}
+
+.mr-dp-mini svg {
+    width: 36px !important;
+    height: 36px !important;
+}
+
+.mr-dp-mini-text {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+/* Mr.DP expressions animation */
+.mr-dp-neuron .dendrites path {
+    animation: dendritePulse 2s ease-in-out infinite;
+}
+
+@keyframes dendritePulse {
+    0%, 100% { stroke-opacity: 1; }
+    50% { stroke-opacity: 0.7; }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -1759,6 +1890,133 @@ section[data-testid="stSidebar"] .stTextArea textarea {
 # --------------------------------------------------
 def safe(s):
     return html_lib.escape(s or "")
+
+def get_mr_dp_svg(expression="happy"):
+    """
+    Generate Mr.DP's cute neuron character SVG.
+    Expressions: happy, thinking, excited, empathetic, curious
+    """
+    # Eye positions based on expression
+    expressions = {
+        "happy": {"left_eye": "◠", "right_eye": "◠", "mouth": "smile", "blush": True},
+        "thinking": {"left_eye": "•", "right_eye": "•", "mouth": "hmm", "blush": False},
+        "excited": {"left_eye": "★", "right_eye": "★", "mouth": "big_smile", "blush": True},
+        "empathetic": {"left_eye": "◠", "right_eye": "◠", "mouth": "soft_smile", "blush": True},
+        "curious": {"left_eye": "◉", "right_eye": "◉", "mouth": "o", "blush": False},
+        "wink": {"left_eye": "◠", "right_eye": "−", "mouth": "smile", "blush": True},
+    }
+    
+    expr = expressions.get(expression, expressions["happy"])
+    
+    # Mouth paths
+    mouths = {
+        "smile": '<path d="M24 38 Q32 46 40 38" stroke="#ff6b9d" stroke-width="3" fill="none" stroke-linecap="round"/>',
+        "big_smile": '<path d="M22 36 Q32 48 42 36" stroke="#ff6b9d" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M26 40 Q32 44 38 40" fill="#ff6b9d"/>',
+        "soft_smile": '<path d="M26 38 Q32 43 38 38" stroke="#ff6b9d" stroke-width="2.5" fill="none" stroke-linecap="round"/>',
+        "hmm": '<path d="M26 40 L38 38" stroke="#ff6b9d" stroke-width="2.5" fill="none" stroke-linecap="round"/>',
+        "o": '<circle cx="32" cy="40" r="4" fill="#ff6b9d"/>',
+    }
+    
+    # Blush circles
+    blush = '<circle cx="18" cy="36" r="5" fill="#ff6b9d" opacity="0.3"/><circle cx="46" cy="36" r="5" fill="#ff6b9d" opacity="0.3"/>' if expr["blush"] else ""
+    
+    svg = f'''<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" class="mr-dp-neuron">
+  <defs>
+    <linearGradient id="neuronGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a78bfa"/>
+      <stop offset="50%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="axonGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#06b6d4"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Dendrites (hair-like projections) -->
+  <g class="dendrites" filter="url(#glow)">
+    <!-- Top dendrites -->
+    <path d="M32 12 Q28 4 20 2" stroke="url(#axonGrad)" stroke-width="3" fill="none" stroke-linecap="round">
+      <animate attributeName="d" values="M32 12 Q28 4 20 2;M32 12 Q30 2 22 0;M32 12 Q28 4 20 2" dur="2s" repeatCount="indefinite"/>
+    </path>
+    <circle cx="20" cy="2" r="3" fill="#06b6d4"><animate attributeName="r" values="3;4;3" dur="1s" repeatCount="indefinite"/></circle>
+    
+    <path d="M32 12 Q36 4 44 2" stroke="url(#axonGrad)" stroke-width="3" fill="none" stroke-linecap="round">
+      <animate attributeName="d" values="M32 12 Q36 4 44 2;M32 12 Q34 2 42 0;M32 12 Q36 4 44 2" dur="2.2s" repeatCount="indefinite"/>
+    </path>
+    <circle cx="44" cy="2" r="3" fill="#06b6d4"><animate attributeName="r" values="3;4;3" dur="1.2s" repeatCount="indefinite"/></circle>
+    
+    <path d="M32 12 Q32 6 32 0" stroke="url(#axonGrad)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <circle cx="32" cy="0" r="2.5" fill="#10b981"><animate attributeName="fill" values="#10b981;#06b6d4;#10b981" dur="1.5s" repeatCount="indefinite"/></circle>
+    
+    <!-- Side dendrites -->
+    <path d="M12 28 Q4 24 0 20" stroke="url(#axonGrad)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <circle cx="0" cy="20" r="2.5" fill="#f59e0b"><animate attributeName="opacity" values="1;0.5;1" dur="1.8s" repeatCount="indefinite"/></circle>
+    
+    <path d="M52 28 Q60 24 64 20" stroke="url(#axonGrad)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <circle cx="64" cy="20" r="2.5" fill="#f59e0b"><animate attributeName="opacity" values="1;0.5;1" dur="1.6s" repeatCount="indefinite"/></circle>
+  </g>
+  
+  <!-- Axon (tail) -->
+  <path d="M32 52 Q32 58 28 62" stroke="url(#axonGrad)" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <circle cx="28" cy="62" r="3" fill="#10b981">
+    <animate attributeName="fill" values="#10b981;#8b5cf6;#10b981" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  
+  <!-- Cell body (soma) - main neuron body -->
+  <ellipse cx="32" cy="32" rx="22" ry="20" fill="url(#neuronGrad)" filter="url(#glow)"/>
+  
+  <!-- Highlight -->
+  <ellipse cx="26" cy="24" rx="8" ry="5" fill="white" opacity="0.3"/>
+  
+  <!-- Face -->
+  <!-- Eyes -->
+  <text x="22" y="32" font-size="10" fill="white" text-anchor="middle">{expr["left_eye"]}</text>
+  <text x="42" y="32" font-size="10" fill="white" text-anchor="middle">{expr["right_eye"]}</text>
+  
+  <!-- Eyebrows (for expression) -->
+  <path d="M18 24 Q22 22 26 24" stroke="white" stroke-width="1.5" fill="none" opacity="0.8"/>
+  <path d="M38 24 Q42 22 46 24" stroke="white" stroke-width="1.5" fill="none" opacity="0.8"/>
+  
+  <!-- Mouth -->
+  {mouths.get(expr["mouth"], mouths["smile"])}
+  
+  <!-- Blush -->
+  {blush}
+  
+  <!-- Sparkles -->
+  <g class="sparkles">
+    <text x="54" y="14" font-size="8" fill="#ffd700" opacity="0.8">✦</text>
+    <text x="8" y="18" font-size="6" fill="#ffd700" opacity="0.6">✦</text>
+    <text x="58" y="44" font-size="5" fill="#ffd700" opacity="0.7">✧</text>
+  </g>
+</svg>'''
+    
+    return svg
+
+def get_mr_dp_expression(current_feeling, desired_feeling):
+    """Determine Mr.DP's expression based on the user's feelings."""
+    # Empathetic for sad/anxious/lonely
+    if current_feeling in ["Sad", "Anxious", "Lonely", "Overwhelmed"]:
+        return "empathetic"
+    # Excited for happy/excited users or energizing content
+    if current_feeling in ["Happy", "Excited"] or desired_feeling in ["Energized", "Stimulated"]:
+        return "excited"
+    # Curious for discovery
+    if desired_feeling in ["Curious", "Inspired"]:
+        return "curious"
+    # Thinking for complex requests
+    if desired_feeling in ["Focused", "Grounded"]:
+        return "thinking"
+    # Wink for entertainment
+    if desired_feeling in ["Entertained", "Happy"]:
+        return "wink"
+    # Default happy
+    return "happy"
 
 def render_stats_bar():
     level_name, level_num, next_level = get_level()
@@ -1934,9 +2192,9 @@ def render_landing():
             <div class="feature-desc">Select how you feel now and how you want to feel. We'll curate content that takes you there.</div>
         </div>
         <div class="feature-card">
-            <div class="feature-icon">🧾</div>
+            <div class="feature-icon">🧠</div>
             <div class="feature-title">Mr.DP - AI Curator</div>
-            <div class="feature-desc">Just type what you want in plain English. "Something funny for a stressed day" — done.</div>
+            <div class="feature-desc">Meet your personal dopamine buddy! Just tell him how you feel and he'll find the perfect content.</div>
         </div>
         <div class="feature-card">
             <div class="feature-icon">⚡</div>
@@ -2368,9 +2626,17 @@ def render_sidebar():
         
         st.markdown("---")
         
-        # MR.DP NLP
-        st.markdown("#### 🧾 Mr.DP")
-        st.caption("Your AI curator — just tell me how you feel!")
+        # MR.DP NLP with Mini Character
+        st.markdown("#### 🧠 Ask Mr.DP")
+        
+        # Mini Mr.DP character
+        mini_svg = get_mr_dp_svg("happy").replace('class="mr-dp-neuron"', 'class="mr-dp-mini-avatar"')
+        st.markdown(f"""
+        <div class="mr-dp-mini">
+            <div style="width:36px;height:36px;">{mini_svg}</div>
+            <div class="mr-dp-mini-text">Tell me how you feel!</div>
+        </div>
+        """, unsafe_allow_html=True)
         
         mr_dp_prompt = st.text_area(
             "Ask Mr.DP",
@@ -2521,7 +2787,7 @@ def render_main():
                 render_movie_card(movie)
         st.markdown("---")
     
-    # MR.DP RESULTS - Conversational Display
+    # MR.DP RESULTS - Conversational Display with Character
     if st.session_state.mr_dp_response and st.session_state.mr_dp_results:
         response = st.session_state.mr_dp_response
         message = response.get("message", "Here's what I found!")
@@ -2529,21 +2795,30 @@ def render_main():
         desired_f = response.get("desired_feeling", "")
         genres = response.get("genres", "")
         
-        # Mr.DP Chat Bubble
+        # Get Mr.DP's expression based on mood
+        expression = get_mr_dp_expression(current_f, desired_f)
+        neuron_svg = get_mr_dp_svg(expression)
+        
+        # Mr.DP Chat Bubble with Character
         st.markdown(f"""
         <div class="mr-dp-bubble">
             <div class="mr-dp-header">
-                <div class="mr-dp-avatar">🧾</div>
+                <div class="mr-dp-character">
+                    {neuron_svg}
+                </div>
                 <div>
                     <div class="mr-dp-name">Mr.DP</div>
-                    <div class="mr-dp-subtitle">Your Dopamine Curator</div>
+                    <div class="mr-dp-subtitle">
+                        <span class="mr-dp-status"></span>
+                        Your Dopamine Curator
+                    </div>
                 </div>
             </div>
-            <div class="mr-dp-user-query">You asked: "{safe(st.session_state.mr_dp_prompt)}"</div>
+            <div class="mr-dp-user-query">💬 "{safe(st.session_state.mr_dp_prompt)}"</div>
             <div class="mr-dp-message">{safe(message)}</div>
             <div class="mr-dp-meta">
-                {f'<span class="mr-dp-tag"><span class="mr-dp-tag-icon">{MOOD_EMOJIS.get(current_f, "😊")}</span> Feeling: {current_f}</span>' if current_f else ''}
-                {f'<span class="mr-dp-tag"><span class="mr-dp-tag-icon">{MOOD_EMOJIS.get(desired_f, "✨")}</span> Want: {desired_f}</span>' if desired_f else ''}
+                {f'<span class="mr-dp-tag"><span class="mr-dp-tag-icon">{MOOD_EMOJIS.get(current_f, "😊")}</span> {current_f}</span>' if current_f else ''}
+                {f'<span class="mr-dp-tag"><span class="mr-dp-tag-icon">→</span> {MOOD_EMOJIS.get(desired_f, "✨")} {desired_f}</span>' if desired_f else ''}
                 {f'<span class="mr-dp-tag"><span class="mr-dp-tag-icon">🎬</span> {genres}</span>' if genres else ''}
             </div>
         </div>
