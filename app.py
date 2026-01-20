@@ -1,7 +1,11 @@
 # FILE: app.py
 # --------------------------------------------------
-# DOPAMINE.WATCH v28.2 - NLP (Mr.DP) + HARD 4x4 PROVIDER GRID
-# Baseline v28.0 (NO REFACTOR) + additions requested
+# DOPAMINE.WATCH v29.0 - VIRAL EDITION 🚀
+# --------------------------------------------------
+# UI/UX inspired by: Netflix, Disney+, TikTok, Duolingo
+# Viral mechanics: Streaks, badges, social sharing, referrals
+# ADHD-optimized: Minimal decisions, instant dopamine
+# Target: 15k users by April, $10k MRR by June
 # --------------------------------------------------
 
 import streamlit as st
@@ -13,59 +17,47 @@ from urllib.parse import quote_plus
 from openai import OpenAI
 import html as html_lib
 import random
+from datetime import datetime, timedelta
 
 # --------------------------------------------------
-# 1. CONFIG & ASSETS
+# 1. CONFIG
 # --------------------------------------------------
-if not hasattr(st, "_page_config_set"):
-    st.set_page_config(page_title="Dopamine.watch", page_icon="🧠", layout="wide")
-    st._page_config_set = True
+st.set_page_config(
+    page_title="Dopamine.watch | Feel Better, Watch Better",
+    page_icon="🧠",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
 APP_NAME = "Dopamine.watch"
 LOGO_PATH = "logo.gif" if os.path.exists("logo.gif") else "logo.png"
-
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 TMDB_IMAGE_URL = "https://image.tmdb.org/t/p/w500"
+TMDB_IMAGE_URL_HD = "https://image.tmdb.org/t/p/original"
 TMDB_LOGO_URL = "https://image.tmdb.org/t/p/original"
 
 # --------------------------------------------------
-# 2. MASTER SERVICE MAP - DIRECT DEEP LINKS
+# 2. SERVICE MAP - WORKING DEEP LINKS
 # --------------------------------------------------
 SERVICE_MAP = {
-    # SUBSCRIPTION SERVICES
-    "Netflix": "https://www.netflix.com/title/{tmdb_id}",
-    "Amazon Prime Video": "https://www.amazon.com/gp/video/detail/{tmdb_id}",
-    "Disney Plus": "https://www.disneyplus.com/movies/-/{tmdb_id}",
-    "Max": "https://play.max.com/video/watch/{tmdb_id}",
-    "Hulu": "https://www.hulu.com/watch/{tmdb_id}",
-    "Peacock": "https://www.peacocktv.com/watch/asset/{tmdb_id}",
-    "Paramount Plus": "https://www.paramountplus.com/movies/video/{tmdb_id}",
-    "Apple TV Plus": "https://tv.apple.com/us/movie/{tmdb_id}",
-    "Starz": "https://www.starz.com/us/en/movies/{tmdb_id}",
-    "Showtime": "https://www.showtime.com/titles/{tmdb_id}",
-    "MGM+": "https://www.mgmplus.com/movie/{tmdb_id}",
-    "Criterion Channel": "https://www.criterionchannel.com/videos/{tmdb_id}",
-    "MUBI": "https://mubi.com/films/{tmdb_id}",
-    "Shudder": "https://www.shudder.com/movies/watch/{tmdb_id}",
-
-    # FREE / AD-SUPPORTED
-    "Tubi": "https://tubitv.com/movies/{tmdb_id}",
-    "Pluto TV": "https://pluto.tv/on-demand/movies/{tmdb_id}",
-    "Freevee": "https://www.amazon.com/gp/video/detail/{tmdb_id}",
-    "The Roku Channel": "https://therokuchannel.roku.com/details/{tmdb_id}",
-    "Plex": "https://watch.plex.tv/movie/{tmdb_id}",
-    "Crackle": "https://www.crackle.com/watch/{tmdb_id}",
-    "Vudu": "https://www.vudu.com/content/movies/details/{tmdb_id}",
-
-    # ANIME
-    "Crunchyroll": "https://www.crunchyroll.com/{tmdb_id}",
-    "Funimation": "https://www.funimation.com/shows/{tmdb_id}",
-    "HIDIVE": "https://www.hidive.com/movies/{tmdb_id}",
-}
-
-LOGOS = {
-    "YouTube": "https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg",
-    "Trailer": "https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg",
+    "Netflix": "https://www.netflix.com/search?q={title}",
+    "Amazon Prime Video": "https://www.amazon.com/s?k={title}&i=instant-video",
+    "Disney Plus": "https://www.disneyplus.com/search?q={title}",
+    "Max": "https://play.max.com/search?q={title}",
+    "Hulu": "https://www.hulu.com/search?q={title}",
+    "Peacock": "https://www.peacocktv.com/search?q={title}",
+    "Paramount Plus": "https://www.paramountplus.com/search?q={title}",
+    "Apple TV Plus": "https://tv.apple.com/search?term={title}",
+    "Apple TV": "https://tv.apple.com/search?term={title}",
+    "Tubi": "https://tubitv.com/search/{title}",
+    "Tubi TV": "https://tubitv.com/search/{title}",
+    "Pluto TV": "https://pluto.tv/search/details/{title}",
+    "Plex": "https://watch.plex.tv/search?q={title}",
+    "Crunchyroll": "https://www.crunchyroll.com/search?q={title}",
+    "Shudder": "https://www.shudder.com/search?q={title}",
+    "MUBI": "https://mubi.com/search?query={title}",
+    "Vudu": "https://www.vudu.com/content/movies/search?searchString={title}",
+    "Fandango At Home": "https://www.vudu.com/content/movies/search?searchString={title}",
 }
 
 # --------------------------------------------------
@@ -73,1437 +65,1084 @@ LOGOS = {
 # --------------------------------------------------
 @st.cache_data
 def get_tmdb_key():
-    return st.secrets["tmdb"]["api_key"]
+    try:
+        return st.secrets["tmdb"]["api_key"]
+    except:
+        return None
 
 try:
     openai_client = OpenAI(api_key=st.secrets["openai"]["api_key"])
-except Exception:
+except:
     openai_client = None
 
 # --------------------------------------------------
-# 4. EMOTION → GENRE MAPPING (THE CORE INTELLIGENCE)
+# 4. EMOTION MAPPINGS
 # --------------------------------------------------
 FEELING_TO_GENRES = {
-    # CURRENT FEELINGS (what to avoid/what helps)
-    "Sad": {
-        "avoid": [18, 10752],  # Drama, War
-        "prefer": [35, 10751, 16]  # Comedy, Family, Animation
-    },
-    "Lonely": {
-        "prefer": [10749, 35, 18]  # Romance, Comedy, Drama
-    },
-    "Anxious": {
-        "avoid": [27, 53],  # Horror, Thriller
-        "prefer": [35, 16, 10751, 99]  # Comedy, Animation, Family, Documentary
-    },
-    "Overwhelmed": {
-        "avoid": [28, 53, 27],  # Action, Thriller, Horror
-        "prefer": [99, 10402, 16]  # Documentary, Music, Animation
-    },
-    "Angry": {
-        "prefer": [28, 53, 80]  # Action, Thriller, Crime (cathartic)
-    },
-    "Stressed": {
-        "avoid": [53, 27],  # Thriller, Horror
-        "prefer": [35, 16, 10751]  # Comedy, Animation, Family
-    },
-    "Bored": {
-        "prefer": [12, 878, 14, 28]  # Adventure, Sci-Fi, Fantasy, Action
-    },
-    "Tired": {
-        "prefer": [35, 10749, 16]  # Comedy, Romance, Animation
-    },
-    "Numb": {
-        "prefer": [28, 12, 53]  # Action, Adventure, Thriller (stimulating)
-    },
-    "Confused": {
-        "prefer": [99, 36]  # Documentary, History
-    },
-    "Restless": {
-        "prefer": [28, 12, 878]  # Action, Adventure, Sci-Fi
-    },
-    "Focused": {
-        "prefer": [99, 9648, 36]  # Documentary, Mystery, History
-    },
-    "Calm": {
-        "prefer": [99, 10402, 36]  # Documentary, Music, History
-    },
-    "Happy": {
-        "prefer": [35, 10751, 12]  # Comedy, Family, Adventure
-    },
-    "Excited": {
-        "prefer": [28, 12, 878]  # Action, Adventure, Sci-Fi
-    },
-    "Curious": {
-        "prefer": [99, 878, 9648, 14]  # Documentary, Sci-Fi, Mystery, Fantasy
-    },
-
-    # DESIRED FEELINGS
-    "Comforted": {
-        "prefer": [10751, 16, 35, 10749]  # Family, Animation, Comedy, Romance
-    },
-    "Relaxed": {
-        "prefer": [10749, 35, 99]  # Romance, Comedy, Documentary
-    },
-    "Energized": {
-        "prefer": [28, 12, 878]  # Action, Adventure, Sci-Fi
-    },
-    "Stimulated": {
-        "prefer": [878, 14, 53, 9648]  # Sci-Fi, Fantasy, Thriller, Mystery
-    },
-    "Entertained": {
-        "prefer": [12, 28, 35, 14]  # Adventure, Action, Comedy, Fantasy
-    },
-    "Inspired": {
-        "prefer": [18, 36, 99, 10752]  # Drama, History, Documentary, War
-    },
-    "Grounded": {
-        "prefer": [99, 36, 10751]  # Documentary, History, Family
-    },
-    "Sleepy": {
-        "prefer": [16, 10751, 10749]  # Animation, Family, Romance
-    },
-    "Connected": {
-        "prefer": [10749, 18, 10751]  # Romance, Drama, Family
-    },
+    "Sad": {"avoid": [18, 10752], "prefer": [35, 10751, 16]},
+    "Lonely": {"prefer": [10749, 35, 18]},
+    "Anxious": {"avoid": [27, 53], "prefer": [35, 16, 10751, 99]},
+    "Overwhelmed": {"avoid": [28, 53, 27], "prefer": [99, 10402, 16]},
+    "Angry": {"prefer": [28, 53, 80]},
+    "Stressed": {"avoid": [53, 27], "prefer": [35, 16, 10751]},
+    "Bored": {"prefer": [12, 878, 14, 28]},
+    "Tired": {"prefer": [35, 10749, 16]},
+    "Numb": {"prefer": [28, 12, 53]},
+    "Confused": {"prefer": [99, 36]},
+    "Restless": {"prefer": [28, 12, 878]},
+    "Focused": {"prefer": [99, 9648, 36]},
+    "Calm": {"prefer": [99, 10402, 36]},
+    "Happy": {"prefer": [35, 10751, 12]},
+    "Excited": {"prefer": [28, 12, 878]},
+    "Curious": {"prefer": [99, 878, 9648, 14]},
+    "Comforted": {"prefer": [10751, 16, 35, 10749]},
+    "Relaxed": {"prefer": [10749, 35, 99]},
+    "Energized": {"prefer": [28, 12, 878]},
+    "Stimulated": {"prefer": [878, 14, 53, 9648]},
+    "Entertained": {"prefer": [12, 28, 35, 14]},
+    "Inspired": {"prefer": [18, 36, 99, 10752]},
+    "Grounded": {"prefer": [99, 36, 10751]},
+    "Sleepy": {"prefer": [16, 10751, 10749]},
+    "Connected": {"prefer": [10749, 18, 10751]},
 }
 
-# --------------------------------------------------
-# 5. EMOTION → MUSIC MOODS (for Spotify)
-# --------------------------------------------------
 FEELING_TO_MUSIC = {
-    "Sad": "sad piano",
-    "Lonely": "comfort songs",
-    "Anxious": "calm relaxing",
-    "Overwhelmed": "peaceful ambient",
-    "Angry": "heavy metal workout",
-    "Stressed": "meditation spa",
-    "Bored": "upbeat pop",
-    "Tired": "acoustic chill",
-    "Numb": "intense electronic",
-    "Confused": "lo-fi study",
-    "Restless": "high energy dance",
-    "Focused": "deep focus",
-    "Calm": "nature sounds",
-    "Happy": "feel good hits",
-    "Excited": "party anthems",
-    "Curious": "experimental indie",
-
-    "Comforted": "warm acoustic",
-    "Relaxed": "sunday morning",
-    "Energized": "workout motivation",
-    "Stimulated": "electronic bass",
-    "Entertained": "viral hits",
-    "Inspired": "epic orchestral",
-    "Grounded": "folk roots",
-    "Sleepy": "sleep sounds",
-    "Connected": "love songs",
+    "Sad": "sad piano", "Lonely": "comfort songs", "Anxious": "calm relaxing",
+    "Overwhelmed": "peaceful ambient", "Angry": "heavy metal workout", "Stressed": "meditation spa",
+    "Bored": "upbeat pop", "Tired": "acoustic chill", "Numb": "intense electronic",
+    "Confused": "lo-fi study", "Restless": "high energy dance", "Focused": "deep focus",
+    "Calm": "nature sounds", "Happy": "feel good hits", "Excited": "party anthems",
+    "Curious": "experimental indie", "Comforted": "warm acoustic", "Relaxed": "sunday morning",
+    "Energized": "workout motivation", "Stimulated": "electronic bass", "Entertained": "viral hits",
+    "Inspired": "epic orchestral", "Grounded": "folk roots", "Sleepy": "sleep sounds", "Connected": "love songs",
 }
 
-# --------------------------------------------------
-# 6. EMOTION → VIDEO KEYWORDS (for Shot tab)
-# --------------------------------------------------
 FEELING_TO_VIDEOS = {
-    "Sad": "wholesome animals",
-    "Lonely": "heartwarming stories",
-    "Anxious": "satisfying oddly",
-    "Overwhelmed": "calming nature",
-    "Angry": "epic fails funny",
-    "Stressed": "meditation guided",
-    "Bored": "mind blowing facts",
-    "Tired": "asmr relaxing",
-    "Numb": "extreme sports",
-    "Confused": "explained simply",
-    "Restless": "action parkour",
-    "Focused": "productivity hacks",
-    "Calm": "ocean waves",
-    "Happy": "funny moments",
-    "Excited": "epic moments",
-    "Curious": "science experiments",
+    "Sad": "wholesome animals", "Lonely": "heartwarming stories", "Anxious": "satisfying oddly",
+    "Overwhelmed": "calming nature", "Angry": "epic fails funny", "Stressed": "meditation guided",
+    "Bored": "mind blowing facts", "Tired": "asmr relaxing", "Numb": "extreme sports",
+    "Confused": "explained simply", "Restless": "action parkour", "Focused": "productivity hacks",
+    "Calm": "ocean waves", "Happy": "funny moments", "Excited": "epic moments",
+    "Curious": "science experiments", "Comforted": "cozy vibes", "Relaxed": "coffee shop",
+    "Energized": "hype motivation", "Stimulated": "wtf moments", "Entertained": "viral comedy",
+    "Inspired": "success stories", "Grounded": "minimalist living", "Sleepy": "rain sounds", "Connected": "friendship goals",
+}
 
-    "Comforted": "cozy vibes",
-    "Relaxed": "coffee shop",
-    "Energized": "hype motivation",
-    "Stimulated": "wtf moments",
-    "Entertained": "viral comedy",
-    "Inspired": "success stories",
-    "Grounded": "minimalist living",
-    "Sleepy": "rain sounds",
-    "Connected": "friendship goals",
+# Gamification badges
+BADGES = {
+    "first_hit": {"icon": "🎯", "name": "First Hit", "desc": "Got your first Dope Hit"},
+    "streak_3": {"icon": "🔥", "name": "On Fire", "desc": "3-day streak"},
+    "streak_7": {"icon": "⚡", "name": "Unstoppable", "desc": "7-day streak"},
+    "explorer": {"icon": "🧭", "name": "Explorer", "desc": "Tried all 5 content types"},
+    "mood_master": {"icon": "🎭", "name": "Mood Master", "desc": "Used 10 different moods"},
+    "share_first": {"icon": "📤", "name": "Spreader", "desc": "Shared with a friend"},
 }
 
 # --------------------------------------------------
-# 7. DATA ENGINE - MOVIES ONLY (NO YOUTUBE/GOOGLE)
+# 5. DATA ENGINE
 # --------------------------------------------------
 def _clean_results(results):
-    """Clean and validate movie/TV results only"""
     clean = []
     for item in results:
-        # FIX: discover endpoint doesn't include media_type - default to "movie"
         media_type = item.get("media_type", "movie")
-
-        # STRICT FILTER: Only actual movies/TV from TMDB
         if media_type not in ["movie", "tv"]:
             continue
-
-        # Must have title and poster
         title = item.get("title") or item.get("name")
         if not title or not item.get("poster_path"):
             continue
-
         clean.append({
-            "id": item.get("id"),
-            "type": media_type,
-            "title": title,
+            "id": item.get("id"), "type": media_type, "title": title,
             "overview": item.get("overview", ""),
             "poster": f"{TMDB_IMAGE_URL}{item['poster_path']}",
-            "release_date": item.get("release_date") or item.get("first_air_date") or "Unknown"
+            "backdrop": f"{TMDB_IMAGE_URL_HD}{item.get('backdrop_path', '')}" if item.get('backdrop_path') else None,
+            "release_date": item.get("release_date") or item.get("first_air_date") or "",
+            "vote_average": item.get("vote_average", 0),
         })
     return clean
 
-
 @st.cache_data(ttl=3600)
 def discover_movies_by_emotion(page=1, current_feeling=None, desired_feeling=None):
-    """Discover movies filtered by emotional state"""
-
-    # Build genre preferences
-    genre_ids = []
-    avoid_genres = []
-
-    # Add desired feeling preferences first (highest priority)
+    api_key = get_tmdb_key()
+    if not api_key:
+        return []
+    genre_ids, avoid_genres = [], []
     if desired_feeling and desired_feeling in FEELING_TO_GENRES:
         prefs = FEELING_TO_GENRES[desired_feeling]
-        if "prefer" in prefs:
-            genre_ids.extend(prefs["prefer"][:3])
-        if "avoid" in prefs:
-            avoid_genres.extend(prefs["avoid"])
-
-    # Add current feeling considerations
+        genre_ids.extend(prefs.get("prefer", [])[:3])
+        avoid_genres.extend(prefs.get("avoid", []))
     if current_feeling and current_feeling in FEELING_TO_GENRES:
         prefs = FEELING_TO_GENRES[current_feeling]
-        if "avoid" in prefs:
-            avoid_genres.extend(prefs["avoid"])
-        if "prefer" in prefs and len(genre_ids) < 3:
-            genre_ids.extend([g for g in prefs["prefer"] if g not in genre_ids][:3-len(genre_ids)])
-
+        avoid_genres.extend(prefs.get("avoid", []))
     try:
-        params = {
-            "api_key": get_tmdb_key(),
-            "sort_by": "popularity.desc",
-            "watch_region": "US",
-            "with_watch_monetization_types": "flatrate|rent",
-            "page": page,
-            "include_adult": "false"
-        }
-
-        # Add genre filtering
+        params = {"api_key": api_key, "sort_by": "popularity.desc", "watch_region": "US",
+                  "with_watch_monetization_types": "flatrate|rent", "page": page, "include_adult": "false"}
         if genre_ids:
             params["with_genres"] = "|".join(map(str, list(set(genre_ids))[:3]))
-
         if avoid_genres:
             params["without_genres"] = ",".join(map(str, list(set(avoid_genres))))
-
-        r = requests.get(
-            f"{TMDB_BASE_URL}/discover/movie",
-            params=params,
-            timeout=8
-        )
-        r.raise_for_status()
-        return _clean_results(r.json().get("results", []))
-    except Exception:
-        return []
-
-
-@st.cache_data(ttl=3600)
-def search_movies_only(query, page=1):
-    """Search for movies/TV only - NO YOUTUBE OR GOOGLE"""
-    if not query:
-        return []
-    try:
-        r = requests.get(
-            f"{TMDB_BASE_URL}/search/multi",
-            params={
-                "api_key": get_tmdb_key(),
-                "query": query,
-                "include_adult": "false",
-                "page": page
-            },
-            timeout=8
-        )
-        r.raise_for_status()
-        # Filter to only movies/TV
-        results = [item for item in r.json().get("results", [])
-                   if item.get("media_type") in ["movie", "tv"]]
-        return _clean_results(results)
-    except Exception:
-        return []
-
-
-@st.cache_data(ttl=86400)
-def get_streaming_providers(tmdb_id, media_type):
-    """Get streaming providers for a title"""
-    try:
-        r = requests.get(
-            f"{TMDB_BASE_URL}/{media_type}/{tmdb_id}/watch/providers",
-            params={"api_key": get_tmdb_key()},
-            timeout=8
-        )
-        r.raise_for_status()
-        data = r.json().get("results", {}).get("US", {})
-        return {
-            "flatrate": data.get("flatrate", [])[:8],  # Max 8 providers
-            "rent": data.get("rent", [])[:8]
-        }
-    except Exception:
-        return {"flatrate": [], "rent": []}
-
-# --------------------------------------------------
-# 8. AI ENGINE - EMOTION-DRIVEN SORTING
-# --------------------------------------------------
-@st.cache_data(show_spinner=False)
-def sort_by_emotion(titles, current_feeling, desired_feeling):
-    """Use OpenAI to sort content by emotional match"""
-    if not titles or not openai_client:
-        return titles
-
-    try:
-        prompt = f"""You are a dopamine-optimization engine for neurodivergent users.
-
-Current feeling: {current_feeling}
-Desired feeling: {desired_feeling}
-
-Reorder these titles to maximize emotional transition and dopamine response.
-Prioritize titles that help shift from current to desired feeling.
-
-Titles: {json.dumps(titles[:20])}
-
-Return ONLY a JSON array of titles in optimal order. No explanation."""
-
-        response = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3
-        )
-
-        content = response.choices[0].message.content.strip()
-        if "```" in content:
-            content = content.replace("```json", "").replace("```", "").strip()
-
-        sorted_titles = json.loads(content)
-        return sorted_titles
-    except Exception:
-        return titles
-
-# --------------------------------------------------
-# 8.5 NLP (Mr.DP) - FREE TEXT -> TMDB PLAN
-# --------------------------------------------------
-
-# NOTE: Mr.DP is intentionally utilitarian.
-# He does NOT do therapy talk; he just translates messy human prompts into search/discover actions.
-
-CURRENT_FEELINGS = [
-    "Sad", "Lonely", "Anxious", "Overwhelmed", "Angry", "Stressed", "Bored", "Tired",
-    "Numb", "Confused", "Restless", "Focused", "Calm", "Happy", "Excited", "Curious",
-]
-
-DESIRED_FEELINGS = [
-    "Comforted", "Calm", "Relaxed", "Focused", "Energized", "Stimulated", "Happy",
-    "Entertained", "Inspired", "Grounded", "Curious", "Sleepy", "Connected",
-]
-
-
-def nlp_infer_feelings(prompt: str):
-    """Best-effort keyword inference so Mr.DP works even when OpenAI returns a weak plan."""
-    t = (prompt or "").lower()
-
-    current = None
-    desired = None
-
-    # --- current feelings ---
-    if any(k in t for k in ["bore", "boring", "nothing", "meh", "stuck"]):
-        current = "Bored"
-    elif any(k in t for k in ["stress", "burnout", "overwork", "overloaded"]):
-        current = "Stressed"
-    elif any(k in t for k in ["overwhelm", "too much", "flooded"]):
-        current = "Overwhelmed"
-    elif any(k in t for k in ["anxious", "anxiety", "panic", "worried"]):
-        current = "Anxious"
-    elif any(k in t for k in ["sad", "down", "depressed", "cry"]):
-        current = "Sad"
-    elif any(k in t for k in ["lonely", "alone", "isolated"]):
-        current = "Lonely"
-    elif any(k in t for k in ["angry", "mad", "pissed", "furious"]):
-        current = "Angry"
-    elif any(k in t for k in ["tired", "exhaust", "drained"]):
-        current = "Tired"
-    elif any(k in t for k in ["numb", "empty", "nothing feels"]):
-        current = "Numb"
-    elif any(k in t for k in ["confus", "lost", "what do i watch", "can't decide"]):
-        current = "Confused"
-    elif any(k in t for k in ["restless", "antsy", "can't sit", "fidget"]):
-        current = "Restless"
-    elif any(k in t for k in ["focus", "study", "deep work", "lock in"]):
-        current = "Focused"
-    elif any(k in t for k in ["calm", "chill", "peaceful"]):
-        current = "Calm"
-    elif any(k in t for k in ["happy", "good mood", "great"]):
-        current = "Happy"
-    elif any(k in t for k in ["excited", "hyped", "pump"]):
-        current = "Excited"
-    elif any(k in t for k in ["curious", "interesting", "learn"]):
-        current = "Curious"
-
-    # --- desired feelings ---
-    if any(k in t for k in ["comfort", "safe", "cozy", "wholesome", "soft"]):
-        desired = "Comforted"
-    elif any(k in t for k in ["relax", "unwind", "easy", "low effort", "decompress"]):
-        desired = "Relaxed"
-    elif any(k in t for k in ["calm", "ground", "peace", "no stress"]):
-        desired = "Calm"
-    elif any(k in t for k in ["focus", "study", "lock in", "work"]):
-        desired = "Focused"
-    elif any(k in t for k in ["action", "energy", "energ", "motivat", "hype", "adrenaline"]):
-        desired = "Energized"
-    elif any(k in t for k in ["stimulat", "mind-blow", "wtf", "thrill", "twist"]):
-        desired = "Stimulated"
-    elif any(k in t for k in ["fun", "funny", "comedy", "entertain", "popcorn"]):
-        desired = "Entertained"
-    elif any(k in t for k in ["inspir", "meaning", "motivational", "uplift"]):
-        desired = "Inspired"
-    elif any(k in t for k in ["ground", "reset", "mindful", "nature"]):
-        desired = "Grounded"
-    elif any(k in t for k in ["curious", "learn", "documentary", "explore"]):
-        desired = "Curious"
-    elif any(k in t for k in ["sleep", "bed", "wind down", "sleepy"]):
-        desired = "Sleepy"
-    elif any(k in t for k in ["connect", "romance", "love", "friendship"]):
-        desired = "Connected"
-    elif any(k in t for k in ["happy", "cheer", "mood boost"]):
-        desired = "Happy"
-
-    return current, desired
-
-
-@st.cache_data(show_spinner=False, ttl=3600)
-def nlp_to_tmdb_plan(prompt: str):
-    """Convert user free text into a TMDB search plan.
-
-    NOTE: This is intentionally utilitarian (no rapport / no emotion commentary).
-    """
-    p = (prompt or "").strip()
-    if not p:
-        return {
-            "mode": "search",
-            "query": "",
-            "media_type": "multi",
-            "year": None,
-            "with_genres": [],
-            "sort_by": "popularity.desc",
-            "current_feeling": None,
-            "desired_feeling": None,
-            "raw_prompt": "",
-        }
-
-    # Fast heuristic pass (works even if OpenAI is down / returns weak JSON)
-    h_current, h_desired = nlp_infer_feelings(p)
-    heuristic_mode = "discover" if (h_current or h_desired) else "search"
-
-    # Fallback: if OpenAI not available, use the prompt as the query
-    if not openai_client:
-        return {
-            "mode": heuristic_mode,
-            "query": p if heuristic_mode == "search" else "",
-            "media_type": "multi",
-            "year": None,
-            "with_genres": [],
-            "sort_by": "popularity.desc",
-            "current_feeling": h_current,
-            "desired_feeling": h_desired,
-            "raw_prompt": p,
-        }
-
-    try:
-        sys = (
-            "You convert user requests into a JSON plan for retrieving titles from TMDB. "
-            "Return ONLY valid JSON. No markdown.\n"
-            "Keys: mode (search|discover), query (string), media_type (movie|tv|multi), "
-            "year (int|null), with_genres (array of ints), sort_by (string), "
-            "current_feeling (string|null), desired_feeling (string|null).\n"
-            "Rules:\n"
-            "- If user clearly names a title/series/actor -> mode=search, query=short title/keywords.\n"
-            "- If user describes a mood (e.g., bored, stressed, need action, something funny) -> mode=discover, query=''\n"
-            "- current_feeling must be one of: " + ", ".join(CURRENT_FEELINGS) + " or null.\n"
-            "- desired_feeling must be one of: " + ", ".join(DESIRED_FEELINGS) + " or null.\n"
-            "- If user asks new/latest -> sort_by=release_date.desc.\n"
-            "- Keep query short (<= 6 words)."
-        )
-
-        resp = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": sys},
-                {"role": "user", "content": p},
-            ],
-            temperature=0.2,
-        )
-
-        content = (resp.choices[0].message.content or "").strip()
-        plan = json.loads(content)
-
-        # Normalize + defaults
-        plan.setdefault("mode", heuristic_mode)
-        plan.setdefault("query", "")
-        plan.setdefault("media_type", "multi")
-        plan.setdefault("year", None)
-        plan.setdefault("with_genres", [])
-        plan.setdefault("sort_by", "popularity.desc")
-        plan.setdefault("current_feeling", None)
-        plan.setdefault("desired_feeling", None)
-        plan.setdefault("raw_prompt", p)
-
-        if plan.get("mode") not in ["search", "discover"]:
-            plan["mode"] = heuristic_mode
-
-        if plan.get("media_type") not in ["movie", "tv", "multi"]:
-            plan["media_type"] = "multi"
-
-        if not isinstance(plan.get("with_genres"), list):
-            plan["with_genres"] = []
-
-        # Fill feelings from heuristic if missing/invalid
-        if plan.get("current_feeling") not in CURRENT_FEELINGS:
-            plan["current_feeling"] = h_current
-        if plan.get("desired_feeling") not in DESIRED_FEELINGS:
-            plan["desired_feeling"] = h_desired
-
-        # If it's clearly a mood prompt but model picked search with a long messy query, prefer discover
-        if plan.get("mode") == "search" and not (plan.get("query") or "").strip() and (plan.get("current_feeling") or plan.get("desired_feeling")):
-            plan["mode"] = "discover"
-
-        return plan
-
-    except Exception:
-        return {
-            "mode": heuristic_mode,
-            "query": p if heuristic_mode == "search" else "",
-            "media_type": "multi",
-            "year": None,
-            "with_genres": [],
-            "sort_by": "popularity.desc",
-            "current_feeling": h_current,
-            "desired_feeling": h_desired,
-            "raw_prompt": p,
-        }
-
-
-@st.cache_data(ttl=3600)
-def nlp_search_tmdb(plan: dict, page: int = 1):
-    """Search TMDB based on the NLP plan."""
-    if not plan:
-        return []
-
-    mode = (plan.get("mode") or "search").strip().lower()
-    query = (plan.get("query") or "").strip()
-    year = plan.get("year", None)
-    with_genres = plan.get("with_genres", []) or []
-    sort_by = plan.get("sort_by", "popularity.desc") or "popularity.desc"
-    current_feeling = plan.get("current_feeling")
-    desired_feeling = plan.get("desired_feeling")
-    raw_prompt = plan.get("raw_prompt") or query
-
-    # 1) If this is a mood-style request, use the emotion-driven discover logic
-    if mode == "discover" and (current_feeling or desired_feeling):
-        return discover_movies_by_emotion(page=page, current_feeling=current_feeling, desired_feeling=desired_feeling)
-
-    # 2) If query exists, try search first (best for exact titles)
-    if query:
-        results = search_movies_only(query, page=page)
-        if results:
-            return results
-
-        # Search failed — fall back to emotion discover if the prompt implies a vibe
-        h_current, h_desired = nlp_infer_feelings(raw_prompt)
-        if h_current or h_desired:
-            return discover_movies_by_emotion(page=page, current_feeling=h_current, desired_feeling=h_desired)
-
-        return []
-
-    # 3) Generic discover (no query) — keep prior behavior
-    try:
-        params = {
-            "api_key": get_tmdb_key(),
-            "sort_by": sort_by,
-            "watch_region": "US",
-            "with_watch_monetization_types": "flatrate|rent",
-            "page": page,
-            "include_adult": "false"
-        }
-
-        if with_genres:
-            params["with_genres"] = "|".join(map(str, with_genres[:3]))
-
-        if year and isinstance(year, int):
-            params["primary_release_year"] = year
-
         r = requests.get(f"{TMDB_BASE_URL}/discover/movie", params=params, timeout=8)
         r.raise_for_status()
         return _clean_results(r.json().get("results", []))
-    except Exception:
+    except:
         return []
 
+@st.cache_data(ttl=3600)
+def search_movies(query, page=1):
+    api_key = get_tmdb_key()
+    if not api_key or not query:
+        return []
+    try:
+        r = requests.get(f"{TMDB_BASE_URL}/search/multi",
+                         params={"api_key": api_key, "query": query, "include_adult": "false", "page": page}, timeout=8)
+        r.raise_for_status()
+        results = [item for item in r.json().get("results", []) if item.get("media_type") in ["movie", "tv"]]
+        return _clean_results(results)
+    except:
+        return []
 
-# --------------------------------------------------
-# 9. DEEP LINK BUILDER (ACTUALLY WORKS)
-# --------------------------------------------------
-def get_deep_link(provider_name, title, tmdb_id=None):
-    """Build working deep link to streaming service"""
+@st.cache_data(ttl=86400)
+def get_streaming_providers(tmdb_id, media_type):
+    api_key = get_tmdb_key()
+    if not api_key:
+        return {"flatrate": [], "rent": []}
+    try:
+        r = requests.get(f"{TMDB_BASE_URL}/{media_type}/{tmdb_id}/watch/providers",
+                         params={"api_key": api_key}, timeout=8)
+        r.raise_for_status()
+        data = r.json().get("results", {}).get("US", {})
+        return {"flatrate": data.get("flatrate", [])[:6], "rent": data.get("rent", [])[:4]}
+    except:
+        return {"flatrate": [], "rent": []}
 
-    # Normalize provider name
-    provider = provider_name.strip()
+@st.cache_data(ttl=3600)
+def get_trending():
+    api_key = get_tmdb_key()
+    if not api_key:
+        return []
+    try:
+        r = requests.get(f"{TMDB_BASE_URL}/trending/movie/week", params={"api_key": api_key}, timeout=8)
+        r.raise_for_status()
+        return _clean_results(r.json().get("results", []))[:10]
+    except:
+        return []
 
-    # Try direct TMDB ID link first (most reliable)
-    if tmdb_id and provider in SERVICE_MAP:
-        template = SERVICE_MAP[provider]
-        if "{tmdb_id}" in template:
-            return template.format(tmdb_id=tmdb_id)
-
-    # Try fuzzy match on provider name
+def get_deep_link(provider_name, title):
+    provider = (provider_name or "").strip()
+    safe_title = quote_plus(title)
+    if provider in SERVICE_MAP:
+        return SERVICE_MAP[provider].format(title=safe_title)
     for key, template in SERVICE_MAP.items():
         if key.lower() in provider.lower() or provider.lower() in key.lower():
-            if "{tmdb_id}" in template and tmdb_id:
-                return template.format(tmdb_id=tmdb_id)
-            elif "{title}" in template:
-                return template.format(title=quote_plus(title))
+            return template.format(title=safe_title)
+    return None
 
-    # Fallback: Direct provider search
-    provider_domains = {
-        "Netflix": "https://www.netflix.com/search?q=",
-        "Amazon": "https://www.amazon.com/s?k=",
-        "Disney": "https://www.disneyplus.com/search",
-        "Hulu": "https://www.hulu.com/search?q=",
-        "Max": "https://play.max.com/search",
-        "Peacock": "https://www.peacocktv.com/search?q=",
-    }
-
-    for key, url in provider_domains.items():
-        if key.lower() in provider.lower():
-            return f"{url}{quote_plus(title)}"
-
-    # Last resort: Google search for specific provider
-    return f"https://www.google.com/search?q=watch+{quote_plus(title)}+on+{quote_plus(provider)}"
-
-
-# --------------------------------------------------
-# 10. HELPERS
-# --------------------------------------------------
-def render_logo(sidebar=False):
-    if os.path.exists(LOGO_PATH):
-        (st.sidebar if sidebar else st).image(LOGO_PATH, width=180 if sidebar else 260)
-    else:
-        (st.sidebar if sidebar else st).markdown(f"# 🧠 {APP_NAME}")
-
-
-def safe(s: str) -> str:
+def safe(s):
     return html_lib.escape(s or "")
 
-
 # --------------------------------------------------
-# 11. STATE INITIALIZATION
+# 6. STATE INITIALIZATION
 # --------------------------------------------------
 if "init" not in st.session_state:
     st.session_state.update({
         "user": None,
-        "auth_step": "login",
-        "onboarding_complete": False,
-
+        "view": "landing",  # landing, onboarding, home
         "current_feeling": "Bored",
         "desired_feeling": "Entertained",
-
         "movies_feed": [],
         "movies_page": 1,
-        "last_emotion_key": None,
-
         "quick_hit": None,
-        "quick_hit_count": 0,
-
+        "dope_hits": 0,
+        "streak": 0,
+        "last_visit": None,
+        "badges": [],
+        "tabs_explored": set(),
+        "moods_used": set(),
         "search_query": "",
         "search_results": [],
-        "search_page": 1,
-
-        # NLP (Mr.DP) state (NEW)
-        # Keep BOTH key styles for backwards/forwards compatibility.
-        # The app currently uses the nlp_* keys in the sidebar + lobby.
-        "nlp_prompt": "",
-        "nlp_plan": None,
-        "nlp_results": [],
-        "nlp_page": 1,
-        "nlp_last_prompt": "",
-
-        "mrdp_prompt": "",
-        "mrdp_plan": None,
-        "mrdp_results": [],
-        "mrdp_page": 1,
-        "mrdp_last_prompt": "",
-        "mrdp_history": [],
+        "hero_movie": None,
+        "show_share_modal": False,
     })
     st.session_state.init = True
 
-# Backfill defaults for existing sessions (prevents AttributeError after deploys)
-_SESSION_DEFAULTS = {
-    "nlp_prompt": "",
-    "nlp_plan": None,
-    "nlp_results": [],
-    "nlp_page": 1,
-    "nlp_last_prompt": "",
-    "mrdp_prompt": "",
-    "mrdp_plan": None,
-    "mrdp_results": [],
-    "mrdp_page": 1,
-    "mrdp_last_prompt": "",
-    "mrdp_history": [],
-}
-for _k, _v in _SESSION_DEFAULTS.items():
-    if _k not in st.session_state:
-        st.session_state[_k] = _v
+# Update streak
+today = datetime.now().date()
+if st.session_state.last_visit:
+    last = st.session_state.last_visit
+    if isinstance(last, str):
+        last = datetime.fromisoformat(last).date()
+    diff = (today - last).days
+    if diff == 1:
+        st.session_state.streak += 1
+    elif diff > 1:
+        st.session_state.streak = 1
+st.session_state.last_visit = today.isoformat()
+
+# Check badges
+def check_badges():
+    badges = st.session_state.badges
+    if st.session_state.dope_hits >= 1 and "first_hit" not in badges:
+        badges.append("first_hit")
+    if st.session_state.streak >= 3 and "streak_3" not in badges:
+        badges.append("streak_3")
+    if st.session_state.streak >= 7 and "streak_7" not in badges:
+        badges.append("streak_7")
+    if len(st.session_state.tabs_explored) >= 5 and "explorer" not in badges:
+        badges.append("explorer")
+    if len(st.session_state.moods_used) >= 10 and "mood_master" not in badges:
+        badges.append("mood_master")
+
+check_badges()
 
 # --------------------------------------------------
-# 12. CUSTOM CSS - CLEAN, DOPAMINE-OPTIMIZED
+# 7. VIRAL CSS - NETFLIX/TIKTOK INSPIRED
 # --------------------------------------------------
 st.markdown("""
 <style>
-/* Dark gradient background */
-.stApp {
-    background: radial-gradient(circle at top, #0f0f23, #000000);
-    color: white;
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #12121a;
+    --bg-card: #1a1a28;
+    --accent-primary: #00d4aa;
+    --accent-secondary: #ff6b6b;
+    --accent-tertiary: #ffd93d;
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255,255,255,0.7);
+    --text-muted: rgba(255,255,255,0.5);
+    --gradient-primary: linear-gradient(135deg, #00d4aa 0%, #00a3ff 100%);
+    --gradient-fire: linear-gradient(135deg, #ff6b6b 0%, #ffd93d 100%);
+    --gradient-hero: linear-gradient(180deg, transparent 0%, var(--bg-primary) 100%);
 }
 
-/* Movie card */
-.card {
-    background: #1a1a2e;
-    border: 1px solid #2a2a3e;
-    border-radius: 12px;
+* { font-family: 'Outfit', sans-serif !important; }
+.stApp { background: var(--bg-primary); }
+
+/* Hide Streamlit defaults */
+#MainMenu, footer, header { visibility: hidden; }
+.stDeployButton { display: none; }
+[data-testid="stSidebar"] { background: var(--bg-secondary); }
+
+/* Landing Hero */
+.landing-hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 2rem;
+    background: radial-gradient(ellipse at top, #1a1a35 0%, var(--bg-primary) 70%);
+    position: relative;
     overflow: hidden;
-    margin-bottom: 16px;
-    transition: transform 0.2s, border-color 0.2s;
 }
 
-.card:hover {
-    transform: translateY(-4px);
-    border-color: #00f2ea;
+.landing-hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(from 0deg, transparent, var(--accent-primary), transparent 30%);
+    animation: rotate 20s linear infinite;
+    opacity: 0.1;
 }
 
-/* Provider grid - HARD 4x4 LAYOUT */
-.provider-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    padding: 12px;
-    max-width: 100%;
+@keyframes rotate {
+    100% { transform: rotate(360deg); }
 }
 
-/* Provider button */
-.provider-btn {
+.hero-logo {
+    font-size: 4rem;
+    font-weight: 900;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 1rem;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+.hero-tagline {
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 48px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--bg-primary);
+    background: var(--gradient-primary);
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    box-shadow: 0 8px 32px rgba(0, 212, 170, 0.3);
+}
+
+.hero-cta:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 16px 48px rgba(0, 212, 170, 0.4);
+}
+
+.social-proof {
+    margin-top: 3rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--text-muted);
+}
+
+.avatars {
+    display: flex;
+}
+
+.avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid var(--bg-primary);
+    margin-left: -12px;
+    background: var(--gradient-primary);
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #0f0f23;
-    padding: 8px;
-    border-radius: 8px;
-    border: 1px solid #2a2a3e;
+    font-size: 14px;
+}
+
+/* Mood Selector */
+.mood-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.mood-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 12px;
+    background: var(--bg-card);
+    border: 2px solid transparent;
+    border-radius: 16px;
+    cursor: pointer;
     transition: all 0.2s;
-    text-decoration: none !important;
-    min-height: 40px;
+    text-decoration: none;
 }
 
-.provider-btn:hover {
-    border-color: #00f2ea;
-    background: #16213e;
-    transform: scale(1.05);
+.mood-btn:hover {
+    background: var(--bg-secondary);
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
 }
 
-.provider-icon {
-    width: 24px;
-    height: 24px;
-    object-fit: contain;
+.mood-btn.active {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
 }
 
-/* Movie title */
-.movie-title {
-    padding: 8px 12px;
-    font-weight: 700;
-    font-size: 0.95rem;
-    color: white;
+.mood-btn.active .mood-label {
+    color: var(--bg-primary);
 }
 
-.movie-sub {
-    padding: 0 12px 8px 12px;
-    opacity: 0.7;
-    font-size: 0.8rem;
+.mood-emoji { font-size: 2rem; margin-bottom: 8px; }
+.mood-label { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; }
+
+/* Hero Banner (Netflix style) */
+.hero-banner {
+    position: relative;
+    height: 70vh;
+    min-height: 500px;
+    margin: -1rem -1rem 2rem -1rem;
+    background-size: cover;
+    background-position: center top;
+    display: flex;
+    align-items: flex-end;
 }
 
-/* Buttons - GRADIENT DOPAMINE */
-button {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    color: white !important;
-    font-weight: 700 !important;
-    border: none !important;
-    transition: all 0.3s !important;
+.hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, var(--bg-primary) 0%, transparent 50%, rgba(0,0,0,0.3) 100%);
 }
 
-button:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4) !important;
+.hero-content {
+    position: relative;
+    z-index: 2;
+    padding: 3rem;
+    max-width: 600px;
 }
 
-/* Feeling selectors */
-.stSelectbox {
-    background: #1a1a2e !important;
-    border-radius: 8px !important;
+.hero-title {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    line-height: 1.1;
 }
 
-/* Small text */
-.small-note {
-    opacity: 0.75;
+.hero-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 1rem;
     font-size: 0.9rem;
-    margin: 12px 0;
+    color: var(--text-secondary);
 }
 
-/* Tab styling */
-.stTabs [data-baseweb="tab-list"] {
+.hero-rating {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--accent-tertiary);
+}
+
+.hero-desc {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.hero-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 32px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--bg-primary);
+    background: var(--text-primary);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-primary:hover { transform: scale(1.05); }
+
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 32px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-secondary:hover { background: rgba(255,255,255,0.3); }
+
+/* Quick Dope Hit Button */
+.dope-hit-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 20px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--bg-primary);
+    background: var(--gradient-fire);
+    border: none;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 8px 32px rgba(255, 107, 107, 0.3);
+    animation: glow 2s ease-in-out infinite;
+}
+
+@keyframes glow {
+    0%, 100% { box-shadow: 0 8px 32px rgba(255, 107, 107, 0.3); }
+    50% { box-shadow: 0 8px 48px rgba(255, 107, 107, 0.5); }
+}
+
+.dope-hit-btn:hover {
+    transform: scale(1.02);
+}
+
+/* Stats Bar */
+.stats-bar {
+    display: flex;
+    justify-content: space-around;
+    padding: 16px;
+    background: var(--bg-card);
+    border-radius: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Content Row */
+.content-row {
+    margin-bottom: 32px;
+}
+
+.row-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
     gap: 8px;
 }
 
-.stTabs [data-baseweb="tab"] {
-    background: #1a1a2e;
-    border-radius: 8px;
-    padding: 12px 24px;
+.row-scroll {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 16px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
 }
 
-.stTabs [aria-selected="true"] {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
+.row-scroll::-webkit-scrollbar { height: 4px; }
+.row-scroll::-webkit-scrollbar-track { background: var(--bg-secondary); border-radius: 4px; }
+.row-scroll::-webkit-scrollbar-thumb { background: var(--accent-primary); border-radius: 4px; }
 
-/* Mr.DP sidebar styling (lightweight) */
-.mrdp-card {
-    background: #141426;
-    border: 1px solid #2a2a3e;
+/* Movie Card */
+.movie-card {
+    flex-shrink: 0;
+    width: 180px;
+    scroll-snap-align: start;
+    background: var(--bg-card);
     border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+
+.movie-card:hover {
+    transform: scale(1.08);
+    z-index: 10;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+}
+
+.movie-poster {
+    width: 100%;
+    aspect-ratio: 2/3;
+    object-fit: cover;
+}
+
+.movie-info {
     padding: 12px;
 }
 
-.mrdp-title {
-    font-weight: 800;
-    font-size: 1.0rem;
+.movie-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
 }
 
-.mrdp-sub {
-    opacity: 0.78;
-    font-size: 0.85rem;
-    margin-top: 4px;
+.movie-meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.mrdp-chip {
-    display: inline-block;
-    margin-top: 8px;
-    padding: 4px 8px;
-    border-radius: 999px;
-    border: 1px solid #2a2a3e;
-    opacity: 0.9;
-    font-size: 0.78rem;
+.movie-rating {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--accent-tertiary);
+}
+
+/* Provider Grid */
+.provider-grid {
+    display: flex;
+    gap: 8px;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+}
+
+.provider-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    object-fit: contain;
+    background: var(--bg-secondary);
+    padding: 4px;
+    transition: transform 0.2s;
+}
+
+.provider-icon:hover { transform: scale(1.15); }
+
+/* Badges */
+.badges-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--bg-card);
+    border-radius: 20px;
+    font-size: 0.8rem;
+}
+
+.badge.earned {
+    background: var(--gradient-primary);
+    color: var(--bg-primary);
+}
+
+.badge.locked {
+    opacity: 0.4;
+}
+
+/* Share Modal */
+.share-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.share-content {
+    background: var(--bg-card);
+    padding: 32px;
+    border-radius: 24px;
+    max-width: 400px;
+    text-align: center;
+}
+
+.share-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.share-subtitle {
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+}
+
+.share-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.share-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.share-btn:hover { transform: scale(1.1); }
+.share-btn.twitter { background: #1DA1F2; }
+.share-btn.facebook { background: #4267B2; }
+.share-btn.whatsapp { background: #25D366; }
+.share-btn.copy { background: var(--accent-primary); }
+
+/* Tabs */
+.tab-bar {
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    margin-bottom: 24px;
+}
+
+.tab-item {
+    flex: 1;
+    padding: 12px 16px;
+    text-align: center;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.tab-item:hover { background: var(--bg-card); }
+.tab-item.active {
+    background: var(--gradient-primary);
+    color: var(--bg-primary);
+}
+
+/* Search */
+.search-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: var(--bg-card);
+    border-radius: 16px;
+    margin-bottom: 24px;
+}
+
+.search-input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 1rem;
+    outline: none;
+}
+
+.search-input::placeholder { color: var(--text-muted); }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hero-title { font-size: 2rem; }
+    .hero-content { padding: 1.5rem; }
+    .movie-card { width: 140px; }
+    .mood-grid { grid-template-columns: repeat(2, 1fr); }
 }
 </style>
 """, unsafe_allow_html=True)
 
 # --------------------------------------------------
-# 13. MOVIE CARD COMPONENT (HARD 4x4 GRID)
+# 8. LANDING PAGE
 # --------------------------------------------------
-def render_movie_card(item):
-    """Render movie card with HARD 4x4 provider icon grid (max 16)."""
-    title = item.get("title", "")
-    media_type = item.get("type", "movie")
-    tmdb_id = item.get("id")
-
-    # Get providers
-    provs = get_streaming_providers(tmdb_id, media_type)
-    flatrate = provs.get("flatrate", [])[:8]
-    rent = provs.get("rent", [])[:8]
-
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-
-    # Poster
-    if item.get("poster"):
-        st.image(item["poster"], use_container_width=True)
-
-    # --------------------------------------------------
-    # PROVIDER ICONS: HARD 4x4 GRID (MAX 16 TOTAL)
-    # Order: flatrate first, then rent, then trailer (if space)
-    # --------------------------------------------------
-    icons = []
-    for p in flatrate:
-        icons.append(("watch", p))
-    for p in rent:
-        icons.append(("rent", p))
-
-    # Cap providers so we never exceed 16 slots
-    # Reserve one slot for a Trailer icon when possible
-    icons = icons[:15]
-
-    # Trailer icon (always present)
-    yt_search = f"https://www.youtube.com/results?search_query={quote_plus(title)}+trailer"
-    icons.append(("trailer", {"provider_name": "Trailer", "logo_path": None, "link": yt_search}))
-
-    st.markdown("<div class='provider-grid'>", unsafe_allow_html=True)
-
-    for kind, p in icons[:16]:
-        if kind == "trailer":
-            link = p["link"]
-            logo = LOGOS["Trailer"]
-            opacity = "1.0"
-            tooltip = "Trailer"
-        else:
-            provider = p.get("provider_name", "")
-            logo_path = p.get("logo_path")
-            if not logo_path:
-                continue
-
-            link = get_deep_link(provider, title, tmdb_id)
-            logo = f"{TMDB_LOGO_URL}{logo_path}"
-            opacity = "0.6" if kind == "rent" else "1.0"
-            tooltip = f"{provider} ({'Rent/Buy' if kind == 'rent' else 'Included'})"
-
-        st.markdown(
-            f"<a href='{safe(link)}' target='_blank' class='provider-btn' style='opacity:{opacity};' title='{safe(tooltip)}'>"
-            f"<img src='{safe(logo)}' class='provider-icon' alt='{safe(tooltip)}'>"
-            f"</a>",
-            unsafe_allow_html=True
-        )
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # Title and date
-    st.markdown(f"<div class='movie-title'>{safe(title)}</div>", unsafe_allow_html=True)
-    st.markdown(f"<div class='movie-sub'>{safe(item.get('release_date', ''))}</div>", unsafe_allow_html=True)
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# --------------------------------------------------
-# 14. QUICK DOPE HIT ENGINE
-# --------------------------------------------------
-def get_quick_dope_hit():
-    """Get ONE perfect match based on emotions"""
-    current = st.session_state.current_feeling
-    desired = st.session_state.desired_feeling
-
-    # Get emotion-filtered movies
-    candidates = discover_movies_by_emotion(
-        page=random.randint(1, 3),
-        current_feeling=current,
-        desired_feeling=desired
-    )
-
-    if not candidates:
-        return None
-
-    # Use AI to pick the BEST match
-    if openai_client and len(candidates) > 5:
-        titles = [m["title"] for m in candidates[:10]]
-        sorted_titles = sort_by_emotion(titles, current, desired)
-
-        # Return the top match
-        for title in sorted_titles[:1]:
-            match = next((m for m in candidates if m["title"] == title), None)
-            if match:
-                return match
-
-    # Fallback: return top result
-    return candidates[0]
-
-# --------------------------------------------------
-# 15. AUTH SCREENS
-# --------------------------------------------------
-def login_screen():
-    _, c, _ = st.columns([1, 1.2, 1])
-    with c:
-        st.markdown("<div class='card' style='padding:30px'>", unsafe_allow_html=True)
-        render_logo()
-        st.markdown("### Welcome to your dopamine engine")
-        e = st.text_input("Email")
-        st.text_input("Password", type="password")
-        if st.button("Log In", use_container_width=True):
-            st.session_state.user = e or "demo"
+def render_landing():
+    st.markdown("""
+    <div class="landing-hero">
+        <div class="hero-logo">🧠 Dopamine.watch</div>
+        <div class="hero-tagline">
+            Stop scrolling forever. Tell us how you feel, and we'll find the perfect movie, music, or video to match your mood — in seconds.
+        </div>
+        <div class="social-proof">
+            <div class="avatars">
+                <div class="avatar">😊</div>
+                <div class="avatar">🎯</div>
+                <div class="avatar">⚡</div>
+                <div class="avatar">🔥</div>
+                <div class="avatar">+2k</div>
+            </div>
+            <span>Join 2,000+ neurodivergent users finding their perfect content</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("⚡ Start Finding Your Vibe", use_container_width=True, type="primary"):
+            st.session_state.view = "onboarding"
             st.rerun()
-        st.markdown("---")
-        if st.button("Create Account", use_container_width=True):
-            st.session_state.auth_step = "signup"
-            st.rerun()
-        if st.button("Guest Mode", use_container_width=True):
-            st.session_state.user = "guest"
-            st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
-
-def signup_screen():
-    _, c, _ = st.columns([1, 1.2, 1])
-    with c:
-        st.markdown("<div class='card' style='padding:30px'>", unsafe_allow_html=True)
-        render_logo()
-        st.markdown("### Create your dopamine profile")
-        st.text_input("Username")
-        e = st.text_input("Email")
-        st.text_input("Password", type="password")
-        if st.button("Sign Up", use_container_width=True):
-            st.session_state.user = e or "demo"
-            st.rerun()
-        if st.button("Back to Login", use_container_width=True):
-            st.session_state.auth_step = "login"
-            st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
-
-def onboarding_baseline():
-    st.markdown("## 🧠 Let's calibrate your brain")
-    st.caption("This helps us personalize content for your neurodivergent needs")
-
-    triggers = st.multiselect(
-        "What overwhelms you?",
-        ["Loud sounds", "Flashing lights", "Fast cuts", "Emotional intensity", "Violence", "Jump scares"]
-    )
-
-    genres = st.multiselect(
-        "What do you enjoy?",
-        ["Action", "Anime", "Sci-Fi", "Comedy", "Documentary", "Fantasy", "Drama", "Horror", "Romance"]
-    )
-
-    decision = st.radio(
-        "When choosing content:",
-        ["Decide for me (Quick Dope Hit)", "Give me 3 options", "Let me explore freely"]
-    )
-
-    if st.button("Save & Start Watching", use_container_width=True):
-        st.session_state.baseline_prefs = {
-            "triggers": triggers,
-            "genres": genres,
-            "decision_style": decision
-        }
-        st.session_state.onboarding_complete = True
-        st.rerun()
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        with st.expander("🧠 Built for ADHD & neurodivergent brains"):
+            st.markdown("""
+            - **Decision paralysis?** We decide for you
+            - **Can't focus?** Quick dopamine hits on demand
+            - **Mood-driven** - not algorithm-driven
+            - **Zero overwhelm** - clean, simple, fast
+            """)
 
 # --------------------------------------------------
-# 16. MAIN LOBBY - EMOTION-DRIVEN EVERYTHING + NLP (Mr.DP)
+# 9. ONBOARDING
 # --------------------------------------------------
-def lobby_screen():
-    # SIDEBAR - ALL CONTROLS
-    with st.sidebar:
-        render_logo(sidebar=True)
-
-        st.markdown("### 🎯 How do you feel?")
-
-        FEELINGS = [
-            ("🌧️", "Sad"), ("🥺", "Lonely"), ("😰", "Anxious"), ("😵‍💫", "Overwhelmed"),
-            ("😡", "Angry"), ("😫", "Stressed"), ("😐", "Bored"), ("😴", "Tired"),
-            ("🫥", "Numb"), ("🤔", "Confused"), ("😬", "Restless"), ("🎯", "Focused"),
-            ("😌", "Calm"), ("😊", "Happy"), ("⚡", "Excited"), ("🧐", "Curious"),
-        ]
-
-        DESIRED_FEELINGS = [
-            ("🫶", "Comforted"), ("🌊", "Calm"), ("🛋️", "Relaxed"), ("🎯", "Focused"),
-            ("🔥", "Energized"), ("🚀", "Stimulated"), ("🌞", "Happy"), ("🍿", "Entertained"),
-            ("✨", "Inspired"), ("🌱", "Grounded"), ("🔍", "Curious"), ("🌙", "Sleepy"),
-            ("❤️", "Connected"),
-        ]
-
-        current_idx = next((i for i, (_, t) in enumerate(FEELINGS) if t == st.session_state.current_feeling), 0)
-        current_choice = st.selectbox(
-            "Right now I feel...",
-            options=[f"{e} {t}" for e, t in FEELINGS],
-            index=current_idx
-        )
-        st.session_state.current_feeling = current_choice.split(" ", 1)[1]
-
-        desired_idx = next((i for i, (_, t) in enumerate(DESIRED_FEELINGS) if t == st.session_state.desired_feeling), 0)
-        desired_choice = st.selectbox(
-            "I want to feel...",
-            options=[f"{e} {t}" for e, t in DESIRED_FEELINGS],
-            index=desired_idx
-        )
-        st.session_state.desired_feeling = desired_choice.split(" ", 1)[1]
-
-        st.markdown("---")
-
-        # QUICK DOPE HIT BUTTON IN SIDEBAR
-        if st.button("⚡ QUICK DOPE HIT", use_container_width=True):
-            with st.spinner("Finding your perfect match..."):
-                st.session_state.quick_hit = get_quick_dope_hit()
-                st.session_state.quick_hit_count += 1
+def render_onboarding():
+    st.markdown("<h1 style='text-align:center;margin-bottom:0'>How do you feel right now?</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center;color:var(--text-secondary);margin-bottom:2rem'>Pick one. We'll handle the rest.</p>", unsafe_allow_html=True)
+    
+    feelings = [
+        ("😐", "Bored"), ("😫", "Stressed"), ("😰", "Anxious"), ("😴", "Tired"),
+        ("🌧️", "Sad"), ("😡", "Angry"), ("🥺", "Lonely"), ("😵‍💫", "Overwhelmed"),
+    ]
+    
+    cols = st.columns(4)
+    for i, (emoji, feeling) in enumerate(feelings):
+        with cols[i % 4]:
+            if st.button(f"{emoji}\n{feeling}", key=f"feel_{feeling}", use_container_width=True):
+                st.session_state.current_feeling = feeling
+                st.session_state.moods_used.add(feeling)
+                
+    st.markdown("<br><h2 style='text-align:center'>What do you want to feel?</h2>", unsafe_allow_html=True)
+    
+    desired = [
+        ("🍿", "Entertained"), ("🔥", "Energized"), ("😌", "Relaxed"), ("✨", "Inspired"),
+        ("😊", "Happy"), ("🚀", "Stimulated"), ("🫶", "Comforted"), ("🌙", "Sleepy"),
+    ]
+    
+    cols = st.columns(4)
+    for i, (emoji, feeling) in enumerate(desired):
+        with cols[i % 4]:
+            if st.button(f"{emoji}\n{feeling}", key=f"want_{feeling}", use_container_width=True):
+                st.session_state.desired_feeling = feeling
+                st.session_state.moods_used.add(feeling)
+                st.session_state.view = "home"
+                st.session_state.movies_feed = discover_movies_by_emotion(
+                    current_feeling=st.session_state.current_feeling,
+                    desired_feeling=feeling
+                )
+                if st.session_state.movies_feed:
+                    st.session_state.hero_movie = st.session_state.movies_feed[0]
                 st.rerun()
 
-        st.metric("Dope Hits", st.session_state.quick_hit_count)
-
-        # --------------------------------------------------
-        # Mr.DP — NLP CHAT BOX (SIDEBAR)
-        # --------------------------------------------------
-        st.markdown("---")
-        st.markdown("### 🧾 Mr.DP")
-        st.caption("Your **librarian & curator** — dressed in velvet gloves, armed with chaos-friendly taste.\n\n"
-                   "Tell Mr.DP what you want. He’ll quietly pull the best matches from the library.")
-
-        dp_prompt = st.text_area(
-            "Ask Mr.DP",
-            placeholder="Examples: \n• ‘smart sci-fi from the 90s’\n• ‘something funny, low effort’\n• ‘Batman animated series’\n• ‘new thriller, not too scary’",
-            height=110,
-            key="mrdp_prompt_input"
+# --------------------------------------------------
+# 10. HOME SCREEN
+# --------------------------------------------------
+def render_home():
+    # Stats bar
+    st.markdown(f"""
+    <div class="stats-bar">
+        <div class="stat-item">
+            <div class="stat-value">🔥 {st.session_state.streak}</div>
+            <div class="stat-label">Day Streak</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">⚡ {st.session_state.dope_hits}</div>
+            <div class="stat-label">Dope Hits</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">🏆 {len(st.session_state.badges)}</div>
+            <div class="stat-label">Badges</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Quick Dope Hit Button
+    if st.button("⚡ QUICK DOPE HIT ⚡", use_container_width=True, type="primary"):
+        movies = discover_movies_by_emotion(
+            page=random.randint(1, 3),
+            current_feeling=st.session_state.current_feeling,
+            desired_feeling=st.session_state.desired_feeling
         )
-
-        col_a, col_b = st.columns(2)
-        with col_a:
-            if st.button("Ask", use_container_width=True, key="mrdp_ask_btn"):
-                if dp_prompt.strip():
-                    with st.spinner("Mr.DP is pulling the catalog..."):
-                        st.session_state.nlp_prompt = dp_prompt
-                        st.session_state.nlp_last_prompt = dp_prompt
-                        st.session_state.nlp_page = 1
-                        st.session_state.nlp_plan = nlp_to_tmdb_plan(dp_prompt)
-                        st.session_state.nlp_results = nlp_search_tmdb(st.session_state.nlp_plan, page=1)
-                        # keep normal search clean
-                        st.session_state.search_query = ""
-                        st.session_state.search_results = []
-                        st.session_state.search_page = 1
-                    st.rerun()
-        with col_b:
-            if st.button("Clear", use_container_width=True, key="mrdp_clear_btn"):
-                st.session_state.nlp_prompt = ""
-                st.session_state.nlp_plan = None
-                st.session_state.nlp_results = []
-                st.session_state.nlp_page = 1
-                st.session_state.nlp_last_prompt = ""
-                st.rerun()
-
-        st.markdown("---")
-        if st.button("🚪 Log out", use_container_width=True):
-            st.session_state.user = None
+        if movies:
+            st.session_state.quick_hit = random.choice(movies[:5])
+            st.session_state.dope_hits += 1
+            check_badges()
             st.rerun()
-
-    # MAIN CONTENT AREA - ONLY MEDIA
-    st.markdown("## 🔎 The Lobby")
-
-    # --------------------------------------------------
-    # Mr.DP RESULTS (MAIN AREA)
-    # --------------------------------------------------
-    if st.session_state.nlp_last_prompt:
-        st.markdown(f"### 📚 Mr.DP pulled these for: ‘{safe(st.session_state.nlp_last_prompt)}’")
-
-        if st.session_state.nlp_plan and st.session_state.nlp_plan.get("query"):
-            st.caption(f"Search query: {st.session_state.nlp_plan.get('query')}")
-
-        # Clear / Load More controls
-        c1, c2, c3 = st.columns([1, 1, 2])
-        with c1:
-            if st.button("Load more", use_container_width=True, key="mrdp_load_more"):
-                st.session_state.nlp_page += 1
-                more = nlp_search_tmdb(st.session_state.nlp_plan, page=st.session_state.nlp_page)
-                st.session_state.nlp_results.extend(more)
-                st.rerun()
-        with c2:
-            if st.button("Clear results", use_container_width=True, key="mrdp_clear_main"):
-                st.session_state.nlp_prompt = ""
-                st.session_state.nlp_plan = None
-                st.session_state.nlp_results = []
-                st.session_state.nlp_page = 1
-                st.session_state.nlp_last_prompt = ""
-                st.rerun()
-        with c3:
-            st.caption(f"Page {st.session_state.nlp_page}")
-
-        if not st.session_state.nlp_results:
-            st.warning("No matches yet. Try being more specific (title, genre, actor, year).")
-        else:
-            cols = st.columns(6)
-            for i, item in enumerate(st.session_state.nlp_results):
-                with cols[i % 6]:
-                    render_movie_card(item)
-
-        return  # Keep Mr.DP results as the primary view
-
-    # --------------------------------------------------
-    # Show quick hit result if exists
-    # --------------------------------------------------
+    
+    # Show Quick Hit Result
     if st.session_state.quick_hit:
-        st.markdown("### 🎬 Your Perfect Match:")
-        cols = st.columns([1, 2, 1])
+        movie = st.session_state.quick_hit
+        st.markdown(f"### 🎯 Your Perfect Match")
+        
+        cols = st.columns([1, 2])
+        with cols[0]:
+            st.image(movie["poster"], use_container_width=True)
         with cols[1]:
-            render_movie_card(st.session_state.quick_hit)
-
-        col_a, col_b = st.columns(2)
-        with col_a:
-            if st.button("🔄 Give me another hit", use_container_width=True):
-                st.session_state.quick_hit = get_quick_dope_hit()
-                st.session_state.quick_hit_count += 1
-                st.rerun()
-        with col_b:
-            if st.button("✕ Close", use_container_width=True):
-                st.session_state.quick_hit = None
-                st.rerun()
-
-    st.markdown("---")
-
-    # SEARCH BAR
-    query = st.text_input("🔍 Search for something specific...", key="search_input")
-
-    if query and query != st.session_state.search_query:
-        st.session_state.search_query = query
-        st.session_state.search_page = 1
-        st.session_state.search_results = search_movies_only(query, page=1)
-
-    if st.session_state.search_query and st.button("Clear Search", use_container_width=True):
-        st.session_state.search_query = ""
-        st.session_state.search_results = []
-        st.session_state.search_page = 1
-        st.rerun()
-
-    # Show search results
-    if st.session_state.search_results:
-        st.markdown(f"### 🔎 Results for '{safe(st.session_state.search_query)}'")
-        cols = st.columns(6)
-        for i, item in enumerate(st.session_state.search_results[:18]):
-            with cols[i % 6]:
-                render_movie_card(item)
-
-        if len(st.session_state.search_results) >= 18:
-            if st.button("Load more results", use_container_width=True):
-                st.session_state.search_page += 1
-                more = search_movies_only(st.session_state.search_query, st.session_state.search_page)
-                st.session_state.search_results.extend(more)
-                st.rerun()
-
-        return  # Don't show tabs when searching
-
-    # TABS - ALL EMOTION-DRIVEN
-    st.markdown("## 🎬 Explore by type")
-
-    t1, t2, t3, t4, t5 = st.tabs(["🎬 Movies", "⚡ Shot", "🎵 Music", "🎙️ Podcasts", "📚 Audiobooks"])
-
-    # TAB 1: MOVIES (emotion-filtered)
-    with t1:
-        emotion_key = f"{st.session_state.current_feeling}_{st.session_state.desired_feeling}"
-
-        # Reload feed if emotions changed
-        if st.session_state.last_emotion_key != emotion_key:
-            st.session_state.movies_page = 1
+            st.markdown(f"## {movie['title']}")
+            if movie.get("vote_average"):
+                st.markdown(f"⭐ {movie['vote_average']:.1f}/10")
+            st.markdown(movie.get("overview", "")[:200] + "...")
+            
+            # Providers
+            provs = get_streaming_providers(movie["id"], movie["type"])
+            if provs["flatrate"]:
+                st.markdown("**Watch on:**")
+                provider_html = ""
+                for p in provs["flatrate"][:4]:
+                    link = get_deep_link(p.get("provider_name", ""), movie["title"])
+                    if link and p.get("logo_path"):
+                        logo = f"{TMDB_LOGO_URL}{p['logo_path']}"
+                        provider_html += f"<a href='{link}' target='_blank'><img src='{logo}' class='provider-icon'></a>"
+                st.markdown(f"<div class='provider-grid'>{provider_html}</div>", unsafe_allow_html=True)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🔄 Try Another", use_container_width=True):
+                    st.session_state.quick_hit = None
+                    st.rerun()
+            with col2:
+                if st.button("📤 Share", use_container_width=True):
+                    st.session_state.show_share_modal = True
+        
+        st.markdown("---")
+    
+    # Search
+    search = st.text_input("🔍 Search movies, shows, actors...", key="search_input")
+    if search:
+        results = search_movies(search)
+        if results:
+            st.markdown(f"### Results for '{search}'")
+            cols = st.columns(6)
+            for i, movie in enumerate(results[:12]):
+                with cols[i % 6]:
+                    render_movie_card(movie)
+            return
+    
+    # Content Tabs
+    tab1, tab2, tab3, tab4 = st.tabs(["🎬 Movies", "⚡ Shots", "🎵 Music", "🎙️ Podcasts"])
+    
+    with tab1:
+        st.session_state.tabs_explored.add("movies")
+        
+        # Trending
+        trending = get_trending()
+        if trending:
+            st.markdown("### 🔥 Trending Now")
+            cols = st.columns(5)
+            for i, movie in enumerate(trending[:5]):
+                with cols[i]:
+                    render_movie_card(movie)
+        
+        # Mood-based
+        st.markdown(f"### ✨ Perfect for feeling {st.session_state.desired_feeling}")
+        if not st.session_state.movies_feed:
             st.session_state.movies_feed = discover_movies_by_emotion(
-                page=1,
                 current_feeling=st.session_state.current_feeling,
                 desired_feeling=st.session_state.desired_feeling
             )
-            st.session_state.last_emotion_key = emotion_key
-        elif not st.session_state.movies_feed:
-            st.session_state.movies_feed = discover_movies_by_emotion(page=1)
-
-        if st.session_state.movies_feed:
-            # Show AI-sorted feed
-            titles = [m["title"] for m in st.session_state.movies_feed[:20]]
-            sorted_titles = sort_by_emotion(
-                titles,
-                st.session_state.current_feeling,
-                st.session_state.desired_feeling
+        
+        cols = st.columns(6)
+        for i, movie in enumerate(st.session_state.movies_feed[:12]):
+            with cols[i % 6]:
+                render_movie_card(movie)
+        
+        if st.button("Load More", use_container_width=True):
+            st.session_state.movies_page += 1
+            more = discover_movies_by_emotion(
+                page=st.session_state.movies_page,
+                current_feeling=st.session_state.current_feeling,
+                desired_feeling=st.session_state.desired_feeling
             )
+            st.session_state.movies_feed.extend(more)
+            st.rerun()
+    
+    with tab2:
+        st.session_state.tabs_explored.add("shots")
+        vk = FEELING_TO_VIDEOS.get(st.session_state.desired_feeling, "trending")
+        st.markdown(f"### ⚡ Quick Dopamine: {vk.title()}")
+        yt_url = f"https://www.youtube.com/results?search_query={quote_plus(vk)}+shorts"
+        st.markdown(f"<a href='{yt_url}' target='_blank' class='btn-primary' style='text-decoration:none;display:inline-block;margin-bottom:1rem'>🎥 Watch {vk.title()} Shorts →</a>", unsafe_allow_html=True)
+        components.iframe(f"https://www.youtube.com/embed?listType=search&list={quote_plus(vk)}", height=400)
+    
+    with tab3:
+        st.session_state.tabs_explored.add("music")
+        mk = FEELING_TO_MUSIC.get(st.session_state.desired_feeling, "feel good")
+        st.markdown(f"### 🎵 Music for: {mk.title()}")
+        sp_url = f"https://open.spotify.com/search/{quote_plus(mk)}"
+        st.markdown(f"<a href='{sp_url}' target='_blank' class='btn-primary' style='text-decoration:none;display:inline-block;margin-bottom:1rem'>🎧 Open in Spotify →</a>", unsafe_allow_html=True)
+        playlists = {"Anxious": "37i9dQZF1DWXe9gFZP0gtP", "Energized": "37i9dQZF1DX76Wlfdnj7AP", "Happy": "37i9dQZF1DX3rxVfibe1L0", "Relaxed": "37i9dQZF1DWTvS1gIcZVp4", "Focused": "37i9dQZF1DWZeKCadgRdKQ"}
+        pid = playlists.get(st.session_state.desired_feeling, "37i9dQZF1DX3rxVfibe1L0")
+        components.iframe(f"https://open.spotify.com/embed/playlist/{pid}", height=380)
+    
+    with tab4:
+        st.session_state.tabs_explored.add("podcasts")
+        topics = {"Anxious": "mental health calm", "Curious": "science explained", "Inspired": "motivational success", "Bored": "true crime mystery", "Focused": "productivity", "Happy": "comedy"}
+        topic = topics.get(st.session_state.desired_feeling, "trending podcasts")
+        st.markdown(f"### 🎙️ Podcasts: {topic.title()}")
+        sp_url = f"https://open.spotify.com/search/{quote_plus(topic)}%20podcast"
+        st.markdown(f"<a href='{sp_url}' target='_blank' class='btn-primary' style='text-decoration:none;display:inline-block'>🎙️ Find Podcasts →</a>", unsafe_allow_html=True)
+    
+    check_badges()
+    
+    # Badges display
+    if st.session_state.badges:
+        st.markdown("---")
+        st.markdown("### 🏆 Your Badges")
+        badge_html = ""
+        for badge_id in st.session_state.badges:
+            b = BADGES.get(badge_id, {})
+            badge_html += f"<span class='badge earned'>{b.get('icon', '🏆')} {b.get('name', badge_id)}</span>"
+        st.markdown(f"<div class='badges-row'>{badge_html}</div>", unsafe_allow_html=True)
+    
+    # Sidebar for mood change
+    with st.sidebar:
+        st.markdown("### 🎯 Current Mood")
+        st.markdown(f"**Feeling:** {st.session_state.current_feeling}")
+        st.markdown(f"**Want:** {st.session_state.desired_feeling}")
+        
+        if st.button("🔄 Change Mood", use_container_width=True):
+            st.session_state.view = "onboarding"
+            st.rerun()
+        
+        st.markdown("---")
+        st.markdown("### 📤 Share & Earn")
+        st.markdown("Invite friends to unlock exclusive badges!")
+        
+        share_url = "https://dopamine.watch"
+        st.code(share_url, language=None)
+        
+        if st.button("📋 Copy Link", use_container_width=True):
+            st.toast("Link copied! 🎉")
+            if "share_first" not in st.session_state.badges:
+                st.session_state.badges.append("share_first")
 
-            # Reorder feed
-            feed_map = {m["title"]: m for m in st.session_state.movies_feed}
-            sorted_feed = []
-            for title in sorted_titles:
-                if title in feed_map:
-                    sorted_feed.append(feed_map[title])
-
-            # Add remaining unsorted
-            for m in st.session_state.movies_feed:
-                if m not in sorted_feed:
-                    sorted_feed.append(m)
-
-            # Display grid
-            cols = st.columns(6)
-            for i, item in enumerate(sorted_feed[:18]):
-                with cols[i % 6]:
-                    render_movie_card(item)
-
-            # Load more
-            if st.button("Load More Movies", use_container_width=True):
-                st.session_state.movies_page += 1
-                more = discover_movies_by_emotion(
-                    page=st.session_state.movies_page,
-                    current_feeling=st.session_state.current_feeling,
-                    desired_feeling=st.session_state.desired_feeling
-                )
-                st.session_state.movies_feed.extend(more)
-                st.rerun()
-        else:
-            st.warning("No movies found. Try adjusting your feelings.")
-
-    # TAB 2: SHOT (TikTok-style videos)
-    with t2:
-        st.markdown("### ⚡ Quick dopamine shots")
-
-        # Get video keyword based on desired feeling
-        video_keyword = FEELING_TO_VIDEOS.get(
-            st.session_state.desired_feeling,
-            "trending viral videos"
-        )
-
-        st.markdown(f"**Curated for:** {safe(st.session_state.desired_feeling)}")
-
-        # Embed YouTube search results (no API needed)
-        yt_search_url = f"https://www.youtube.com/results?search_query={quote_plus(video_keyword)}+shorts"
-
-        st.markdown(
-            f"<a href='{yt_search_url}' target='_blank'>"
-            f"<button style='width:100%; padding:20px; font-size:1.1rem;'>"
-            f"🎥 Watch {safe(video_keyword.title())} Videos →"
-            f"</button></a>",
-            unsafe_allow_html=True
-        )
-
-        # Show sample embed
-        sample_videos = {
-            "Anxious": "https://www.youtube.com/embed/1ZYbU82GVz4",  # Oddly satisfying
-            "Sad": "https://www.youtube.com/embed/AK3PWHxoT_E",  # Wholesome animals
-            "Bored": "https://www.youtube.com/embed/tlTKTTt47WE",  # Mind blown
-            "Tired": "https://www.youtube.com/embed/UfcAVejslrU",  # ASMR
-        }
-
-        embed = sample_videos.get(st.session_state.desired_feeling, sample_videos["Bored"])
-        components.iframe(embed, height=400)
-
-    # TAB 3: MUSIC (emotion-driven Spotify)
-    with t3:
-        st.markdown("### 🎵 Music for your mood")
-
-        # Get music keyword based on feelings
-        music_keyword = FEELING_TO_MUSIC.get(
-            st.session_state.desired_feeling,
-            "feel good music"
-        )
-
-        st.markdown(f"**Curated for:** {safe(st.session_state.desired_feeling)}")
-
-        # Spotify search embed (works without API)
-        spotify_search_url = f"https://open.spotify.com/search/{quote_plus(music_keyword)}"
-
-        st.markdown(
-            f"<a href='{spotify_search_url}' target='_blank'>"
-            f"<button style='width:100%; padding:20px; font-size:1.1rem;'>"
-            f"🎧 Listen to {safe(music_keyword.title())} →"
-            f"</button></a>",
-            unsafe_allow_html=True
-        )
-
-        # Popular playlists by mood
-        mood_playlists = {
-            "Anxious": "37i9dQZF1DWXe9gFZP0gtP",  # Peaceful Piano
-            "Energized": "37i9dQZF1DX76Wlfdnj7AP",  # Beast Mode
-            "Happy": "37i9dQZF1DX3rxVfibe1L0",  # Mood Booster
-            "Sad": "37i9dQZF1DX7qK8ma5wgG1",  # Life Sucks
-            "Focused": "37i9dQZF1DWZeKCadgRdKQ",  # Deep Focus
-        }
-
-        playlist_id = mood_playlists.get(st.session_state.desired_feeling, "37i9dQZF1DX3rxVfibe1L0")
-        components.iframe(
-            f"https://open.spotify.com/embed/playlist/{playlist_id}?utm_source=generator",
-            height=380
-        )
-
-    # TAB 4: PODCASTS (emotion-driven)
-    with t4:
-        st.markdown("### 🎙️ Podcasts for your headspace")
-
-        podcast_topics = {
-            "Anxious": "anxiety mental health",
-            "Curious": "science explained",
-            "Inspired": "motivational success",
-            "Bored": "true crime mystery",
-            "Focused": "productivity business",
-            "Happy": "comedy funny",
-        }
-
-        topic = podcast_topics.get(st.session_state.desired_feeling, "trending podcasts")
-
-        st.markdown(f"**Recommended:** {safe(topic.title())}")
-
-        # Spotify podcast search
-        spotify_url = f"https://open.spotify.com/search/{quote_plus(topic)}%20podcast"
-
-        st.markdown(
-            f"<a href='{spotify_url}' target='_blank'>"
-            f"<button style='width:100%; padding:20px; font-size:1.1rem;'>"
-            f"🎙️ Find {safe(topic.title())} Podcasts →"
-            f"</button></a>",
-            unsafe_allow_html=True
-        )
-
-        # Featured podcasts
-        st.markdown("#### 🔥 Popular picks:")
-        featured = [
-            ("Huberman Lab", "Science-based mental health", "https://open.spotify.com/show/79CkJF3UJTHFV8Dse3Oy0P"),
-            ("The Daily", "News explained", "https://open.spotify.com/show/3IM0lmZxpFAY7CwMuv9H4g"),
-            ("SmartLess", "Comedy interviews", "https://open.spotify.com/show/5fYAKY5CtCCpVqfcP1OXzl"),
-        ]
-
-        for title, desc, url in featured:
-            st.markdown(
-                f"**{safe(title)}** - {safe(desc)} | [Listen →]({url})",
-                unsafe_allow_html=True
-            )
-
-    # TAB 5: AUDIOBOOKS (emotion-driven)
-    with t5:
-        st.markdown("### 📚 Audiobooks for your vibe")
-
-        audiobook_genres = {
-            "Anxious": "self-help mindfulness",
-            "Curious": "science history",
-            "Inspired": "biography motivation",
-            "Bored": "thriller mystery",
-            "Sleepy": "fantasy fiction",
-            "Happy": "romance comedy",
-        }
-
-        genre = audiobook_genres.get(st.session_state.desired_feeling, "bestsellers")
-
-        st.markdown(f"**Genre match:** {safe(genre.title())}")
-
-        # Audible search
-        audible_url = f"https://www.audible.com/search?keywords={quote_plus(genre)}"
-
-        st.markdown(
-            f"<a href='{audible_url}' target='_blank'>"
-            f"<button style='width:100%; padding:20px; font-size:1.1rem;'>"
-            f"📖 Browse {safe(genre.title())} Audiobooks →"
-            f"</button></a>",
-            unsafe_allow_html=True
-        )
-
-        # Libro.fm (supports indie bookstores)
-        libro_url = f"https://libro.fm/search?search={quote_plus(genre)}"
-
-        st.markdown(
-            f"<a href='{libro_url}' target='_blank'>"
-            f"<button style='width:100%; padding:20px; font-size:1.1rem;'>"
-            f"📚 Support Indie Bookstores (Libro.fm) →"
-            f"</button></a>",
-            unsafe_allow_html=True
-        )
-
-        st.caption("💡 Tip: Check if your library offers free audiobooks via Libby or Hoopla!")
-
+def render_movie_card(movie):
+    provs = get_streaming_providers(movie["id"], movie["type"])
+    first_provider = provs["flatrate"][0] if provs["flatrate"] else None
+    link = get_deep_link(first_provider.get("provider_name", ""), movie["title"]) if first_provider else f"https://www.google.com/search?q={quote_plus(movie['title'])}"
+    
+    st.markdown(f"""
+    <a href="{link}" target="_blank" style="text-decoration:none;color:inherit">
+        <div class="movie-card">
+            <img src="{movie['poster']}" class="movie-poster" loading="lazy">
+            <div class="movie-info">
+                <div class="movie-title">{safe(movie['title'])}</div>
+                <div class="movie-meta">
+                    {f"<span class='movie-rating'>⭐ {movie['vote_average']:.1f}</span>" if movie.get('vote_average') else ""}
+                    <span>{movie.get('release_date', '')[:4]}</span>
+                </div>
+            </div>
+        </div>
+    </a>
+    """, unsafe_allow_html=True)
 
 # --------------------------------------------------
-# 17. MAIN ROUTER
+# 11. ROUTER
 # --------------------------------------------------
-if not st.session_state.user:
-    if st.session_state.auth_step == "signup":
-        signup_screen()
-    else:
-        login_screen()
-    st.stop()
-
-if not st.session_state.onboarding_complete:
-    onboarding_baseline()
-    st.stop()
-
-lobby_screen()
+if st.session_state.view == "landing":
+    render_landing()
+elif st.session_state.view == "onboarding":
+    render_onboarding()
+else:
+    render_home()
