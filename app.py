@@ -14,7 +14,6 @@
 
 import streamlit as st
 import os
-import textwrap
 import requests
 import json
 import base64
@@ -2195,13 +2194,14 @@ def render_hero(movie):
     # Trailer button HTML
     trailer_btn = ""
     if trailer_key:
-        trailer_btn = textwrap.dedent(f"""
+        trailer_btn = f'''
         <a href="https://www.youtube.com/watch?v={trailer_key}" target="_blank" class="hero-trailer-btn" title="Watch Trailer">
             <span class="hero-play-icon">▶</span>
             <span>Watch Trailer</span>
         </a>
-        """).strip()
-    hero_html = textwrap.dedent(f"""
+        '''
+    
+    st.markdown(f"""
     <style>
     .hero-trailer-btn {{
         display: inline-flex;
@@ -2244,8 +2244,7 @@ def render_hero(movie):
             {trailer_btn}
         </div>
     </div>
-    """).strip()
-    st.markdown(hero_html, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 def render_service_buttons(services, query):
     for name, data in services.items():
@@ -2803,47 +2802,21 @@ def render_main():
         # Use components.html with LONGER delays to beat Streamlit's scroll
         components.html("""
         <script>
-        (function(){
-          const parent = window.parent;
-          const start = Date.now();
-
-          function doScroll(){
-            try {
-              const doc = parent.document;
-              const container =
-                doc.querySelector('div[data-testid="stAppViewContainer"]') ||
-                doc.querySelector('[data-testid="stAppViewContainer"]') ||
-                doc.querySelector('section.main') ||
-                doc.querySelector('.main') ||
-                doc.documentElement;
-
-              if (container && container.scrollTo) {
-                container.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-              } else if (container) {
-                container.scrollTop = 0;
-              }
-              doc.body.scrollTop = 0;
-              doc.documentElement.scrollTop = 0;
-              parent.scrollTo(0, 0);
-            } catch(e) {}
-          }
-
-          function keepScrolling(){
-            doScroll();
-            if (Date.now() - start < 6000) {
-              requestAnimationFrame(keepScrolling);
+            function scrollToTop() {
+                try {
+                    var container = window.parent.document.querySelector('[data-testid="stAppViewContainer"]');
+                    if (container) container.scrollTop = 0;
+                    var main = window.parent.document.querySelector('.main');
+                    if (main) main.scrollTop = 0;
+                    window.parent.scrollTo(0, 0);
+                } catch(e) {}
             }
-          }
-
-          // Kick off several times to beat Streamlit's auto-focus on chat_input
-          setTimeout(keepScrolling, 200);
-          setTimeout(keepScrolling, 800);
-          setTimeout(keepScrolling, 1600);
-          setTimeout(keepScrolling, 3200);
-          setTimeout(keepScrolling, 5200);
-        })();
+            // Much longer delays to beat Streamlit's auto-focus on chat_input
+            setTimeout(scrollToTop, 500);
+            setTimeout(scrollToTop, 1000);
+            setTimeout(scrollToTop, 1500);
         </script>
-""", height=0)
+        """, height=0)
         st.session_state.scroll_to_top = False  # Clear flag
     
     render_stats_bar()
