@@ -2864,7 +2864,7 @@ def render_main():
         desired_f = response.get("desired_feeling", "")
         genres = response.get("genres", "")
         
-        # Anchor for auto-scroll + Header with mood info
+        # Anchor + Header with mood info
         st.markdown(f"""
         <div id="mr-dp-results"></div>
         <div class="section-header" style="margin-bottom: 8px;">
@@ -2876,20 +2876,6 @@ def render_main():
             {f'<span style="padding:6px 14px;background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.2);border-radius:20px;font-size:0.85rem;color:var(--text-primary);">→ {MOOD_EMOJIS.get(desired_f, "✨")} {desired_f}</span>' if desired_f else ''}
             {f'<span style="padding:6px 14px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:20px;font-size:0.85rem;color:var(--text-primary);">🎬 {genres}</span>' if genres else ''}
         </div>
-        <script>
-            // Auto-scroll to TOP of page to see results
-            setTimeout(function() {{
-                // Try multiple scroll methods for Streamlit compatibility
-                window.scrollTo({{ top: 0, behavior: 'smooth' }});
-                document.documentElement.scrollTop = 0;
-                document.body.scrollTop = 0;
-                // Streamlit's main container
-                var main = document.querySelector('[data-testid="stAppViewContainer"]');
-                if (main) main.scrollTop = 0;
-                var mainBlock = document.querySelector('.main');
-                if (mainBlock) mainBlock.scrollTop = 0;
-            }}, 200);
-        </script>
         """, unsafe_allow_html=True)
         
         # Movie grid
@@ -3143,13 +3129,15 @@ if not st.session_state.get("user"):
         render_landing()
 else:
     render_sidebar()
-    render_main()
+    
+    # Render floating Mr.DP chat widget FIRST (fixed position, won't cause scroll)
+    render_mr_dp_chat_widget()
     
     # Render support resources modal (always available)
     render_support_resources_modal()
     
-    # Render floating Mr.DP chat widget
-    render_mr_dp_chat_widget()
+    # Main content
+    render_main()
     
     # MR.DP CHAT INPUT - Using st.chat_input for Enter key support
     # This creates a floating input at the bottom
