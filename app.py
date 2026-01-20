@@ -1863,40 +1863,42 @@ def render_mr_dp_chat_widget():
     history = st.session_state.get("mr_dp_chat_history", [])
     show_chat = st.session_state.get("mr_dp_open", False) or len(history) > 0
     
-    # Build chat history HTML
+    # Build chat history HTML with INLINE STYLES (classes don't render in Streamlit)
     chat_html = ""
     if not history:
         chat_html = f'''
         <div style="text-align:center; padding:20px;">
             <div style="width:64px;height:64px;margin:0 auto 12px;">{avatar_img}</div>
-            <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;">Hey! I'm Mr.DP 🧠</div>
-            <div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.5;">
+            <div style="font-weight:600;color:white;margin-bottom:8px;">Hey! I'm Mr.DP 🧠</div>
+            <div style="font-size:0.85rem;color:rgba(255,255,255,0.6);line-height:1.5;">
                 Your dopamine curator. Tell me how you feel and I'll find the perfect content!
             </div>
             <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
-                <span style="padding:8px 12px;background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;font-size:0.8rem;color:var(--text-secondary);">Try: "I'm bored"</span>
-                <span style="padding:8px 12px;background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;font-size:0.8rem;color:var(--text-secondary);">"make me laugh"</span>
+                <span style="padding:8px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:16px;font-size:0.8rem;color:rgba(255,255,255,0.5);">Try: "I'm bored"</span>
+                <span style="padding:8px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:16px;font-size:0.8rem;color:rgba(255,255,255,0.5);">"make me laugh"</span>
             </div>
         </div>
         '''
     else:
         for msg in history[-6:]:
             if msg["role"] == "user":
+                # User message - gradient background, right aligned
                 chat_html += f'''
-                <div class="mr-dp-msg mr-dp-msg-user">{safe(msg["content"])}</div>
+                <div style="max-width:85%;padding:10px 14px;border-radius:16px;border-bottom-right-radius:4px;font-size:0.9rem;line-height:1.5;background:linear-gradient(135deg,#8b5cf6,#06b6d4);color:white;align-self:flex-end;margin-left:auto;">{safe(msg["content"])}</div>
                 '''
             else:
+                # Bot message - glass background, left aligned
                 tags_html = ""
                 if msg.get("current_feeling") or msg.get("desired_feeling"):
-                    tags_html = '<div class="mr-dp-msg-tags">'
+                    tags_html = '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;">'
                     if msg.get("current_feeling"):
-                        tags_html += f'<span class="mr-dp-msg-tag">{MOOD_EMOJIS.get(msg["current_feeling"], "😊")} {msg["current_feeling"]}</span>'
+                        tags_html += f'<span style="padding:3px 8px;background:rgba(139,92,246,0.2);border-radius:10px;font-size:0.7rem;color:rgba(255,255,255,0.8);">{MOOD_EMOJIS.get(msg["current_feeling"], "😊")} {msg["current_feeling"]}</span>'
                     if msg.get("desired_feeling"):
-                        tags_html += f'<span class="mr-dp-msg-tag">→ {MOOD_EMOJIS.get(msg["desired_feeling"], "✨")} {msg["desired_feeling"]}</span>'
+                        tags_html += f'<span style="padding:3px 8px;background:rgba(6,182,212,0.2);border-radius:10px;font-size:0.7rem;color:rgba(255,255,255,0.8);">→ {MOOD_EMOJIS.get(msg["desired_feeling"], "✨")} {msg["desired_feeling"]}</span>'
                     tags_html += '</div>'
                 
                 chat_html += f'''
-                <div class="mr-dp-msg mr-dp-msg-bot">{safe(msg["content"])}{tags_html}</div>
+                <div style="max-width:85%;padding:10px 14px;border-radius:16px;border-bottom-left-radius:4px;font-size:0.9rem;line-height:1.5;background:linear-gradient(135deg,rgba(139,92,246,0.12),rgba(6,182,212,0.08));border:1px solid rgba(139,92,246,0.15);color:white;align-self:flex-start;">{safe(msg["content"])}{tags_html}</div>
                 '''
     
     # Render complete floating widget HTML
@@ -1946,7 +1948,7 @@ def render_mr_dp_chat_widget():
         height: 24px;
         background: #10b981;
         border-radius: 50%;
-        border: 3px solid var(--bg-primary);
+        border: 3px solid #050508;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1961,7 +1963,7 @@ def render_mr_dp_chat_widget():
         right: 24px;
         width: 360px;
         max-height: 480px;
-        background: var(--bg-secondary);
+        background: #0a0a0f;
         border: 1px solid rgba(139, 92, 246, 0.3);
         border-radius: 24px;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(139, 92, 246, 0.1);
@@ -1987,14 +1989,14 @@ def render_mr_dp_chat_widget():
     
     .mr-dp-popup-title {{
         font-weight: 700;
-        background: var(--accent-gradient);
+        background: linear-gradient(135deg, #8b5cf6, #06b6d4, #10b981);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }}
     
     .mr-dp-popup-status {{
         font-size: 0.7rem;
-        color: var(--text-secondary);
+        color: rgba(255,255,255,0.6);
         display: flex;
         align-items: center;
         gap: 6px;
@@ -2018,48 +2020,12 @@ def render_mr_dp_chat_widget():
         max-height: 280px;
     }}
     
-    .mr-dp-msg {{
-        max-width: 85%;
-        padding: 10px 14px;
-        border-radius: 16px;
-        font-size: 0.9rem;
-        line-height: 1.5;
-    }}
-    
-    .mr-dp-msg-bot {{
-        background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%);
-        border: 1px solid rgba(139, 92, 246, 0.15);
-        align-self: flex-start;
-        border-bottom-left-radius: 4px;
-    }}
-    
-    .mr-dp-msg-user {{
-        background: linear-gradient(135deg, #8b5cf6, #06b6d4);
-        color: white;
-        align-self: flex-end;
-        border-bottom-right-radius: 4px;
-    }}
-    
-    .mr-dp-msg-tags {{
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-        margin-top: 8px;
-    }}
-    
-    .mr-dp-msg-tag {{
-        padding: 3px 8px;
-        background: rgba(139, 92, 246, 0.2);
-        border-radius: 10px;
-        font-size: 0.7rem;
-    }}
-    
     .mr-dp-support {{
         padding: 8px 16px;
         background: rgba(16, 185, 129, 0.08);
         border-top: 1px solid rgba(16, 185, 129, 0.15);
         font-size: 0.7rem;
-        color: var(--text-secondary);
+        color: rgba(255,255,255,0.6);
         text-align: center;
     }}
     
