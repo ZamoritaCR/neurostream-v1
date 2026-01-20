@@ -582,57 +582,159 @@ def get_movie_deep_link(provider_name, title):
     return None
 
 # --------------------------------------------------
-# 9. NLP ENGINE (Mr.DP)
+# 9. NLP ENGINE (Mr.DP) - ENHANCED
 # --------------------------------------------------
 def nlp_infer_feelings(prompt):
+    """Enhanced feeling detection with more keywords and smart inference"""
     t = (prompt or "").lower()
     current, desired = None, None
     
-    if any(k in t for k in ["bore", "boring", "nothing to watch", "meh", "blah"]):
-        current = "Bored"
-    elif any(k in t for k in ["stress", "burnout", "overwhelm", "too much"]):
-        current = "Stressed"
-    elif any(k in t for k in ["anxious", "anxiety", "panic", "nervous", "worried"]):
-        current = "Anxious"
-    elif any(k in t for k in ["sad", "down", "depressed", "blue", "crying"]):
-        current = "Sad"
-    elif any(k in t for k in ["lonely", "alone", "isolated"]):
-        current = "Lonely"
-    elif any(k in t for k in ["angry", "mad", "pissed", "furious", "rage"]):
-        current = "Angry"
-    elif any(k in t for k in ["tired", "exhaust", "drained", "sleepy", "fatigue"]):
-        current = "Tired"
-    elif any(k in t for k in ["numb", "empty", "void", "nothing"]):
-        current = "Numb"
-    elif any(k in t for k in ["confus", "lost", "uncertain"]):
-        current = "Confused"
-    elif any(k in t for k in ["restless", "antsy", "fidget"]):
-        current = "Restless"
+    # CURRENT FEELING DETECTION (expanded keywords)
+    current_map = {
+        "Bored": ["bored", "boring", "nothing to watch", "meh", "blah", "dull", "uninterested", "nothing good", "same old", "monoton"],
+        "Stressed": ["stress", "burnout", "overwhelm", "too much", "pressure", "tense", "wound up", "frazzled", "overwork"],
+        "Anxious": ["anxious", "anxiety", "panic", "nervous", "worried", "uneasy", "on edge", "jittery", "freaking out", "scared"],
+        "Sad": ["sad", "down", "depressed", "blue", "crying", "upset", "unhappy", "miserable", "low", "bummed", "heartbr", "grief"],
+        "Lonely": ["lonely", "alone", "isolated", "nobody", "no one", "by myself", "disconnected", "miss people"],
+        "Angry": ["angry", "mad", "pissed", "furious", "rage", "annoyed", "irritated", "frustrated", "aggravat"],
+        "Tired": ["tired", "exhaust", "drained", "sleepy", "fatigue", "worn out", "wiped", "no energy", "beat", "weary"],
+        "Numb": ["numb", "empty", "void", "nothing", "hollow", "dead inside", "flat", "detached"],
+        "Confused": ["confus", "lost", "uncertain", "don't know", "unsure", "unclear", "what to watch"],
+        "Restless": ["restless", "antsy", "fidget", "can't sit still", "agitated", "edgy"],
+        "Happy": ["happy", "good mood", "great day", "wonderful", "cheerful", "joyful", "feeling good"],
+        "Excited": ["excited", "pumped", "hyped", "thrilled", "stoked", "can't wait", "amped"],
+        "Calm": ["calm", "peaceful", "serene", "tranquil", "at ease", "relaxed already"],
+        "Focused": ["focused", "productive", "in the zone", "concentrating", "working"],
+    }
     
-    if any(k in t for k in ["comfort", "cozy", "warm", "safe", "wholesome", "soft"]):
-        desired = "Comforted"
-    elif any(k in t for k in ["relax", "unwind", "chill", "easy", "calm"]):
-        desired = "Relaxed"
-    elif any(k in t for k in ["action", "energy", "pump", "hype", "adrenaline", "intense"]):
-        desired = "Energized"
-    elif any(k in t for k in ["fun", "funny", "comedy", "laugh", "humor", "entertain"]):
-        desired = "Entertained"
-    elif any(k in t for k in ["inspir", "motivat", "uplift", "meaning"]):
-        desired = "Inspired"
-    elif any(k in t for k in ["curious", "learn", "discover", "documentary", "interesting"]):
-        desired = "Curious"
-    elif any(k in t for k in ["sleep", "bed", "wind down", "night"]):
-        desired = "Sleepy"
-    elif any(k in t for k in ["connect", "romance", "love", "relationship", "feel"]):
-        desired = "Connected"
-    elif any(k in t for k in ["thrill", "suspense", "edge", "twist", "mind"]):
-        desired = "Stimulated"
-    elif any(k in t for k in ["happy", "joy", "cheer", "good mood", "smile"]):
-        desired = "Happy"
-    elif any(k in t for k in ["focus", "concentrate", "study", "work", "productive"]):
-        desired = "Focused"
+    # DESIRED FEELING DETECTION (expanded keywords)
+    desired_map = {
+        "Comforted": ["comfort", "cozy", "warm", "safe", "wholesome", "soft", "soothing", "hug", "feel better", "healing"],
+        "Relaxed": ["relax", "unwind", "chill", "easy", "calm down", "de-stress", "mellow", "peaceful", "zen"],
+        "Energized": ["action", "energy", "pump", "hype", "adrenaline", "intense", "exciting", "thrilling", "wild", "rush"],
+        "Entertained": ["fun", "funny", "comedy", "laugh", "humor", "entertain", "amusing", "hilarious", "silly", "light", "enjoyable"],
+        "Inspired": ["inspir", "motivat", "uplift", "meaning", "powerful", "moving", "profound", "thought-provok"],
+        "Curious": ["curious", "learn", "discover", "documentary", "interesting", "fascinating", "intriguing", "mind-blowing", "educational"],
+        "Sleepy": ["sleep", "bed", "wind down", "night", "drowsy", "ready for bed", "knock out"],
+        "Connected": ["connect", "romance", "love", "relationship", "feel something", "emotional", "touching", "heartfelt", "romantic"],
+        "Stimulated": ["thrill", "suspense", "edge", "twist", "mind", "think", "smart", "clever", "cerebral", "mystery", "puzzle"],
+        "Happy": ["happy", "joy", "cheer", "good mood", "smile", "upbeat", "positive", "feel-good", "uplifting", "bright"],
+        "Focused": ["focus", "concentrate", "study", "work", "productive", "get stuff done", "background"],
+        "Grounded": ["grounded", "centered", "balanced", "stable", "rooted", "real"],
+        "Calm": ["calm", "peace", "tranquil", "serene", "quiet", "still", "seren"],
+    }
+    
+    # Find current feeling
+    for feeling, keywords in current_map.items():
+        if any(k in t for k in keywords):
+            current = feeling
+            break
+    
+    # Find desired feeling
+    for feeling, keywords in desired_map.items():
+        if any(k in t for k in keywords):
+            desired = feeling
+            break
+    
+    # SMART INFERENCE: If only current detected, infer desired
+    if current and not desired:
+        inference_map = {
+            "Bored": "Entertained",
+            "Stressed": "Relaxed",
+            "Anxious": "Calm",
+            "Sad": "Comforted",
+            "Lonely": "Connected",
+            "Angry": "Calm",
+            "Tired": "Energized",
+            "Numb": "Stimulated",
+            "Confused": "Curious",
+            "Restless": "Calm",
+            "Happy": "Entertained",
+            "Excited": "Energized",
+            "Calm": "Relaxed",
+            "Focused": "Focused",
+        }
+        desired = inference_map.get(current, "Entertained")
+    
+    # If no current but desired, infer current
+    if desired and not current:
+        reverse_inference = {
+            "Comforted": "Sad",
+            "Relaxed": "Stressed",
+            "Calm": "Anxious",
+            "Energized": "Tired",
+            "Entertained": "Bored",
+            "Stimulated": "Numb",
+            "Connected": "Lonely",
+            "Curious": "Bored",
+            "Inspired": "Numb",
+            "Happy": "Sad",
+            "Focused": "Confused",
+            "Grounded": "Anxious",
+            "Sleepy": "Tired",
+        }
+        current = reverse_inference.get(desired, "Bored")
     
     return current, desired
+
+def discover_movies_fresh(current_feeling=None, desired_feeling=None):
+    """
+    Non-cached movie discovery with randomization.
+    Returns DIFFERENT results each time for variety.
+    """
+    api_key = get_tmdb_key()
+    if not api_key:
+        return []
+    
+    # Randomize for variety
+    page = random.randint(1, 5)
+    sort_options = ["popularity.desc", "vote_average.desc", "vote_count.desc"]
+    sort_by = random.choice(sort_options)
+    
+    genre_ids, avoid_genres = [], []
+    
+    if desired_feeling and desired_feeling in FEELING_TO_GENRES:
+        prefs = FEELING_TO_GENRES[desired_feeling]
+        genre_ids.extend(prefs.get("prefer", [])[:3])
+        avoid_genres.extend(prefs.get("avoid", []))
+    
+    if current_feeling and current_feeling in FEELING_TO_GENRES:
+        prefs = FEELING_TO_GENRES[current_feeling]
+        avoid_genres.extend(prefs.get("avoid", []))
+    
+    # Shuffle genres for variety
+    if genre_ids:
+        random.shuffle(genre_ids)
+    
+    try:
+        params = {
+            "api_key": api_key,
+            "sort_by": sort_by,
+            "watch_region": "US",
+            "with_watch_monetization_types": "flatrate|rent",
+            "page": page,
+            "include_adult": "false",
+            "vote_count.gte": 50,
+        }
+        
+        if genre_ids:
+            params["with_genres"] = "|".join(map(str, list(set(genre_ids))[:3]))
+        
+        if avoid_genres:
+            params["without_genres"] = ",".join(map(str, list(set(avoid_genres))))
+        
+        r = requests.get(f"{TMDB_BASE_URL}/discover/movie", params=params, timeout=8)
+        r.raise_for_status()
+        results = r.json().get("results", [])
+        
+        # Shuffle results for variety
+        random.shuffle(results)
+        
+        return _clean_movie_results(results)
+    except Exception as e:
+        print(f"Fresh discover error: {e}")
+        return []
+
 
 @st.cache_data(show_spinner=False, ttl=3600)
 def nlp_to_tmdb_plan(prompt):
@@ -692,8 +794,10 @@ Return ONLY valid JSON with these keys:
             "raw_prompt": p
         }
 
-@st.cache_data(ttl=3600)
 def nlp_search_tmdb(plan, page=1):
+    """
+    Execute NLP search plan - uses FRESH results (not cached) for variety.
+    """
     if not plan:
         return []
     
@@ -702,16 +806,23 @@ def nlp_search_tmdb(plan, page=1):
     current_feeling = plan.get("current_feeling")
     desired_feeling = plan.get("desired_feeling")
     
+    # DISCOVER MODE: Use fresh (non-cached) results for variety
     if mode == "discover" and (current_feeling or desired_feeling):
-        return discover_movies(page=page, current_feeling=current_feeling, desired_feeling=desired_feeling)
+        return discover_movies_fresh(current_feeling=current_feeling, desired_feeling=desired_feeling)
     
+    # SEARCH MODE: Search by title/actor/director
     if query:
         results = search_movies(query, page=page)
         if results:
             return results
+        # Fallback to discover if search fails
         h_current, h_desired = nlp_infer_feelings(plan.get("raw_prompt", ""))
         if h_current or h_desired:
-            return discover_movies(page=page, current_feeling=h_current, desired_feeling=h_desired)
+            return discover_movies_fresh(current_feeling=h_current, desired_feeling=h_desired)
+    
+    # FALLBACK: If nothing else works, use feelings from plan
+    if current_feeling or desired_feeling:
+        return discover_movies_fresh(current_feeling=current_feeling, desired_feeling=desired_feeling)
     
     return []
 
@@ -2102,9 +2213,21 @@ def render_sidebar():
         with col1:
             if st.button("🔮 Ask", use_container_width=True, key="nlp_ask"):
                 if nlp_prompt.strip():
-                    with st.spinner("Mr.DP is searching..."):
+                    with st.spinner("Mr.DP is thinking..."):
                         st.session_state.nlp_last_prompt = nlp_prompt
                         st.session_state.nlp_plan = nlp_to_tmdb_plan(nlp_prompt)
+                        
+                        # Update sidebar moods based on NLP detection
+                        plan = st.session_state.nlp_plan
+                        if plan.get("current_feeling"):
+                            st.session_state.current_feeling = plan["current_feeling"]
+                        if plan.get("desired_feeling"):
+                            st.session_state.desired_feeling = plan["desired_feeling"]
+                        
+                        # Clear old movies feed so it updates
+                        st.session_state.movies_feed = []
+                        
+                        # Get fresh results (not cached!)
                         st.session_state.nlp_results = nlp_search_tmdb(st.session_state.nlp_plan, page=1)
                         st.session_state.nlp_page = 1
                         st.session_state.quick_hit = None
@@ -2229,11 +2352,22 @@ def render_main():
         plan = st.session_state.nlp_plan or {}
         mode = plan.get("mode", "search")
         query = plan.get("query", "")
+        current_f = plan.get("current_feeling", "")
+        desired_f = plan.get("desired_feeling", "")
+        
+        # Build metadata string
+        meta_parts = [f"Mode: {mode.title()}"]
+        if query:
+            meta_parts.append(f"Query: {query}")
+        if current_f:
+            meta_parts.append(f"Feeling: {MOOD_EMOJIS.get(current_f, '')} {current_f}")
+        if desired_f:
+            meta_parts.append(f"Want: {MOOD_EMOJIS.get(desired_f, '')} {desired_f}")
         
         st.markdown(f"""
         <div class="nlp-header">
             <div class="nlp-prompt">🧾 Mr.DP: "{safe(st.session_state.nlp_last_prompt)}"</div>
-            <div class="nlp-meta">Mode: {mode.title()} {'• Query: ' + query if query else ''}</div>
+            <div class="nlp-meta">{' • '.join(meta_parts)}</div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -2242,13 +2376,31 @@ def render_main():
             with cols[i % 6]:
                 render_movie_card(movie)
         
-        if len(st.session_state.nlp_results) >= 20:
-            if st.button("Load More Results", key="nlp_more", use_container_width=True):
-                st.session_state.nlp_page += 1
-                more = nlp_search_tmdb(st.session_state.nlp_plan, page=st.session_state.nlp_page)
-                st.session_state.nlp_results.extend(more)
-                add_dopamine_points(5, "Exploring!")
+        # Action buttons for NLP results
+        btn_cols = st.columns([1, 1, 1])
+        with btn_cols[0]:
+            if st.button("🔄 Shuffle Results", key="nlp_shuffle", use_container_width=True):
+                # Get fresh results with same feelings
+                st.session_state.nlp_results = nlp_search_tmdb(st.session_state.nlp_plan, page=1)
+                add_dopamine_points(5, "Shuffled!")
                 st.rerun()
+        with btn_cols[1]:
+            if len(st.session_state.nlp_results) >= 20:
+                if st.button("📥 Load More", key="nlp_more", use_container_width=True):
+                    st.session_state.nlp_page += 1
+                    more = discover_movies_fresh(
+                        current_feeling=st.session_state.nlp_plan.get("current_feeling"),
+                        desired_feeling=st.session_state.nlp_plan.get("desired_feeling")
+                    )
+                    st.session_state.nlp_results.extend(more)
+                    add_dopamine_points(5, "Exploring!")
+                    st.rerun()
+        with btn_cols[2]:
+            if st.button("✕ Clear", key="nlp_clear_main", use_container_width=True):
+                st.session_state.nlp_results = []
+                st.session_state.nlp_last_prompt = ""
+                st.rerun()
+        
         st.markdown("---")
     
     # PAGE CONTENT
