@@ -1832,7 +1832,7 @@ def get_mr_dp_svg(expression="happy"):
     # Convert to base64 data URL
     svg_bytes = svg.encode('utf-8')
     b64 = base64.b64encode(svg_bytes).decode('utf-8')
-    return f'<img src="data:image/svg+xml;base64,{b64}" style="width:100%;height:100%;" alt="Mr.DP"/>'
+    return f'<img src="data:image/svg+xml;base64,{b64}" alt="Mr.DP"/>'
 
 def get_mr_dp_expression(current_feeling, desired_feeling):
     """Determine Mr.DP's expression based on the user's feelings."""
@@ -1884,8 +1884,10 @@ def render_mr_dp_chat_widget():
         animation: mrDpFloat 3s ease-in-out infinite;
     }}
     .mr-dp-float-btn img {{
-        width: 48px;
-        height: 48px;
+        width: 48px !important;
+        height: 48px !important;
+        max-width: 48px !important;
+        max-height: 48px !important;
     }}
     @keyframes mrDpFloat {{
         0%, 100% {{ transform: translateY(0); }}
@@ -1938,9 +1940,18 @@ def render_mr_dp_chat_widget():
             gap: 10px;
             border-bottom: 1px solid rgba(139, 92, 246, 0.2);
         }}
-        .mr-dp-chat-header img {{
-            width: 36px;
-            height: 36px;
+        .mr-dp-header-avatar {{
+            width: 36px !important;
+            height: 36px !important;
+            min-width: 36px !important;
+            min-height: 36px !important;
+            flex-shrink: 0;
+        }}
+        .mr-dp-header-avatar img {{
+            width: 36px !important;
+            height: 36px !important;
+            max-width: 36px !important;
+            max-height: 36px !important;
         }}
         .mr-dp-chat-msgs {{
             padding: 12px;
@@ -1950,7 +1961,7 @@ def render_mr_dp_chat_widget():
         </style>
         <div class="mr-dp-chat-popup">
             <div class="mr-dp-chat-header">
-                {avatar_img}
+                <div class="mr-dp-header-avatar">{avatar_img}</div>
                 <div>
                     <div style="font-weight:700;background:linear-gradient(135deg,#8b5cf6,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Mr.DP</div>
                     <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);">● Online</div>
