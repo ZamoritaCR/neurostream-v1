@@ -16,6 +16,7 @@ import streamlit as st
 import os
 import requests
 import json
+import base64
 import streamlit.components.v1 as components
 from urllib.parse import quote_plus
 from openai import OpenAI
@@ -1038,9 +1039,10 @@ if "init" not in st.session_state:
         "search_results": [],
         "search_page": 1,
         
-        # Mr.DP (NLP)
-        "mr_dp_prompt": "",
-        "mr_dp_response": None,  # Full response including message
+        # Mr.DP Chat Widget
+        "mr_dp_open": False,
+        "mr_dp_chat_history": [],  # List of {"role": "user"/"assistant", "content": "..."}
+        "mr_dp_response": None,
         "mr_dp_results": [],
         "mr_dp_page": 1,
         
@@ -1676,211 +1678,83 @@ section[data-testid="stSidebar"] .stTextArea textarea {
     font-size: 0.8rem;
 }
 
-/* Mr.DP Chat Bubble */
-.mr-dp-bubble {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%);
-    border: 2px solid rgba(139, 92, 246, 0.4);
-    border-radius: 24px;
-    padding: 20px 24px;
-    margin-bottom: 24px;
-    position: relative;
-    overflow: visible;
-}
-
-.mr-dp-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 12px;
-}
-
 /* Mr.DP Neuron Character Container */
 .mr-dp-character {
-    position: relative;
-    width: 64px;
-    height: 64px;
+    width: 56px;
+    height: 56px;
     flex-shrink: 0;
+    filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.5));
 }
 
-.mr-dp-neuron {
-    width: 64px;
-    height: 64px;
-    animation: neuronBob 3s ease-in-out infinite;
+/* Keyframes for Mr.DP animations */
+@keyframes mrDpBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
 }
 
-@keyframes neuronBob {
-    0%, 100% { transform: translateY(0) rotate(-2deg); }
-    50% { transform: translateY(-4px) rotate(2deg); }
+@keyframes mrDpPulse {
+    0%, 100% { box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4); }
+    50% { box-shadow: 0 8px 40px rgba(139, 92, 246, 0.6), 0 0 0 8px rgba(139, 92, 246, 0.15); }
 }
 
-/* Neuron glow effect */
-.mr-dp-character::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 80px;
-    height: 80px;
-    background: radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, transparent 70%);
-    border-radius: 50%;
-    z-index: -1;
-    animation: glowPulse 2s ease-in-out infinite;
+/* Style Streamlit's chat input to be Mr.DP's input */
+.stChatInput {
+    position: fixed !important;
+    bottom: 24px !important;
+    left: 50% !important;
+    transform: translateX(-60%) !important;
+    max-width: 420px !important;
+    width: calc(100% - 200px) !important;
+    z-index: 9997 !important;
 }
 
-@keyframes glowPulse {
-    0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
-    50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.1); }
+.stChatInput > div {
+    background: var(--bg-secondary) !important;
+    border: 2px solid rgba(139, 92, 246, 0.4) !important;
+    border-radius: 28px !important;
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2) !important;
+    padding: 4px !important;
 }
 
-/* Speech bubble tail */
-.mr-dp-bubble::before {
-    content: '';
-    position: absolute;
-    left: 28px;
-    top: -12px;
-    width: 24px;
-    height: 24px;
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%);
-    border-left: 2px solid rgba(139, 92, 246, 0.4);
-    border-top: 2px solid rgba(139, 92, 246, 0.4);
-    transform: rotate(45deg);
-    border-radius: 4px 0 0 0;
+.stChatInput > div:focus-within {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.3), 0 0 0 4px rgba(139, 92, 246, 0.1) !important;
 }
 
-.mr-dp-name {
-    font-weight: 700;
-    font-size: 1.2rem;
-    color: var(--text-primary);
-    background: var(--accent-gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+.stChatInput input {
+    background: transparent !important;
+    color: var(--text-primary) !important;
+    padding: 14px 20px !important;
+    font-size: 0.95rem !important;
 }
 
-.mr-dp-subtitle {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    display: flex;
-    align-items: center;
-    gap: 6px;
+.stChatInput input::placeholder {
+    color: var(--text-secondary) !important;
 }
 
-.mr-dp-status {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    background: #10b981;
-    border-radius: 50%;
-    animation: statusPulse 2s ease-in-out infinite;
+.stChatInput button {
+    background: var(--accent-gradient) !important;
+    border-radius: 50% !important;
+    width: 40px !important;
+    height: 40px !important;
+    margin: 4px !important;
 }
 
-@keyframes statusPulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+.stChatInput button svg {
+    fill: white !important;
 }
 
-.mr-dp-message {
-    font-size: 1.15rem;
-    line-height: 1.6;
-    color: var(--text-primary);
-    margin-bottom: 16px;
-    padding-left: 80px;
+/* Adjust main content to account for fixed chat input */
+.main .block-container {
+    padding-bottom: 100px !important;
 }
 
-.mr-dp-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    padding-top: 14px;
-    padding-left: 80px;
-    border-top: 1px solid rgba(139, 92, 246, 0.2);
-}
-
-.mr-dp-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    background: rgba(139, 92, 246, 0.1);
-    border: 1px solid rgba(139, 92, 246, 0.2);
-    border-radius: 20px;
-    font-size: 0.8rem;
-    color: var(--text-primary);
-    transition: all 0.2s;
-}
-
-.mr-dp-tag:hover {
-    background: rgba(139, 92, 246, 0.2);
-    transform: translateY(-2px);
-}
-
-.mr-dp-tag-icon {
-    font-size: 1rem;
-}
-
-.mr-dp-user-query {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    font-style: italic;
-    margin-bottom: 10px;
-    padding-left: 80px;
-    opacity: 0.8;
-}
-
-/* Thinking animation */
-.mr-dp-thinking {
-    display: flex;
-    gap: 4px;
-    padding-left: 80px;
-}
-
-.mr-dp-thinking span {
-    width: 8px;
-    height: 8px;
-    background: var(--accent-primary);
-    border-radius: 50%;
-    animation: thinking 1.4s ease-in-out infinite;
-}
-
-.mr-dp-thinking span:nth-child(2) { animation-delay: 0.2s; }
-.mr-dp-thinking span:nth-child(3) { animation-delay: 0.4s; }
-
-@keyframes thinking {
-    0%, 100% { transform: translateY(0); opacity: 0.4; }
-    50% { transform: translateY(-8px); opacity: 1; }
-}
-
-/* Compact sidebar version */
-.mr-dp-mini {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 14px;
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%);
-    border: 1px solid rgba(139, 92, 246, 0.3);
-    border-radius: 14px;
-    margin-bottom: 12px;
-}
-
-.mr-dp-mini svg {
-    width: 36px !important;
-    height: 36px !important;
-}
-
-.mr-dp-mini-text {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    font-style: italic;
-}
-
-/* Mr.DP expressions animation */
-.mr-dp-neuron .dendrites path {
-    animation: dendritePulse 2s ease-in-out infinite;
-}
-
-@keyframes dendritePulse {
-    0%, 100% { stroke-opacity: 1; }
-    50% { stroke-opacity: 0.7; }
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .stChatInput {
+        max-width: calc(100% - 120px) !important;
+        transform: translateX(-55%) !important;
+    }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -1893,10 +1767,10 @@ def safe(s):
 
 def get_mr_dp_svg(expression="happy"):
     """
-    Generate Mr.DP's cute neuron character SVG.
-    Expressions: happy, thinking, excited, empathetic, curious
+    Generate Mr.DP's cute neuron character SVG as a base64 data URL.
+    Returns an img tag that will render properly in Streamlit.
     """
-    # Eye positions based on expression
+    # Eye/mouth based on expression
     expressions = {
         "happy": {"left_eye": "◠", "right_eye": "◠", "mouth": "smile", "blush": True},
         "thinking": {"left_eye": "•", "right_eye": "•", "mouth": "hmm", "blush": False},
@@ -1908,7 +1782,6 @@ def get_mr_dp_svg(expression="happy"):
     
     expr = expressions.get(expression, expressions["happy"])
     
-    # Mouth paths
     mouths = {
         "smile": '<path d="M24 38 Q32 46 40 38" stroke="#ff6b9d" stroke-width="3" fill="none" stroke-linecap="round"/>',
         "big_smile": '<path d="M22 36 Q32 48 42 36" stroke="#ff6b9d" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M26 40 Q32 44 38 40" fill="#ff6b9d"/>',
@@ -1917,106 +1790,430 @@ def get_mr_dp_svg(expression="happy"):
         "o": '<circle cx="32" cy="40" r="4" fill="#ff6b9d"/>',
     }
     
-    # Blush circles
     blush = '<circle cx="18" cy="36" r="5" fill="#ff6b9d" opacity="0.3"/><circle cx="46" cy="36" r="5" fill="#ff6b9d" opacity="0.3"/>' if expr["blush"] else ""
     
-    svg = f'''<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" class="mr-dp-neuron">
-  <defs>
-    <linearGradient id="neuronGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#a78bfa"/>
-      <stop offset="50%" style="stop-color:#8b5cf6"/>
-      <stop offset="100%" style="stop-color:#7c3aed"/>
-    </linearGradient>
-    <linearGradient id="axonGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#8b5cf6"/>
-      <stop offset="100%" style="stop-color:#06b6d4"/>
-    </linearGradient>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-  </defs>
-  
-  <!-- Dendrites (hair-like projections) -->
-  <g class="dendrites" filter="url(#glow)">
-    <!-- Top dendrites -->
-    <path d="M32 12 Q28 4 20 2" stroke="url(#axonGrad)" stroke-width="3" fill="none" stroke-linecap="round">
-      <animate attributeName="d" values="M32 12 Q28 4 20 2;M32 12 Q30 2 22 0;M32 12 Q28 4 20 2" dur="2s" repeatCount="indefinite"/>
-    </path>
-    <circle cx="20" cy="2" r="3" fill="#06b6d4"><animate attributeName="r" values="3;4;3" dur="1s" repeatCount="indefinite"/></circle>
-    
-    <path d="M32 12 Q36 4 44 2" stroke="url(#axonGrad)" stroke-width="3" fill="none" stroke-linecap="round">
-      <animate attributeName="d" values="M32 12 Q36 4 44 2;M32 12 Q34 2 42 0;M32 12 Q36 4 44 2" dur="2.2s" repeatCount="indefinite"/>
-    </path>
-    <circle cx="44" cy="2" r="3" fill="#06b6d4"><animate attributeName="r" values="3;4;3" dur="1.2s" repeatCount="indefinite"/></circle>
-    
-    <path d="M32 12 Q32 6 32 0" stroke="url(#axonGrad)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    <circle cx="32" cy="0" r="2.5" fill="#10b981"><animate attributeName="fill" values="#10b981;#06b6d4;#10b981" dur="1.5s" repeatCount="indefinite"/></circle>
-    
-    <!-- Side dendrites -->
-    <path d="M12 28 Q4 24 0 20" stroke="url(#axonGrad)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    <circle cx="0" cy="20" r="2.5" fill="#f59e0b"><animate attributeName="opacity" values="1;0.5;1" dur="1.8s" repeatCount="indefinite"/></circle>
-    
-    <path d="M52 28 Q60 24 64 20" stroke="url(#axonGrad)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    <circle cx="64" cy="20" r="2.5" fill="#f59e0b"><animate attributeName="opacity" values="1;0.5;1" dur="1.6s" repeatCount="indefinite"/></circle>
-  </g>
-  
-  <!-- Axon (tail) -->
-  <path d="M32 52 Q32 58 28 62" stroke="url(#axonGrad)" stroke-width="4" fill="none" stroke-linecap="round"/>
-  <circle cx="28" cy="62" r="3" fill="#10b981">
-    <animate attributeName="fill" values="#10b981;#8b5cf6;#10b981" dur="2s" repeatCount="indefinite"/>
-  </circle>
-  
-  <!-- Cell body (soma) - main neuron body -->
-  <ellipse cx="32" cy="32" rx="22" ry="20" fill="url(#neuronGrad)" filter="url(#glow)"/>
-  
-  <!-- Highlight -->
-  <ellipse cx="26" cy="24" rx="8" ry="5" fill="white" opacity="0.3"/>
-  
-  <!-- Face -->
-  <!-- Eyes -->
-  <text x="22" y="32" font-size="10" fill="white" text-anchor="middle">{expr["left_eye"]}</text>
-  <text x="42" y="32" font-size="10" fill="white" text-anchor="middle">{expr["right_eye"]}</text>
-  
-  <!-- Eyebrows (for expression) -->
-  <path d="M18 24 Q22 22 26 24" stroke="white" stroke-width="1.5" fill="none" opacity="0.8"/>
-  <path d="M38 24 Q42 22 46 24" stroke="white" stroke-width="1.5" fill="none" opacity="0.8"/>
-  
-  <!-- Mouth -->
-  {mouths.get(expr["mouth"], mouths["smile"])}
-  
-  <!-- Blush -->
-  {blush}
-  
-  <!-- Sparkles -->
-  <g class="sparkles">
-    <text x="54" y="14" font-size="8" fill="#ffd700" opacity="0.8">✦</text>
-    <text x="8" y="18" font-size="6" fill="#ffd700" opacity="0.6">✦</text>
-    <text x="58" y="44" font-size="5" fill="#ffd700" opacity="0.7">✧</text>
-  </g>
+    svg = f'''<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="ng" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" style="stop-color:#a78bfa"/><stop offset="50%" style="stop-color:#8b5cf6"/><stop offset="100%" style="stop-color:#7c3aed"/>
+</linearGradient>
+<linearGradient id="ag" x1="0%" y1="0%" x2="100%" y2="0%">
+<stop offset="0%" style="stop-color:#8b5cf6"/><stop offset="100%" style="stop-color:#06b6d4"/>
+</linearGradient>
+</defs>
+<g>
+<path d="M32 12 Q28 4 20 2" stroke="url(#ag)" stroke-width="3" fill="none" stroke-linecap="round"/>
+<circle cx="20" cy="2" r="3" fill="#06b6d4"/>
+<path d="M32 12 Q36 4 44 2" stroke="url(#ag)" stroke-width="3" fill="none" stroke-linecap="round"/>
+<circle cx="44" cy="2" r="3" fill="#06b6d4"/>
+<path d="M32 12 Q32 6 32 0" stroke="url(#ag)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<circle cx="32" cy="0" r="2.5" fill="#10b981"/>
+<path d="M12 28 Q4 24 0 20" stroke="url(#ag)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<circle cx="0" cy="20" r="2.5" fill="#f59e0b"/>
+<path d="M52 28 Q60 24 64 20" stroke="url(#ag)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<circle cx="64" cy="20" r="2.5" fill="#f59e0b"/>
+</g>
+<path d="M32 52 Q32 58 28 62" stroke="url(#ag)" stroke-width="4" fill="none" stroke-linecap="round"/>
+<circle cx="28" cy="62" r="3" fill="#10b981"/>
+<ellipse cx="32" cy="32" rx="22" ry="20" fill="url(#ng)"/>
+<ellipse cx="26" cy="24" rx="8" ry="5" fill="white" opacity="0.3"/>
+<text x="22" y="32" font-size="10" fill="white" text-anchor="middle" font-family="Arial">{expr["left_eye"]}</text>
+<text x="42" y="32" font-size="10" fill="white" text-anchor="middle" font-family="Arial">{expr["right_eye"]}</text>
+<path d="M18 24 Q22 22 26 24" stroke="white" stroke-width="1.5" fill="none" opacity="0.8"/>
+<path d="M38 24 Q42 22 46 24" stroke="white" stroke-width="1.5" fill="none" opacity="0.8"/>
+{mouths.get(expr["mouth"], mouths["smile"])}
+{blush}
+<text x="54" y="14" font-size="8" fill="#ffd700" opacity="0.8">✦</text>
+<text x="8" y="18" font-size="6" fill="#ffd700" opacity="0.6">✦</text>
 </svg>'''
     
-    return svg
+    # Convert to base64 data URL
+    svg_bytes = svg.encode('utf-8')
+    b64 = base64.b64encode(svg_bytes).decode('utf-8')
+    return f'<img src="data:image/svg+xml;base64,{b64}" style="width:100%;height:100%;" alt="Mr.DP"/>'
 
 def get_mr_dp_expression(current_feeling, desired_feeling):
     """Determine Mr.DP's expression based on the user's feelings."""
-    # Empathetic for sad/anxious/lonely
     if current_feeling in ["Sad", "Anxious", "Lonely", "Overwhelmed"]:
         return "empathetic"
-    # Excited for happy/excited users or energizing content
     if current_feeling in ["Happy", "Excited"] or desired_feeling in ["Energized", "Stimulated"]:
         return "excited"
-    # Curious for discovery
     if desired_feeling in ["Curious", "Inspired"]:
         return "curious"
-    # Thinking for complex requests
     if desired_feeling in ["Focused", "Grounded"]:
         return "thinking"
-    # Wink for entertainment
     if desired_feeling in ["Entertained", "Happy"]:
         return "wink"
-    # Default happy
     return "happy"
+
+def render_mr_dp_chat_widget():
+    """Render the floating Mr.DP chat widget with full interactivity."""
+    
+    # Get current expression based on last detected mood
+    response = st.session_state.get("mr_dp_response")
+    if response:
+        expression = get_mr_dp_expression(
+            response.get("current_feeling", ""),
+            response.get("desired_feeling", "")
+        )
+    else:
+        expression = "happy"
+    
+    avatar_img = get_mr_dp_svg(expression)
+    history = st.session_state.get("mr_dp_chat_history", [])
+    show_chat = st.session_state.get("mr_dp_open", False) or len(history) > 0
+    
+    # Build chat history HTML
+    chat_html = ""
+    if not history:
+        chat_html = f'''
+        <div style="text-align:center; padding:20px;">
+            <div style="width:64px;height:64px;margin:0 auto 12px;">{avatar_img}</div>
+            <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;">Hey! I'm Mr.DP 🧠</div>
+            <div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.5;">
+                Your dopamine curator. Tell me how you feel and I'll find the perfect content!
+            </div>
+            <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
+                <span style="padding:8px 12px;background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;font-size:0.8rem;color:var(--text-secondary);">Try: "I'm bored"</span>
+                <span style="padding:8px 12px;background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;font-size:0.8rem;color:var(--text-secondary);">"make me laugh"</span>
+            </div>
+        </div>
+        '''
+    else:
+        for msg in history[-6:]:
+            if msg["role"] == "user":
+                chat_html += f'''
+                <div class="mr-dp-msg mr-dp-msg-user">{safe(msg["content"])}</div>
+                '''
+            else:
+                tags_html = ""
+                if msg.get("current_feeling") or msg.get("desired_feeling"):
+                    tags_html = '<div class="mr-dp-msg-tags">'
+                    if msg.get("current_feeling"):
+                        tags_html += f'<span class="mr-dp-msg-tag">{MOOD_EMOJIS.get(msg["current_feeling"], "😊")} {msg["current_feeling"]}</span>'
+                    if msg.get("desired_feeling"):
+                        tags_html += f'<span class="mr-dp-msg-tag">→ {MOOD_EMOJIS.get(msg["desired_feeling"], "✨")} {msg["desired_feeling"]}</span>'
+                    tags_html += '</div>'
+                
+                chat_html += f'''
+                <div class="mr-dp-msg mr-dp-msg-bot">{safe(msg["content"])}{tags_html}</div>
+                '''
+    
+    # Render complete floating widget HTML
+    widget_html = f'''
+    <style>
+    .mr-dp-float-container {{
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 9999;
+    }}
+    
+    .mr-dp-float-btn {{
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 50%, #10b981 100%);
+        box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4), 0 0 0 4px rgba(139, 92, 246, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        animation: mrDpFloat 3s ease-in-out infinite;
+    }}
+    
+    .mr-dp-float-btn:hover {{
+        transform: scale(1.1) translateY(-4px);
+        box-shadow: 0 12px 40px rgba(139, 92, 246, 0.5), 0 0 0 6px rgba(139, 92, 246, 0.2);
+    }}
+    
+    .mr-dp-float-btn img {{
+        width: 52px;
+        height: 52px;
+    }}
+    
+    @keyframes mrDpFloat {{
+        0%, 100% {{ transform: translateY(0); }}
+        50% {{ transform: translateY(-6px); }}
+    }}
+    
+    .mr-dp-badge {{
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        width: 24px;
+        height: 24px;
+        background: #10b981;
+        border-radius: 50%;
+        border: 3px solid var(--bg-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        color: white;
+        font-weight: bold;
+    }}
+    
+    .mr-dp-popup {{
+        position: fixed;
+        bottom: 108px;
+        right: 24px;
+        width: 360px;
+        max-height: 480px;
+        background: var(--bg-secondary);
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        border-radius: 24px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(139, 92, 246, 0.1);
+        z-index: 9998;
+        overflow: hidden;
+        display: {'flex' if show_chat else 'none'};
+        flex-direction: column;
+    }}
+    
+    .mr-dp-popup-header {{
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(6, 182, 212, 0.1) 100%);
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+    }}
+    
+    .mr-dp-popup-avatar {{
+        width: 40px;
+        height: 40px;
+    }}
+    
+    .mr-dp-popup-title {{
+        font-weight: 700;
+        background: var(--accent-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }}
+    
+    .mr-dp-popup-status {{
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }}
+    
+    .mr-dp-popup-status::before {{
+        content: '';
+        width: 6px;
+        height: 6px;
+        background: #10b981;
+        border-radius: 50%;
+    }}
+    
+    .mr-dp-popup-messages {{
+        flex: 1;
+        padding: 16px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-height: 280px;
+    }}
+    
+    .mr-dp-msg {{
+        max-width: 85%;
+        padding: 10px 14px;
+        border-radius: 16px;
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }}
+    
+    .mr-dp-msg-bot {{
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%);
+        border: 1px solid rgba(139, 92, 246, 0.15);
+        align-self: flex-start;
+        border-bottom-left-radius: 4px;
+    }}
+    
+    .mr-dp-msg-user {{
+        background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+        color: white;
+        align-self: flex-end;
+        border-bottom-right-radius: 4px;
+    }}
+    
+    .mr-dp-msg-tags {{
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 8px;
+    }}
+    
+    .mr-dp-msg-tag {{
+        padding: 3px 8px;
+        background: rgba(139, 92, 246, 0.2);
+        border-radius: 10px;
+        font-size: 0.7rem;
+    }}
+    
+    .mr-dp-support {{
+        padding: 8px 16px;
+        background: rgba(16, 185, 129, 0.08);
+        border-top: 1px solid rgba(16, 185, 129, 0.15);
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        text-align: center;
+    }}
+    
+    .mr-dp-support a {{
+        color: #10b981;
+        text-decoration: none;
+        font-weight: 500;
+    }}
+    
+    .mr-dp-support a:hover {{
+        text-decoration: underline;
+    }}
+    
+    @media (max-width: 480px) {{
+        .mr-dp-popup {{
+            width: calc(100vw - 32px);
+            right: 16px;
+            bottom: 100px;
+        }}
+        .mr-dp-float-container {{
+            right: 16px;
+            bottom: 16px;
+        }}
+    }}
+    </style>
+    
+    <!-- Floating Button -->
+    <div class="mr-dp-float-container">
+        <div class="mr-dp-float-btn" title="Chat with Mr.DP">
+            {avatar_img}
+        </div>
+        {f'<div class="mr-dp-badge">💬</div>' if len(history) > 0 else ''}
+    </div>
+    
+    <!-- Chat Popup -->
+    <div class="mr-dp-popup" id="mr-dp-popup">
+        <div class="mr-dp-popup-header">
+            <div class="mr-dp-popup-avatar">{avatar_img}</div>
+            <div>
+                <div class="mr-dp-popup-title">Mr.DP</div>
+                <div class="mr-dp-popup-status">Online • Your Dopamine Curator</div>
+            </div>
+        </div>
+        <div class="mr-dp-popup-messages" id="mr-dp-msgs">
+            {chat_html}
+        </div>
+        <div class="mr-dp-support">
+            💚 Need support? <a href="javascript:void(0)" onclick="document.getElementById('support-modal').style.display='block'">Click for resources</a>
+        </div>
+    </div>
+    
+    <script>
+        // Auto-scroll chat to bottom
+        var msgsDiv = document.getElementById('mr-dp-msgs');
+        if (msgsDiv) msgsDiv.scrollTop = msgsDiv.scrollHeight;
+    </script>
+    '''
+    
+    st.markdown(widget_html, unsafe_allow_html=True)
+
+def render_support_resources_modal():
+    """Render mental health support resources modal with government hotlines."""
+    st.markdown('''
+    <div id="support-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); z-index:10000; padding:20px; overflow-y:auto;">
+        <div style="max-width:600px; margin:40px auto; background:#111118; border-radius:24px; padding:32px; border:1px solid rgba(139,92,246,0.3);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+                <h2 style="margin:0; color:white; font-size:1.5rem;">💚 Mental Health Resources</h2>
+                <button onclick="document.getElementById('support-modal').style.display='none'" style="background:rgba(255,255,255,0.1); border:none; color:white; font-size:1.2rem; cursor:pointer; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;">✕</button>
+            </div>
+            <p style="color:rgba(255,255,255,0.7); margin-bottom:24px; font-size:0.95rem; line-height:1.6;">
+                If you're struggling, please reach out. These services are free, confidential, and available 24/7.
+            </p>
+            
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <!-- USA -->
+                <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:16px;">
+                    <div style="font-weight:600; color:white; margin-bottom:6px; display:flex; align-items:center; gap:8px;">
+                        <span>🇺🇸</span> 988 Suicide & Crisis Lifeline
+                    </div>
+                    <div style="color:#10b981; font-size:1.4rem; font-weight:700; margin-bottom:4px;">Call or Text: 988</div>
+                    <div style="color:rgba(255,255,255,0.6); font-size:0.8rem;">24/7 • Free • Confidential</div>
+                </div>
+                
+                <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:16px;">
+                    <div style="font-weight:600; color:white; margin-bottom:6px; display:flex; align-items:center; gap:8px;">
+                        <span>🇺🇸</span> Crisis Text Line
+                    </div>
+                    <div style="color:#10b981; font-size:1.4rem; font-weight:700; margin-bottom:4px;">Text HOME to 741741</div>
+                    <div style="color:rgba(255,255,255,0.6); font-size:0.8rem;">24/7 • Free • For any crisis</div>
+                </div>
+                
+                <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:16px;">
+                    <div style="font-weight:600; color:white; margin-bottom:6px; display:flex; align-items:center; gap:8px;">
+                        <span>🇺🇸</span> SAMHSA National Helpline
+                    </div>
+                    <div style="color:#10b981; font-size:1.4rem; font-weight:700; margin-bottom:4px;">1-800-662-4357</div>
+                    <div style="color:rgba(255,255,255,0.6); font-size:0.8rem;">24/7 • Mental health & substance abuse</div>
+                </div>
+                
+                <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:16px;">
+                    <div style="font-weight:600; color:white; margin-bottom:6px; display:flex; align-items:center; gap:8px;">
+                        <span>🇺🇸</span> Veterans Crisis Line
+                    </div>
+                    <div style="color:#10b981; font-size:1.4rem; font-weight:700; margin-bottom:4px;">Call: 988 (Press 1)</div>
+                    <div style="color:rgba(255,255,255,0.6); font-size:0.8rem;">24/7 • For veterans & their families</div>
+                </div>
+                
+                <!-- UK -->
+                <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:16px;">
+                    <div style="font-weight:600; color:white; margin-bottom:6px; display:flex; align-items:center; gap:8px;">
+                        <span>🇬🇧</span> Samaritans (UK & Ireland)
+                    </div>
+                    <div style="color:#10b981; font-size:1.4rem; font-weight:700; margin-bottom:4px;">116 123</div>
+                    <div style="color:rgba(255,255,255,0.6); font-size:0.8rem;">24/7 • Free from any phone</div>
+                </div>
+                
+                <!-- Canada -->
+                <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:16px;">
+                    <div style="font-weight:600; color:white; margin-bottom:6px; display:flex; align-items:center; gap:8px;">
+                        <span>🇨🇦</span> Canada Crisis Line
+                    </div>
+                    <div style="color:#10b981; font-size:1.4rem; font-weight:700; margin-bottom:4px;">988</div>
+                    <div style="color:rgba(255,255,255,0.6); font-size:0.8rem;">24/7 • Nationwide support</div>
+                </div>
+                
+                <!-- Australia -->
+                <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:16px;">
+                    <div style="font-weight:600; color:white; margin-bottom:6px; display:flex; align-items:center; gap:8px;">
+                        <span>🇦🇺</span> Lifeline Australia
+                    </div>
+                    <div style="color:#10b981; font-size:1.4rem; font-weight:700; margin-bottom:4px;">13 11 14</div>
+                    <div style="color:rgba(255,255,255,0.6); font-size:0.8rem;">24/7 • Crisis support & suicide prevention</div>
+                </div>
+                
+                <!-- International -->
+                <div style="background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.3); border-radius:16px; padding:16px;">
+                    <div style="font-weight:600; color:white; margin-bottom:6px; display:flex; align-items:center; gap:8px;">
+                        <span>🌍</span> International Resources
+                    </div>
+                    <div style="color:#06b6d4; font-size:0.95rem;">
+                        <a href="https://www.iasp.info/resources/Crisis_Centres/" target="_blank" style="color:#06b6d4; text-decoration:none;">
+                            Find crisis centers in your country →
+                        </a>
+                    </div>
+                    <div style="color:rgba(255,255,255,0.6); font-size:0.8rem; margin-top:4px;">International Association for Suicide Prevention</div>
+                </div>
+            </div>
+            
+            <p style="color:rgba(255,255,255,0.5); font-size:0.8rem; margin-top:20px; text-align:center; line-height:1.5;">
+                💜 It's okay to ask for help. You matter, and these services are here for you.
+            </p>
+        </div>
+    </div>
+    ''', unsafe_allow_html=True)
 
 def render_stats_bar():
     level_name, level_num, next_level = get_level()
@@ -2626,63 +2823,6 @@ def render_sidebar():
         
         st.markdown("---")
         
-        # MR.DP NLP with Mini Character
-        st.markdown("#### 🧠 Ask Mr.DP")
-        
-        # Mini Mr.DP character
-        mini_svg = get_mr_dp_svg("happy").replace('class="mr-dp-neuron"', 'class="mr-dp-mini-avatar"')
-        st.markdown(f"""
-        <div class="mr-dp-mini">
-            <div style="width:36px;height:36px;">{mini_svg}</div>
-            <div class="mr-dp-mini-text">Tell me how you feel!</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        mr_dp_prompt = st.text_area(
-            "Ask Mr.DP",
-            placeholder="Try:\n• 'I'm bored'\n• 'feeling anxious, need calm'\n• 'make me laugh'\n• 'Christopher Nolan movies'",
-            height=100,
-            key="mr_dp_input",
-            label_visibility="collapsed"
-        )
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("🔮 Ask", use_container_width=True, key="mr_dp_ask"):
-                if mr_dp_prompt.strip():
-                    with st.spinner("Mr.DP is thinking..."):
-                        # Get conversational response from Mr.DP
-                        response = ask_mr_dp(mr_dp_prompt)
-                        
-                        if response:
-                            st.session_state.mr_dp_prompt = mr_dp_prompt
-                            st.session_state.mr_dp_response = response
-                            
-                            # Update sidebar moods based on detection
-                            if response.get("current_feeling"):
-                                st.session_state.current_feeling = response["current_feeling"]
-                            if response.get("desired_feeling"):
-                                st.session_state.desired_feeling = response["desired_feeling"]
-                            
-                            # Clear old movies feed
-                            st.session_state.movies_feed = []
-                            
-                            # Get movie results
-                            st.session_state.mr_dp_results = mr_dp_search(response)
-                            st.session_state.mr_dp_page = 1
-                            st.session_state.quick_hit = None
-                            st.session_state.search_results = []
-                            add_dopamine_points(10, "Asked Mr.DP!")
-                    st.rerun()
-        with col2:
-            if st.button("✕ Clear", use_container_width=True, key="mr_dp_clear"):
-                st.session_state.mr_dp_results = []
-                st.session_state.mr_dp_prompt = ""
-                st.session_state.mr_dp_response = None
-                st.rerun()
-        
-        st.markdown("---")
-        
         # SHARE
         st.markdown("#### 📤 Share & Invite")
         ref_code = st.session_state.referral_code
@@ -2787,40 +2927,23 @@ def render_main():
                 render_movie_card(movie)
         st.markdown("---")
     
-    # MR.DP RESULTS - Conversational Display with Character
-    if st.session_state.mr_dp_response and st.session_state.mr_dp_results:
-        response = st.session_state.mr_dp_response
-        message = response.get("message", "Here's what I found!")
+    # MR.DP RESULTS - Show when there are results from chat
+    if st.session_state.mr_dp_results:
+        response = st.session_state.mr_dp_response or {}
         current_f = response.get("current_feeling", "")
         desired_f = response.get("desired_feeling", "")
         genres = response.get("genres", "")
         
-        # Get Mr.DP's expression based on mood
-        expression = get_mr_dp_expression(current_f, desired_f)
-        neuron_svg = get_mr_dp_svg(expression)
-        
-        # Mr.DP Chat Bubble with Character
+        # Header with mood info
         st.markdown(f"""
-        <div class="mr-dp-bubble">
-            <div class="mr-dp-header">
-                <div class="mr-dp-character">
-                    {neuron_svg}
-                </div>
-                <div>
-                    <div class="mr-dp-name">Mr.DP</div>
-                    <div class="mr-dp-subtitle">
-                        <span class="mr-dp-status"></span>
-                        Your Dopamine Curator
-                    </div>
-                </div>
-            </div>
-            <div class="mr-dp-user-query">💬 "{safe(st.session_state.mr_dp_prompt)}"</div>
-            <div class="mr-dp-message">{safe(message)}</div>
-            <div class="mr-dp-meta">
-                {f'<span class="mr-dp-tag"><span class="mr-dp-tag-icon">{MOOD_EMOJIS.get(current_f, "😊")}</span> {current_f}</span>' if current_f else ''}
-                {f'<span class="mr-dp-tag"><span class="mr-dp-tag-icon">→</span> {MOOD_EMOJIS.get(desired_f, "✨")} {desired_f}</span>' if desired_f else ''}
-                {f'<span class="mr-dp-tag"><span class="mr-dp-tag-icon">🎬</span> {genres}</span>' if genres else ''}
-            </div>
+        <div class="section-header" style="margin-bottom: 8px;">
+            <span class="section-icon">🧠</span>
+            <h2 class="section-title">Mr.DP's Picks</h2>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
+            {f'<span style="padding:6px 14px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);border-radius:20px;font-size:0.85rem;color:var(--text-primary);">{MOOD_EMOJIS.get(current_f, "😊")} {current_f}</span>' if current_f else ''}
+            {f'<span style="padding:6px 14px;background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.2);border-radius:20px;font-size:0.85rem;color:var(--text-primary);">→ {MOOD_EMOJIS.get(desired_f, "✨")} {desired_f}</span>' if desired_f else ''}
+            {f'<span style="padding:6px 14px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:20px;font-size:0.85rem;color:var(--text-primary);">🎬 {genres}</span>' if genres else ''}
         </div>
         """, unsafe_allow_html=True)
         
@@ -2850,8 +2973,8 @@ def render_main():
         with btn_cols[2]:
             if st.button("✕ Clear", key="mr_dp_clear_main", use_container_width=True):
                 st.session_state.mr_dp_results = []
-                st.session_state.mr_dp_prompt = ""
                 st.session_state.mr_dp_response = None
+                st.session_state.mr_dp_chat_history = []
                 st.rerun()
         
         st.markdown("---")
@@ -3076,3 +3199,51 @@ if not st.session_state.get("user"):
 else:
     render_sidebar()
     render_main()
+    
+    # Render support resources modal (always available)
+    render_support_resources_modal()
+    
+    # Render floating Mr.DP chat widget
+    render_mr_dp_chat_widget()
+    
+    # MR.DP CHAT INPUT - Using st.chat_input for Enter key support
+    # This creates a floating input at the bottom
+    if user_input := st.chat_input("💬 Tell Mr.DP how you feel... (press Enter)", key="mr_dp_chat_input"):
+        # Open chat window
+        st.session_state.mr_dp_open = True
+        
+        # Add user message to history
+        st.session_state.mr_dp_chat_history.append({
+            "role": "user",
+            "content": user_input
+        })
+        
+        # Get Mr.DP's response
+        response = ask_mr_dp(user_input)
+        
+        if response:
+            # Add assistant message to history
+            st.session_state.mr_dp_chat_history.append({
+                "role": "assistant",
+                "content": response.get("message", "Let me find something for you!"),
+                "current_feeling": response.get("current_feeling"),
+                "desired_feeling": response.get("desired_feeling"),
+                "genres": response.get("genres")
+            })
+            
+            # Update mood state
+            if response.get("current_feeling"):
+                st.session_state.current_feeling = response["current_feeling"]
+            if response.get("desired_feeling"):
+                st.session_state.desired_feeling = response["desired_feeling"]
+            
+            # Store response and get results
+            st.session_state.mr_dp_response = response
+            st.session_state.mr_dp_results = mr_dp_search(response)
+            st.session_state.movies_feed = []  # Clear old feed
+            st.session_state.quick_hit = None
+            st.session_state.search_results = []
+            
+            add_dopamine_points(10, "Chatted with Mr.DP!")
+        
+        st.rerun()
