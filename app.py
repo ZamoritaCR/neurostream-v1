@@ -59,6 +59,64 @@ except Exception as e:
 # --------------------------------------------------
 # 3. SUPABASE AUTH FUNCTIONS
 # --------------------------------------------------
+def get_oauth_url(provider: str):
+    """Get OAuth sign-in URL for Google or Apple"""
+    if not SUPABASE_ENABLED:
+        return None
+    try:
+        # Get the current app URL for redirect
+        redirect_url = "https://neurostream-v1.streamlit.app"  # Update this with your actual URL
+        
+        response = supabase.auth.sign_in_with_oauth({
+            "provider": provider,
+            "options": {
+                "redirect_to": redirect_url
+            }
+        })
+        return response.url if response else None
+    except Exception as e:
+        print(f"OAuth error: {e}")
+        return None
+
+def handle_oauth_callback():
+    """Handle OAuth callback from URL parameters"""
+    if not SUPABASE_ENABLED:
+        return None
+    try:
+        # Check for access_token in URL fragment (Supabase returns tokens in hash)
+        # Streamlit can access query params
+        params = st.query_params
+        
+        # Check for error
+        if "error" in params:
+            return {"success": False, "error": params.get("error_description", "OAuth failed")}
+        
+        # Check for access token (might come as query param after redirect)
+        access_token = params.get("access_token")
+        refresh_token = params.get("refresh_token")
+        
+        if access_token:
+            # Set the session
+            response = supabase.auth.set_session(access_token, refresh_token or "")
+            if response and response.user:
+                # Create/get user profile
+                profile = get_user_profile(response.user.id)
+                if not profile:
+                    # New OAuth user - create profile
+                    name = response.user.user_metadata.get("full_name") or response.user.user_metadata.get("name") or response.user.email.split("@")[0]
+                    create_user_profile(response.user.id, response.user.email, name)
+                    profile = get_user_profile(response.user.id)
+                
+                # Clear URL params
+                st.query_params.clear()
+                
+                return {"success": True, "user": response.user, "profile": profile}
+        
+        return None
+    except Exception as e:
+        print(f"OAuth callback error: {e}")
+        return None
+
 def supabase_sign_up(email: str, password: str, name: str = ""):
     """Register a new user with Supabase"""
     if not SUPABASE_ENABLED:
@@ -1629,6 +1687,25 @@ if "init" not in st.session_state:
 if not st.session_state.get("referral_code"):
     st.session_state.referral_code = hashlib.md5(str(random.random()).encode()).hexdigest()[:8].upper()
 
+# Handle OAuth callback (check URL for tokens)
+if SUPABASE_ENABLED and not st.session_state.get("user"):
+    oauth_result = handle_oauth_callback()
+    if oauth_result and oauth_result.get("success"):
+        user = oauth_result["user"]
+        profile = oauth_result.get("profile") or {}
+        st.session_state.user = {
+            "email": user.email,
+            "name": profile.get("name") or user.user_metadata.get("full_name") or user.email.split("@")[0],
+            "id": user.id
+        }
+        st.session_state.db_user_id = user.id
+        st.session_state.dopamine_points = profile.get("dopamine_points", 50)
+        st.session_state.streak_days = profile.get("streak_days", 1)
+        st.session_state.referral_code = profile.get("referral_code", st.session_state.referral_code)
+        st.session_state.is_premium = profile.get("is_premium", False)
+        st.session_state.auth_success = "Welcome! Signed in successfully."
+        st.rerun()
+
 # --------------------------------------------------
 # 12. CSS - COMPLETE STYLING
 # --------------------------------------------------
@@ -1803,6 +1880,55 @@ section[data-testid="stSidebar"] .stTextArea textarea {
 }
 
 .auth-divider span { padding: 0 16px; }
+
+.oauth-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 16px 0;
+}
+
+.oauth-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: none;
+    width: 100%;
+}
+
+.oauth-btn-google {
+    background: white;
+    color: #333;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.oauth-btn-google:hover {
+    background: #f5f5f5;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.oauth-btn-apple {
+    background: #000;
+    color: white;
+}
+
+.oauth-btn-apple:hover {
+    background: #333;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.oauth-icon {
+    width: 20px;
+    height: 20px;
+}
 
 .stats-bar {
     display: flex;
@@ -3006,6 +3132,42 @@ def render_login():
             st.markdown(f"<div class='auth-success'>✅ {st.session_state.auth_success}</div>", unsafe_allow_html=True)
             st.session_state.auth_success = None
         
+        # OAuth Buttons (Google & Apple)
+        if SUPABASE_ENABLED:
+            st.markdown("""
+            <div class="oauth-buttons">
+                <a href="#" id="google-btn" class="oauth-btn oauth-btn-google">
+                    <svg class="oauth-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                    Continue with Google
+                </a>
+                <a href="#" id="apple-btn" class="oauth-btn oauth-btn-apple">
+                    <svg class="oauth-icon" viewBox="0 0 24 24" fill="white"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+                    Continue with Apple
+                </a>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Handle OAuth button clicks via Streamlit buttons (hidden, triggered by JS)
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🔵 Google", key="oauth_google", use_container_width=True):
+                    oauth_url = get_oauth_url("google")
+                    if oauth_url:
+                        st.markdown(f'<meta http-equiv="refresh" content="0;url={oauth_url}">', unsafe_allow_html=True)
+                    else:
+                        st.session_state.auth_error = "Google sign-in not configured"
+                        st.rerun()
+            with col2:
+                if st.button("🍎 Apple", key="oauth_apple", use_container_width=True):
+                    oauth_url = get_oauth_url("apple")
+                    if oauth_url:
+                        st.markdown(f'<meta http-equiv="refresh" content="0;url={oauth_url}">', unsafe_allow_html=True)
+                    else:
+                        st.session_state.auth_error = "Apple sign-in not configured"
+                        st.rerun()
+            
+            st.markdown("<div class='auth-divider'><span>or continue with email</span></div>", unsafe_allow_html=True)
+        
         email = st.text_input("Email", key="login_email", placeholder="your@email.com")
         password = st.text_input("Password", type="password", key="login_pass", placeholder="••••••••")
         
@@ -3084,6 +3246,28 @@ def render_signup():
         if st.session_state.get("auth_error"):
             st.markdown(f"<div class='auth-error'>❌ {st.session_state.auth_error}</div>", unsafe_allow_html=True)
             st.session_state.auth_error = None
+        
+        # OAuth Buttons (Google & Apple)
+        if SUPABASE_ENABLED:
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🔵 Sign up with Google", key="oauth_google_signup", use_container_width=True):
+                    oauth_url = get_oauth_url("google")
+                    if oauth_url:
+                        st.markdown(f'<meta http-equiv="refresh" content="0;url={oauth_url}">', unsafe_allow_html=True)
+                    else:
+                        st.session_state.auth_error = "Google sign-in not configured"
+                        st.rerun()
+            with col2:
+                if st.button("🍎 Sign up with Apple", key="oauth_apple_signup", use_container_width=True):
+                    oauth_url = get_oauth_url("apple")
+                    if oauth_url:
+                        st.markdown(f'<meta http-equiv="refresh" content="0;url={oauth_url}">', unsafe_allow_html=True)
+                    else:
+                        st.session_state.auth_error = "Apple sign-in not configured"
+                        st.rerun()
+            
+            st.markdown("<div class='auth-divider'><span>or sign up with email</span></div>", unsafe_allow_html=True)
         
         name = st.text_input("Name", key="signup_name", placeholder="Your name")
         email = st.text_input("Email", key="signup_email", placeholder="your@email.com")
