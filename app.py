@@ -1930,24 +1930,24 @@ def render_mr_dp_chat_widget():
     
     # If there's chat history, show it in a popup above the button
     if show_chat:
-        # Build messages HTML
+        # Build messages HTML - only last 4 to fit without scroll
         messages_html = ""
-        for msg in history[-6:]:
+        for msg in history[-4:]:
             if msg["role"] == "user":
-                messages_html += f'<div style="background:linear-gradient(135deg,#8b5cf6,#06b6d4);color:white;padding:10px 14px;border-radius:16px;border-bottom-right-radius:4px;margin:8px 0;margin-left:15%;text-align:right;">{safe(msg["content"])}</div>'
+                messages_html += f'<div style="background:linear-gradient(135deg,#8b5cf6,#06b6d4);color:white;padding:10px 14px;border-radius:16px;border-bottom-right-radius:4px;margin:6px 0;margin-left:15%;text-align:right;font-size:0.9rem;">{safe(msg["content"])}</div>'
             else:
                 content = safe(msg["content"])
                 # Add mood tags if present
                 if msg.get("current_feeling") or msg.get("desired_feeling"):
-                    content += '<div style="margin-top:8px;font-size:0.75rem;color:rgba(255,255,255,0.7);">'
+                    content += '<div style="margin-top:6px;font-size:0.7rem;color:rgba(255,255,255,0.6);">'
                     if msg.get("current_feeling"):
                         content += f'{MOOD_EMOJIS.get(msg["current_feeling"], "😊")} {msg["current_feeling"]} '
                     if msg.get("desired_feeling"):
                         content += f'→ {MOOD_EMOJIS.get(msg["desired_feeling"], "✨")} {msg["desired_feeling"]}'
                     content += '</div>'
-                messages_html += f'<div style="background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.25);color:white;padding:10px 14px;border-radius:16px;border-bottom-left-radius:4px;margin:8px 0;margin-right:15%;">{content}</div>'
+                messages_html += f'<div style="background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.25);color:white;padding:10px 14px;border-radius:16px;border-bottom-left-radius:4px;margin:6px 0;margin-right:15%;font-size:0.9rem;">{content}</div>'
         
-        # Render popup with auto-scroll to bottom
+        # Render popup - messages pushed to bottom
         st.markdown(f'''
         <style>
         .mr-dp-chat-popup {{
@@ -1955,7 +1955,7 @@ def render_mr_dp_chat_widget():
             bottom: 155px;
             right: 24px;
             width: 340px;
-            max-height: 380px;
+            height: 380px;
             background: #0d0d14;
             border: 1px solid rgba(139, 92, 246, 0.35);
             border-radius: 20px;
@@ -1975,24 +1975,21 @@ def render_mr_dp_chat_widget():
             flex-shrink: 0;
         }}
         .mr-dp-header-avatar {{
-            width: 36px !important;
-            height: 36px !important;
-            min-width: 36px !important;
-            min-height: 36px !important;
+            width: 36px;
+            height: 36px;
             flex-shrink: 0;
         }}
         .mr-dp-header-avatar img {{
             width: 36px !important;
             height: 36px !important;
-            max-width: 36px !important;
-            max-height: 36px !important;
         }}
         .mr-dp-chat-msgs {{
             padding: 12px;
-            overflow-y: auto;
             flex: 1;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
+            justify-content: flex-end;
         }}
         </style>
         <div class="mr-dp-chat-popup">
@@ -2003,14 +2000,19 @@ def render_mr_dp_chat_widget():
                     <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);">● Online</div>
                 </div>
             </div>
-            <div class="mr-dp-chat-msgs" id="mr-dp-chat-msgs">{messages_html}</div>
+            <div class="mr-dp-chat-msgs">{messages_html}</div>
         </div>
-        <script>
-            // Scroll chat to bottom to show latest messages
-            var chatMsgs = document.getElementById('mr-dp-chat-msgs');
-            if (chatMsgs) chatMsgs.scrollTop = chatMsgs.scrollHeight;
-        </script>
         ''', unsafe_allow_html=True)
+        
+        # Scroll chat to bottom using components.html for reliable execution
+        components.html("""
+        <script>
+            setTimeout(function() {
+                var msgs = window.parent.document.querySelector('.mr-dp-chat-msgs');
+                if (msgs) msgs.scrollTop = msgs.scrollHeight;
+            }, 150);
+        </script>
+        """, height=0)
 
 def render_support_resources_modal():
     """Render mental health support resources modal with government hotlines."""
@@ -2797,15 +2799,24 @@ def render_sidebar():
 def render_main():
     # Check if we need to scroll to top (after Mr.DP response)
     if st.session_state.get("scroll_to_top"):
-        st.markdown("""
+        # Use components.html with LONGER delays to beat Streamlit's scroll
+        components.html("""
         <script>
-            window.scrollTo(0, 0);
-            document.documentElement.scrollTop = 0;
-            document.body.scrollTop = 0;
-            var main = document.querySelector('[data-testid="stAppViewContainer"]');
-            if (main) main.scrollTop = 0;
+            function scrollToTop() {
+                try {
+                    var container = window.parent.document.querySelector('[data-testid="stAppViewContainer"]');
+                    if (container) container.scrollTop = 0;
+                    var main = window.parent.document.querySelector('.main');
+                    if (main) main.scrollTop = 0;
+                    window.parent.scrollTo(0, 0);
+                } catch(e) {}
+            }
+            // Much longer delays to beat Streamlit's auto-focus on chat_input
+            setTimeout(scrollToTop, 500);
+            setTimeout(scrollToTop, 1000);
+            setTimeout(scrollToTop, 1500);
         </script>
-        """, unsafe_allow_html=True)
+        """, height=0)
         st.session_state.scroll_to_top = False  # Clear flag
     
     render_stats_bar()
