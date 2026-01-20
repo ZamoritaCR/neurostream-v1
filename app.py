@@ -1697,46 +1697,47 @@ section[data-testid="stSidebar"] .stTextArea textarea {
     50% { box-shadow: 0 8px 40px rgba(139, 92, 246, 0.6), 0 0 0 8px rgba(139, 92, 246, 0.15); }
 }
 
-/* Style Streamlit's chat input to be Mr.DP's input */
+/* Style Streamlit's chat input - position near Mr.DP on the right */
 .stChatInput {
     position: fixed !important;
     bottom: 24px !important;
-    left: 50% !important;
-    transform: translateX(-60%) !important;
-    max-width: 420px !important;
-    width: calc(100% - 200px) !important;
+    right: 24px !important;
+    left: auto !important;
+    transform: none !important;
+    max-width: 340px !important;
+    width: 340px !important;
     z-index: 9997 !important;
 }
 
 .stChatInput > div {
-    background: var(--bg-secondary) !important;
+    background: #0d0d12 !important;
     border: 2px solid rgba(139, 92, 246, 0.4) !important;
-    border-radius: 28px !important;
-    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2) !important;
+    border-radius: 24px !important;
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.25) !important;
     padding: 4px !important;
 }
 
 .stChatInput > div:focus-within {
-    border-color: var(--accent-primary) !important;
-    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.3), 0 0 0 4px rgba(139, 92, 246, 0.1) !important;
+    border-color: #8b5cf6 !important;
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4), 0 0 0 4px rgba(139, 92, 246, 0.15) !important;
 }
 
 .stChatInput input {
     background: transparent !important;
-    color: var(--text-primary) !important;
-    padding: 14px 20px !important;
-    font-size: 0.95rem !important;
+    color: white !important;
+    padding: 12px 16px !important;
+    font-size: 0.9rem !important;
 }
 
 .stChatInput input::placeholder {
-    color: var(--text-secondary) !important;
+    color: rgba(255,255,255,0.5) !important;
 }
 
 .stChatInput button {
-    background: var(--accent-gradient) !important;
+    background: linear-gradient(135deg, #8b5cf6, #06b6d4) !important;
     border-radius: 50% !important;
-    width: 40px !important;
-    height: 40px !important;
+    width: 36px !important;
+    height: 36px !important;
     margin: 4px !important;
 }
 
@@ -1744,7 +1745,7 @@ section[data-testid="stSidebar"] .stTextArea textarea {
     fill: white !important;
 }
 
-/* Adjust main content to account for fixed chat input */
+/* Adjust main content to account for fixed elements */
 .main .block-container {
     padding-bottom: 100px !important;
 }
@@ -1752,8 +1753,9 @@ section[data-testid="stSidebar"] .stTextArea textarea {
 /* Mobile adjustments */
 @media (max-width: 768px) {
     .stChatInput {
-        max-width: calc(100% - 120px) !important;
-        transform: translateX(-55%) !important;
+        max-width: calc(100% - 100px) !important;
+        width: calc(100% - 100px) !important;
+        right: 16px !important;
     }
 }
 </style>
@@ -1863,15 +1865,15 @@ def render_mr_dp_chat_widget():
     history = st.session_state.get("mr_dp_chat_history", [])
     show_chat = len(history) > 0
     
-    # Floating button CSS + HTML (this always shows)
+    # Floating button CSS + HTML (positioned above the chat input)
     st.markdown(f'''
     <style>
     .mr-dp-float-btn {{
         position: fixed;
-        bottom: 90px;
-        right: 24px;
-        width: 72px;
-        height: 72px;
+        bottom: 80px;
+        right: 32px;
+        width: 64px;
+        height: 64px;
         border-radius: 50%;
         background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 50%, #10b981 100%);
         box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
@@ -1882,8 +1884,8 @@ def render_mr_dp_chat_widget():
         animation: mrDpFloat 3s ease-in-out infinite;
     }}
     .mr-dp-float-btn img {{
-        width: 52px;
-        height: 52px;
+        width: 48px;
+        height: 48px;
     }}
     @keyframes mrDpFloat {{
         0%, 100% {{ transform: translateY(0); }}
@@ -1893,36 +1895,36 @@ def render_mr_dp_chat_widget():
     <div class="mr-dp-float-btn">{avatar_img}</div>
     ''', unsafe_allow_html=True)
     
-    # If there's chat history, show it in a popup
+    # If there's chat history, show it in a popup above the button
     if show_chat:
-        # Build messages HTML separately with very simple structure
+        # Build messages HTML
         messages_html = ""
         for msg in history[-6:]:
             if msg["role"] == "user":
-                messages_html += f'<div style="background:linear-gradient(135deg,#8b5cf6,#06b6d4);color:white;padding:10px 14px;border-radius:16px;margin:8px 0;margin-left:20%;text-align:right;">{safe(msg["content"])}</div>'
+                messages_html += f'<div style="background:linear-gradient(135deg,#8b5cf6,#06b6d4);color:white;padding:10px 14px;border-radius:16px;border-bottom-right-radius:4px;margin:8px 0;margin-left:15%;text-align:right;">{safe(msg["content"])}</div>'
             else:
                 content = safe(msg["content"])
                 # Add mood tags if present
                 if msg.get("current_feeling") or msg.get("desired_feeling"):
-                    content += '<div style="margin-top:8px;font-size:0.75rem;opacity:0.8;">'
+                    content += '<div style="margin-top:8px;font-size:0.75rem;color:rgba(255,255,255,0.7);">'
                     if msg.get("current_feeling"):
                         content += f'{MOOD_EMOJIS.get(msg["current_feeling"], "😊")} {msg["current_feeling"]} '
                     if msg.get("desired_feeling"):
                         content += f'→ {MOOD_EMOJIS.get(msg["desired_feeling"], "✨")} {msg["desired_feeling"]}'
                     content += '</div>'
-                messages_html += f'<div style="background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.2);color:white;padding:10px 14px;border-radius:16px;margin:8px 0;margin-right:20%;">{content}</div>'
+                messages_html += f'<div style="background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.25);color:white;padding:10px 14px;border-radius:16px;border-bottom-left-radius:4px;margin:8px 0;margin-right:15%;">{content}</div>'
         
-        # Render popup as a single st.markdown call
+        # Render popup
         st.markdown(f'''
         <style>
         .mr-dp-chat-popup {{
             position: fixed;
-            bottom: 170px;
+            bottom: 155px;
             right: 24px;
             width: 340px;
-            max-height: 400px;
-            background: #0d0d12;
-            border: 1px solid rgba(139, 92, 246, 0.3);
+            max-height: 380px;
+            background: #0d0d14;
+            border: 1px solid rgba(139, 92, 246, 0.35);
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
             z-index: 9998;
