@@ -1075,6 +1075,7 @@ if "init" not in st.session_state:
         "mr_dp_response": None,
         "mr_dp_results": [],
         "mr_dp_page": 1,
+        "scroll_to_top": False,  # Flag to scroll to top after results
         
         # Quick Hit
         "quick_hit": None,
@@ -1946,7 +1947,7 @@ def render_mr_dp_chat_widget():
                     content += '</div>'
                 messages_html += f'<div style="background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.25);color:white;padding:10px 14px;border-radius:16px;border-bottom-left-radius:4px;margin:8px 0;margin-right:15%;">{content}</div>'
         
-        # Render popup
+        # Render popup with auto-scroll to bottom
         st.markdown(f'''
         <style>
         .mr-dp-chat-popup {{
@@ -1961,6 +1962,8 @@ def render_mr_dp_chat_widget():
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
             z-index: 9998;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }}
         .mr-dp-chat-header {{
             background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(6, 182, 212, 0.15));
@@ -1969,6 +1972,7 @@ def render_mr_dp_chat_widget():
             align-items: center;
             gap: 10px;
             border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+            flex-shrink: 0;
         }}
         .mr-dp-header-avatar {{
             width: 36px !important;
@@ -1985,8 +1989,10 @@ def render_mr_dp_chat_widget():
         }}
         .mr-dp-chat-msgs {{
             padding: 12px;
-            max-height: 280px;
             overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
         }}
         </style>
         <div class="mr-dp-chat-popup">
@@ -1997,8 +2003,13 @@ def render_mr_dp_chat_widget():
                     <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);">● Online</div>
                 </div>
             </div>
-            <div class="mr-dp-chat-msgs">{messages_html}</div>
+            <div class="mr-dp-chat-msgs" id="mr-dp-chat-msgs">{messages_html}</div>
         </div>
+        <script>
+            // Scroll chat to bottom to show latest messages
+            var chatMsgs = document.getElementById('mr-dp-chat-msgs');
+            if (chatMsgs) chatMsgs.scrollTop = chatMsgs.scrollHeight;
+        </script>
         ''', unsafe_allow_html=True)
 
 def render_support_resources_modal():
@@ -2784,6 +2795,19 @@ def render_sidebar():
 # 17. MAIN CONTENT
 # --------------------------------------------------
 def render_main():
+    # Check if we need to scroll to top (after Mr.DP response)
+    if st.session_state.get("scroll_to_top"):
+        st.markdown("""
+        <script>
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+            var main = document.querySelector('[data-testid="stAppViewContainer"]');
+            if (main) main.scrollTop = 0;
+        </script>
+        """, unsafe_allow_html=True)
+        st.session_state.scroll_to_top = False  # Clear flag
+    
     render_stats_bar()
     
     achievements = get_achievements()
@@ -3176,6 +3200,7 @@ else:
             st.session_state.movies_feed = []  # Clear old feed
             st.session_state.quick_hit = None
             st.session_state.search_results = []
+            st.session_state.scroll_to_top = True  # Flag to scroll after rerun
             
             add_dopamine_points(10, "Chatted with Mr.DP!")
         
