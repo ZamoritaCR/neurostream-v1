@@ -1847,7 +1847,7 @@ def get_mr_dp_expression(current_feeling, desired_feeling):
     return "happy"
 
 def render_mr_dp_chat_widget():
-    """Render the floating Mr.DP chat widget with full interactivity."""
+    """Render the floating Mr.DP chat widget - simplified for Streamlit."""
     
     # Get current expression based on last detected mood
     response = st.session_state.get("mr_dp_response")
@@ -1861,230 +1861,102 @@ def render_mr_dp_chat_widget():
     
     avatar_img = get_mr_dp_svg(expression)
     history = st.session_state.get("mr_dp_chat_history", [])
-    show_chat = st.session_state.get("mr_dp_open", False) or len(history) > 0
+    show_chat = len(history) > 0
     
-    # Build chat history HTML with INLINE STYLES (classes don't render in Streamlit)
-    chat_html = ""
-    if not history:
-        chat_html = f'''
-        <div style="text-align:center; padding:20px;">
-            <div style="width:64px;height:64px;margin:0 auto 12px;">{avatar_img}</div>
-            <div style="font-weight:600;color:white;margin-bottom:8px;">Hey! I'm Mr.DP 🧠</div>
-            <div style="font-size:0.85rem;color:rgba(255,255,255,0.6);line-height:1.5;">
-                Your dopamine curator. Tell me how you feel and I'll find the perfect content!
-            </div>
-            <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
-                <span style="padding:8px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:16px;font-size:0.8rem;color:rgba(255,255,255,0.5);">Try: "I'm bored"</span>
-                <span style="padding:8px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:16px;font-size:0.8rem;color:rgba(255,255,255,0.5);">"make me laugh"</span>
-            </div>
-        </div>
-        '''
-    else:
-        for msg in history[-6:]:
-            if msg["role"] == "user":
-                # User message - gradient background, right aligned
-                chat_html += f'''
-                <div style="max-width:85%;padding:10px 14px;border-radius:16px;border-bottom-right-radius:4px;font-size:0.9rem;line-height:1.5;background:linear-gradient(135deg,#8b5cf6,#06b6d4);color:white;align-self:flex-end;margin-left:auto;">{safe(msg["content"])}</div>
-                '''
-            else:
-                # Bot message - glass background, left aligned
-                tags_html = ""
-                if msg.get("current_feeling") or msg.get("desired_feeling"):
-                    tags_html = '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;">'
-                    if msg.get("current_feeling"):
-                        tags_html += f'<span style="padding:3px 8px;background:rgba(139,92,246,0.2);border-radius:10px;font-size:0.7rem;color:rgba(255,255,255,0.8);">{MOOD_EMOJIS.get(msg["current_feeling"], "😊")} {msg["current_feeling"]}</span>'
-                    if msg.get("desired_feeling"):
-                        tags_html += f'<span style="padding:3px 8px;background:rgba(6,182,212,0.2);border-radius:10px;font-size:0.7rem;color:rgba(255,255,255,0.8);">→ {MOOD_EMOJIS.get(msg["desired_feeling"], "✨")} {msg["desired_feeling"]}</span>'
-                    tags_html += '</div>'
-                
-                chat_html += f'''
-                <div style="max-width:85%;padding:10px 14px;border-radius:16px;border-bottom-left-radius:4px;font-size:0.9rem;line-height:1.5;background:linear-gradient(135deg,rgba(139,92,246,0.12),rgba(6,182,212,0.08));border:1px solid rgba(139,92,246,0.15);color:white;align-self:flex-start;">{safe(msg["content"])}{tags_html}</div>
-                '''
-    
-    # Render complete floating widget HTML
-    widget_html = f'''
+    # Floating button CSS + HTML (this always shows)
+    st.markdown(f'''
     <style>
-    .mr-dp-float-container {{
-        position: fixed;
-        bottom: 24px;
-        right: 24px;
-        z-index: 9999;
-    }}
-    
     .mr-dp-float-btn {{
+        position: fixed;
+        bottom: 90px;
+        right: 24px;
         width: 72px;
         height: 72px;
         border-radius: 50%;
         background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 50%, #10b981 100%);
-        box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4), 0 0 0 4px rgba(139, 92, 246, 0.15);
+        box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
         display: flex;
         align-items: center;
         justify-content: center;
-        cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 9999;
         animation: mrDpFloat 3s ease-in-out infinite;
     }}
-    
-    .mr-dp-float-btn:hover {{
-        transform: scale(1.1) translateY(-4px);
-        box-shadow: 0 12px 40px rgba(139, 92, 246, 0.5), 0 0 0 6px rgba(139, 92, 246, 0.2);
-    }}
-    
     .mr-dp-float-btn img {{
         width: 52px;
         height: 52px;
     }}
-    
     @keyframes mrDpFloat {{
         0%, 100% {{ transform: translateY(0); }}
         50% {{ transform: translateY(-6px); }}
     }}
-    
-    .mr-dp-badge {{
-        position: absolute;
-        top: -4px;
-        right: -4px;
-        width: 24px;
-        height: 24px;
-        background: #10b981;
-        border-radius: 50%;
-        border: 3px solid #050508;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.7rem;
-        color: white;
-        font-weight: bold;
-    }}
-    
-    .mr-dp-popup {{
-        position: fixed;
-        bottom: 108px;
-        right: 24px;
-        width: 360px;
-        max-height: 480px;
-        background: #0a0a0f;
-        border: 1px solid rgba(139, 92, 246, 0.3);
-        border-radius: 24px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(139, 92, 246, 0.1);
-        z-index: 9998;
-        overflow: hidden;
-        display: {'flex' if show_chat else 'none'};
-        flex-direction: column;
-    }}
-    
-    .mr-dp-popup-header {{
-        background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(6, 182, 212, 0.1) 100%);
-        padding: 14px 18px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        border-bottom: 1px solid rgba(139, 92, 246, 0.2);
-    }}
-    
-    .mr-dp-popup-avatar {{
-        width: 40px;
-        height: 40px;
-    }}
-    
-    .mr-dp-popup-title {{
-        font-weight: 700;
-        background: linear-gradient(135deg, #8b5cf6, #06b6d4, #10b981);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }}
-    
-    .mr-dp-popup-status {{
-        font-size: 0.7rem;
-        color: rgba(255,255,255,0.6);
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }}
-    
-    .mr-dp-popup-status::before {{
-        content: '';
-        width: 6px;
-        height: 6px;
-        background: #10b981;
-        border-radius: 50%;
-    }}
-    
-    .mr-dp-popup-messages {{
-        flex: 1;
-        padding: 16px;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        max-height: 280px;
-    }}
-    
-    .mr-dp-support {{
-        padding: 8px 16px;
-        background: rgba(16, 185, 129, 0.08);
-        border-top: 1px solid rgba(16, 185, 129, 0.15);
-        font-size: 0.7rem;
-        color: rgba(255,255,255,0.6);
-        text-align: center;
-    }}
-    
-    .mr-dp-support a {{
-        color: #10b981;
-        text-decoration: none;
-        font-weight: 500;
-    }}
-    
-    .mr-dp-support a:hover {{
-        text-decoration: underline;
-    }}
-    
-    @media (max-width: 480px) {{
-        .mr-dp-popup {{
-            width: calc(100vw - 32px);
-            right: 16px;
-            bottom: 100px;
-        }}
-        .mr-dp-float-container {{
-            right: 16px;
-            bottom: 16px;
-        }}
-    }}
     </style>
+    <div class="mr-dp-float-btn">{avatar_img}</div>
+    ''', unsafe_allow_html=True)
     
-    <!-- Floating Button -->
-    <div class="mr-dp-float-container">
-        <div class="mr-dp-float-btn" title="Chat with Mr.DP">
-            {avatar_img}
-        </div>
-        {f'<div class="mr-dp-badge">💬</div>' if len(history) > 0 else ''}
-    </div>
-    
-    <!-- Chat Popup -->
-    <div class="mr-dp-popup" id="mr-dp-popup">
-        <div class="mr-dp-popup-header">
-            <div class="mr-dp-popup-avatar">{avatar_img}</div>
-            <div>
-                <div class="mr-dp-popup-title">Mr.DP</div>
-                <div class="mr-dp-popup-status">Online • Your Dopamine Curator</div>
+    # If there's chat history, show it in a popup
+    if show_chat:
+        # Build messages HTML separately with very simple structure
+        messages_html = ""
+        for msg in history[-6:]:
+            if msg["role"] == "user":
+                messages_html += f'<div style="background:linear-gradient(135deg,#8b5cf6,#06b6d4);color:white;padding:10px 14px;border-radius:16px;margin:8px 0;margin-left:20%;text-align:right;">{safe(msg["content"])}</div>'
+            else:
+                content = safe(msg["content"])
+                # Add mood tags if present
+                if msg.get("current_feeling") or msg.get("desired_feeling"):
+                    content += '<div style="margin-top:8px;font-size:0.75rem;opacity:0.8;">'
+                    if msg.get("current_feeling"):
+                        content += f'{MOOD_EMOJIS.get(msg["current_feeling"], "😊")} {msg["current_feeling"]} '
+                    if msg.get("desired_feeling"):
+                        content += f'→ {MOOD_EMOJIS.get(msg["desired_feeling"], "✨")} {msg["desired_feeling"]}'
+                    content += '</div>'
+                messages_html += f'<div style="background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.2);color:white;padding:10px 14px;border-radius:16px;margin:8px 0;margin-right:20%;">{content}</div>'
+        
+        # Render popup as a single st.markdown call
+        st.markdown(f'''
+        <style>
+        .mr-dp-chat-popup {{
+            position: fixed;
+            bottom: 170px;
+            right: 24px;
+            width: 340px;
+            max-height: 400px;
+            background: #0d0d12;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            z-index: 9998;
+            overflow: hidden;
+        }}
+        .mr-dp-chat-header {{
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(6, 182, 212, 0.15));
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+        }}
+        .mr-dp-chat-header img {{
+            width: 36px;
+            height: 36px;
+        }}
+        .mr-dp-chat-msgs {{
+            padding: 12px;
+            max-height: 280px;
+            overflow-y: auto;
+        }}
+        </style>
+        <div class="mr-dp-chat-popup">
+            <div class="mr-dp-chat-header">
+                {avatar_img}
+                <div>
+                    <div style="font-weight:700;background:linear-gradient(135deg,#8b5cf6,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Mr.DP</div>
+                    <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);">● Online</div>
+                </div>
             </div>
+            <div class="mr-dp-chat-msgs">{messages_html}</div>
         </div>
-        <div class="mr-dp-popup-messages" id="mr-dp-msgs">
-            {chat_html}
-        </div>
-        <div class="mr-dp-support">
-            💚 Need support? <a href="javascript:void(0)" onclick="document.getElementById('support-modal').style.display='block'">Click for resources</a>
-        </div>
-    </div>
-    
-    <script>
-        // Auto-scroll chat to bottom
-        var msgsDiv = document.getElementById('mr-dp-msgs');
-        if (msgsDiv) msgsDiv.scrollTop = msgsDiv.scrollHeight;
-    </script>
-    '''
-    
-    st.markdown(widget_html, unsafe_allow_html=True)
+        ''', unsafe_allow_html=True)
 
 def render_support_resources_modal():
     """Render mental health support resources modal with government hotlines."""
