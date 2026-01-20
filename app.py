@@ -615,10 +615,10 @@ def get_movie_trailer(tmdb_id, media_type="movie"):
 # --------------------------------------------------
 # 9. MR.DP - CONVERSATIONAL AI CURATOR 🧾
 # --------------------------------------------------
-MR_DP_SYSTEM_PROMPT = """You are Mr.DP (Mr. Dopamine), the world's most empathetic movie curator designed specifically for ADHD and neurodivergent brains. You understand decision fatigue, emotional dysregulation, and the need for the RIGHT content at the RIGHT time.
+MR_DP_SYSTEM_PROMPT = """You are Mr.DP (Mr. Dopamine), the world's most empathetic content curator designed specifically for ADHD and neurodivergent brains. You understand decision fatigue, emotional dysregulation, and the need for the RIGHT content at the RIGHT time.
 
 Your personality:
-- Warm, friendly, and understanding (like a cool older sibling who loves movies)
+- Warm, friendly, and understanding (like a cool older sibling who loves entertainment)
 - You get ADHD struggles - no judgment, only support
 - You're enthusiastic about helping people find their dopamine fix
 - You use casual language, occasional emojis, but not over the top
@@ -626,14 +626,16 @@ Your personality:
 
 Your job:
 1. Understand what the user is feeling and what they NEED to feel
-2. Respond with empathy and explain your recommendation approach
-3. Return structured data for the app to use
+2. Detect if they want MOVIES or MUSIC (default to movies unless they mention music/songs/playlist/beats/tunes)
+3. Respond with empathy and explain your recommendation approach
+4. Return structured data for the app to use
 
 ALWAYS respond in this exact JSON format:
 {
     "message": "Your friendly 1-3 sentence response to the user",
     "current_feeling": "one of: Sad, Lonely, Anxious, Overwhelmed, Angry, Stressed, Bored, Tired, Numb, Confused, Restless, Focused, Calm, Happy, Excited, Curious (or null)",
     "desired_feeling": "one of: Comforted, Calm, Relaxed, Focused, Energized, Stimulated, Happy, Entertained, Inspired, Grounded, Curious, Sleepy, Connected (or null)",
+    "media_type": "movies or music",
     "mode": "discover or search",
     "search_query": "specific search terms if mode is search, empty string otherwise",
     "genres": "brief description of what kind of content you're recommending"
@@ -646,9 +648,21 @@ User: "I'm so bored"
     "message": "Ugh, the boredom spiral is REAL. Let me shake things up with some high-energy adventures and mind-bending sci-fi that'll actually hold your attention! 🚀",
     "current_feeling": "Bored",
     "desired_feeling": "Entertained",
+    "media_type": "movies",
     "mode": "discover",
     "search_query": "",
     "genres": "action-adventures, sci-fi thrillers, engaging comedies"
+}
+
+User: "need some focus music for coding"
+{
+    "message": "Ah, the coding zone! Let me queue up some beats that'll keep your brain locked in without being distracting. Lo-fi and electronic focus vibes coming up! 🎧",
+    "current_feeling": "Restless",
+    "desired_feeling": "Focused",
+    "media_type": "music",
+    "mode": "discover",
+    "search_query": "",
+    "genres": "lo-fi beats, electronic focus, ambient coding music"
 }
 
 User: "feeling anxious, need something calming"
@@ -656,9 +670,21 @@ User: "feeling anxious, need something calming"
     "message": "I got you. When anxiety hits, you need gentle, predictable comfort. I'm pulling up some cozy feel-good films - nothing stressful, just warm vibes. 💫",
     "current_feeling": "Anxious",
     "desired_feeling": "Calm",
+    "media_type": "movies",
     "mode": "discover",
     "search_query": "",
     "genres": "heartwarming comedies, gentle animations, comfort films"
+}
+
+User: "play me something upbeat"
+{
+    "message": "Time to boost that energy! I've got the perfect playlist to get those good vibes flowing. Upbeat bangers incoming! 🔥",
+    "current_feeling": "Bored",
+    "desired_feeling": "Energized",
+    "media_type": "music",
+    "mode": "discover",
+    "search_query": "",
+    "genres": "upbeat pop, dance hits, feel-good energy"
 }
 
 User: "Christopher Nolan movies"
@@ -666,19 +692,21 @@ User: "Christopher Nolan movies"
     "message": "Ah, a person of culture! Nolan's mind-benders are perfect for when you want to feel intellectually stimulated. Bringing up his filmography! 🎬",
     "current_feeling": null,
     "desired_feeling": "Stimulated",
+    "media_type": "movies",
     "mode": "search",
     "search_query": "Christopher Nolan",
     "genres": "cerebral thrillers, mind-bending sci-fi"
 }
 
-User: "sad and need comfort"
+User: "sad playlist"
 {
-    "message": "Sending you a virtual hug first 🫂 On tough days, you deserve movies that feel like a warm blanket. I've got wholesome picks that'll lift you up gently.",
+    "message": "Sometimes you just need to feel your feelings with the right soundtrack. Here's some music that gets it - perfect for processing those emotions. 💙",
     "current_feeling": "Sad",
     "desired_feeling": "Comforted",
+    "media_type": "music",
     "mode": "discover",
     "search_query": "",
-    "genres": "heartwarming dramas, uplifting animations, feel-good films"
+    "genres": "emotional ballads, comfort songs, healing music"
 }
 
 User: "make me laugh"
@@ -686,12 +714,24 @@ User: "make me laugh"
     "message": "Say no more! Laughter is the best dopamine hit. Loading up comedies that'll actually make you LOL, not just exhale slightly harder 😂",
     "current_feeling": "Bored",
     "desired_feeling": "Entertained",
+    "media_type": "movies",
     "mode": "discover",
     "search_query": "",
     "genres": "comedies, funny adventures, witty films"
 }
 
-Remember: Be genuine, warm, and helpful. You're not just finding movies - you're helping someone feel better."""
+User: "workout songs"
+{
+    "message": "Let's GO! Time to get that adrenaline pumping with some serious workout fuel. These tracks will push you through any set! 💪",
+    "current_feeling": "Tired",
+    "desired_feeling": "Energized",
+    "media_type": "music",
+    "mode": "discover",
+    "search_query": "",
+    "genres": "workout anthems, high energy, pump-up tracks"
+}
+
+Remember: Be genuine, warm, and helpful. You're not just finding content - you're helping someone feel better."""
 
 def ask_mr_dp(user_prompt):
     """
@@ -729,6 +769,7 @@ def ask_mr_dp(user_prompt):
             result.setdefault("message", "Let me find something perfect for you!")
             result.setdefault("current_feeling", None)
             result.setdefault("desired_feeling", None)
+            result.setdefault("media_type", "movies")  # Default to movies
             result.setdefault("mode", "discover")
             result.setdefault("search_query", "")
             result.setdefault("genres", "")
@@ -738,6 +779,10 @@ def ask_mr_dp(user_prompt):
                 result["current_feeling"] = None
             if result["desired_feeling"] not in DESIRED_FEELINGS:
                 result["desired_feeling"] = None
+            
+            # Validate media_type
+            if result["media_type"] not in ["movies", "music"]:
+                result["media_type"] = "movies"
             
             return result
             
@@ -756,50 +801,58 @@ def heuristic_mr_dp(prompt):
     t = (prompt or "").lower()
     
     current, desired, message, mode, query, genres = None, None, "", "discover", "", ""
+    media_type = "movies"  # Default to movies
+    
+    # Detect if user wants MUSIC
+    music_keywords = ["music", "song", "songs", "playlist", "beats", "tunes", "listen", "track", "tracks", 
+                      "spotify", "album", "artist", "band", "melody", "lo-fi", "lofi", "workout music",
+                      "study music", "focus music", "chill music", "sad songs", "happy songs"]
+    if any(k in t for k in music_keywords):
+        media_type = "music"
     
     # Detect current feeling
     feeling_responses = {
         "Bored": {
             "keywords": ["bored", "boring", "nothing to watch", "meh", "blah", "dull"],
-            "message": "The boredom struggle is real! Let me find something that'll actually grab your attention 🎬",
+            "message": "The boredom struggle is real! Let me find something that'll actually grab your attention 🎬" if media_type == "movies" else "The boredom struggle is real! Let me queue up some bangers 🎵",
             "desired": "Entertained",
-            "genres": "action, adventure, engaging comedies"
+            "genres": "action, adventure, engaging comedies" if media_type == "movies" else "upbeat pop, energetic hits"
         },
         "Stressed": {
             "keywords": ["stress", "overwhelm", "too much", "burnout", "pressure"],
             "message": "Deep breath - I've got you. Time for some gentle, relaxing vibes to help you decompress 🌿",
             "desired": "Relaxed",
-            "genres": "calming films, light comedies, nature docs"
+            "genres": "calming films, light comedies, nature docs" if media_type == "movies" else "ambient, chill, relaxation"
         },
         "Anxious": {
             "keywords": ["anxious", "anxiety", "nervous", "worried", "panic", "scared"],
-            "message": "Anxiety is tough. Let me find something comforting and predictable - no jump scares, I promise 💫",
+            "message": "Anxiety is tough. Let me find something comforting and soothing 💫",
             "desired": "Calm",
-            "genres": "feel-good movies, gentle animations, comfort films"
+            "genres": "feel-good movies, gentle animations, comfort films" if media_type == "movies" else "calming ambient, peaceful piano, meditation"
         },
         "Sad": {
             "keywords": ["sad", "down", "depressed", "crying", "upset", "heartbr", "grief"],
-            "message": "Sending virtual hugs 🫂 I'll find something warm and uplifting to help you feel a bit better.",
+            "message": "Sending virtual hugs 🫂 I'll find something to help you feel a bit better.",
             "desired": "Comforted",
-            "genres": "heartwarming stories, uplifting dramas, wholesome films"
+            "genres": "heartwarming stories, uplifting dramas, wholesome films" if media_type == "movies" else "comfort songs, healing music, emotional ballads"
         },
         "Lonely": {
             "keywords": ["lonely", "alone", "isolated", "miss people"],
-            "message": "Feeling lonely sucks. How about some movies with beautiful friendships and connections? ❤️",
+            "message": "Feeling lonely sucks. Let me find something with beautiful connections ❤️",
             "desired": "Connected",
-            "genres": "friendship stories, heartfelt dramas, romantic comedies"
+            "genres": "friendship stories, heartfelt dramas, romantic comedies" if media_type == "movies" else "love songs, soulful R&B, connection vibes"
         },
         "Angry": {
             "keywords": ["angry", "mad", "pissed", "furious", "frustrated", "annoyed"],
-            "message": "I feel you! Sometimes you need to watch stuff blow up, or maybe something to calm that fire 🔥",
+            "message": "I feel you! Sometimes you need to let it out 🔥",
             "desired": "Calm",
-            "genres": "action catharsis, calming films"
+            "genres": "action catharsis, calming films" if media_type == "movies" else "metal, rock, intense workout"
         },
         "Tired": {
             "keywords": ["tired", "exhaust", "drained", "sleepy", "no energy", "wiped"],
-            "message": "Running on empty? I've got easy-watching picks that won't require much brainpower 😴",
+            "message": "Running on empty? I've got easy-going picks that won't require much energy 😴",
             "desired": "Relaxed",
-            "genres": "light comedies, feel-good films, easy watches"
+            "genres": "light comedies, feel-good films, easy watches" if media_type == "movies" else "chill lo-fi, acoustic, mellow vibes"
         },
     }
     
@@ -814,28 +867,31 @@ def heuristic_mr_dp(prompt):
     
     # Check for desired feeling keywords
     desire_responses = {
-        "laugh": ("Entertained", "Say no more! Comedy incoming - the good stuff that actually makes you LOL 😂", "comedies, funny films"),
-        "funny": ("Entertained", "Let's get those laughs going! I've got comedies that'll hit different 🎭", "comedies, witty films"),
-        "action": ("Energized", "Time to get that adrenaline pumping! Action-packed picks coming up 💥", "action, thrillers, adventure"),
-        "scary": ("Stimulated", "Ooh, feeling brave! Let me find some quality scares for you 👻", "horror, thrillers"),
-        "romance": ("Connected", "Aww, in the mood for love? I've got swoon-worthy picks! 💕", "romantic films, love stories"),
-        "romantic": ("Connected", "Love is in the air! Here come the butterflies 🦋", "romance, romantic comedies"),
-        "think": ("Stimulated", "Big brain time! Let me find something that'll make you go 'whoa' 🧠", "cerebral thrillers, mind-benders"),
-        "smart": ("Stimulated", "Intellectual stimulation coming right up! 🎯", "thought-provoking films, clever stories"),
-        "relax": ("Relaxed", "Chill mode activated. Easy, breezy content incoming ✨", "calming films, gentle stories"),
-        "comfort": ("Comforted", "Comfort content is my specialty! Warm blanket vibes only 🧸", "feel-good, heartwarming films"),
-        "inspired": ("Inspired", "Let's get those motivation juices flowing! 🌟", "inspiring true stories, uplifting dramas"),
-        "motivat": ("Inspired", "Ready to feel like you can conquer the world? Let's go! 💪", "motivational films, success stories"),
+        "laugh": ("Entertained", "Say no more! Comedy incoming - the good stuff that actually makes you LOL 😂", "comedies, funny films", "funny songs, comedy podcasts"),
+        "funny": ("Entertained", "Let's get those laughs going! 🎭", "comedies, witty films", "funny songs, comedy"),
+        "action": ("Energized", "Time to get that adrenaline pumping! 💥", "action, thrillers, adventure", "high energy, workout anthems"),
+        "scary": ("Stimulated", "Ooh, feeling brave! 👻", "horror, thrillers", "dark ambient, suspense"),
+        "romance": ("Connected", "In the mood for love? 💕", "romantic films, love stories", "love songs, romantic ballads"),
+        "romantic": ("Connected", "Love is in the air! 🦋", "romance, romantic comedies", "love songs, R&B"),
+        "think": ("Stimulated", "Big brain time! 🧠", "cerebral thrillers, mind-benders", "classical, instrumental focus"),
+        "smart": ("Stimulated", "Intellectual stimulation coming up! 🎯", "thought-provoking films", "jazz, classical"),
+        "relax": ("Relaxed", "Chill mode activated ✨", "calming films, gentle stories", "ambient, chill, lo-fi"),
+        "comfort": ("Comforted", "Comfort content is my specialty! 🧸", "feel-good, heartwarming films", "acoustic, cozy vibes"),
+        "focus": ("Focused", "Lock-in mode activated! 🎯", "documentaries, slow burns", "lo-fi beats, focus music, ambient"),
+        "study": ("Focused", "Study session? I got the perfect vibe! 📚", "documentaries", "lo-fi hip hop, study beats"),
+        "workout": ("Energized", "Let's get those gains! 💪", "sports films, action", "workout anthems, pump-up tracks, EDM"),
+        "sleep": ("Sleepy", "Sweet dreams incoming 🌙", "gentle films", "sleep sounds, ambient, rain"),
+        "energy": ("Energized", "Let's boost that energy! ⚡", "action, adventure", "upbeat pop, EDM, dance hits"),
     }
     
-    for keyword, (des_feeling, des_message, des_genres) in desire_responses.items():
+    for keyword, (des_feeling, des_message, movie_genres, music_genres) in desire_responses.items():
         if keyword in t:
             if not desired:
                 desired = des_feeling
             if not message:
                 message = des_message
             if not genres:
-                genres = des_genres
+                genres = music_genres if media_type == "music" else movie_genres
             if not current:
                 current = "Bored"  # Default
             break
@@ -854,18 +910,22 @@ def heuristic_mr_dp(prompt):
     
     # Default fallback
     if not message:
-        message = "Let me find something perfect for your current vibe! 🎬"
+        if media_type == "music":
+            message = "Let me find the perfect tunes for your vibe! 🎵"
+        else:
+            message = "Let me find something perfect for your current vibe! 🎬"
     if not current:
         current = "Bored"
     if not desired:
         desired = "Entertained"
     if not genres:
-        genres = "popular films, crowd-pleasers"
+        genres = "popular hits" if media_type == "music" else "popular films, crowd-pleasers"
     
     return {
         "message": message,
         "current_feeling": current,
         "desired_feeling": desired,
+        "media_type": media_type,
         "mode": mode,
         "search_query": query,
         "genres": genres
@@ -933,16 +993,29 @@ def discover_movies_fresh(current_feeling=None, desired_feeling=None):
 def mr_dp_search(response):
     """
     Execute Mr.DP's recommendation based on his analysis.
-    Uses fresh (non-cached) results for variety.
+    Handles both movies and music.
     """
     if not response:
         return []
     
+    media_type = response.get("media_type", "movies")
     mode = response.get("mode", "discover")
     query = response.get("search_query", "").strip()
     current_feeling = response.get("current_feeling")
     desired_feeling = response.get("desired_feeling")
     
+    # MUSIC MODE
+    if media_type == "music":
+        # Return music data (playlist ID based on feeling)
+        mood_music = FEELING_TO_MUSIC.get(desired_feeling) or FEELING_TO_MUSIC.get(current_feeling) or FEELING_TO_MUSIC.get("Happy")
+        return {
+            "type": "music",
+            "playlist_id": mood_music.get("playlist"),
+            "query": mood_music.get("query"),
+            "genres": mood_music.get("genres", [])
+        }
+    
+    # MOVIES MODE
     # SEARCH MODE: Specific title/actor/director
     if mode == "search" and query:
         results = search_movies(query)
@@ -2886,50 +2959,92 @@ def render_main():
         current_f = response.get("current_feeling", "")
         desired_f = response.get("desired_feeling", "")
         genres = response.get("genres", "")
+        media_type = response.get("media_type", "movies")
+        results = st.session_state.mr_dp_results
+        
+        # Check if results are music (dict with type: music) or movies (list)
+        is_music = isinstance(results, dict) and results.get("type") == "music"
+        
+        # Icon based on media type
+        icon = "🎵" if is_music else "🧠"
+        title = "Mr.DP's Playlist" if is_music else "Mr.DP's Picks"
         
         # Anchor + Header with mood info
         st.markdown(f"""
         <div id="mr-dp-results"></div>
         <div class="section-header" style="margin-bottom: 8px;">
-            <span class="section-icon">🧠</span>
-            <h2 class="section-title">Mr.DP's Picks</h2>
+            <span class="section-icon">{icon}</span>
+            <h2 class="section-title">{title}</h2>
         </div>
         <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
             {f'<span style="padding:6px 14px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);border-radius:20px;font-size:0.85rem;color:var(--text-primary);">{MOOD_EMOJIS.get(current_f, "😊")} {current_f}</span>' if current_f else ''}
             {f'<span style="padding:6px 14px;background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.2);border-radius:20px;font-size:0.85rem;color:var(--text-primary);">→ {MOOD_EMOJIS.get(desired_f, "✨")} {desired_f}</span>' if desired_f else ''}
-            {f'<span style="padding:6px 14px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:20px;font-size:0.85rem;color:var(--text-primary);">🎬 {genres}</span>' if genres else ''}
+            {f'<span style="padding:6px 14px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:20px;font-size:0.85rem;color:var(--text-primary);">{"🎵" if is_music else "🎬"} {genres}</span>' if genres else ''}
         </div>
         """, unsafe_allow_html=True)
         
-        # Movie grid
-        cols = st.columns(6)
-        for i, movie in enumerate(st.session_state.mr_dp_results[:24]):
-            with cols[i % 6]:
-                render_movie_card(movie)
-        
-        # Action buttons
-        btn_cols = st.columns([1, 1, 1])
-        with btn_cols[0]:
-            if st.button("🔄 Different Picks", key="mr_dp_shuffle", use_container_width=True):
-                st.session_state.mr_dp_results = mr_dp_search(st.session_state.mr_dp_response)
-                add_dopamine_points(5, "Shuffled!")
-                st.rerun()
-        with btn_cols[1]:
-            if len(st.session_state.mr_dp_results) >= 20:
-                if st.button("📥 More Movies", key="mr_dp_more", use_container_width=True):
-                    more = discover_movies_fresh(
-                        current_feeling=response.get("current_feeling"),
-                        desired_feeling=response.get("desired_feeling")
-                    )
-                    st.session_state.mr_dp_results.extend(more)
-                    add_dopamine_points(5, "Exploring!")
+        if is_music:
+            # MUSIC RESULTS - Embedded Spotify playlist
+            playlist_id = results.get("playlist_id", "37i9dQZF1DXcBWIGoYBM5M")
+            music_query = results.get("query", "")
+            music_genres = results.get("genres", [])
+            
+            st.caption(f"Genres: {', '.join(music_genres)}")
+            
+            # Embedded Spotify player
+            components.iframe(f"https://open.spotify.com/embed/playlist/{playlist_id}?theme=0", height=380)
+            
+            # Music service buttons
+            st.markdown("##### 🔍 Open in Your Music App")
+            c1, c2 = st.columns(2)
+            with c1:
+                render_service_buttons(dict(list(MUSIC_SERVICES.items())[:3]), music_query)
+            with c2:
+                render_service_buttons(dict(list(MUSIC_SERVICES.items())[3:]), music_query)
+            
+            # Action buttons for music
+            btn_cols = st.columns([1, 1])
+            with btn_cols[0]:
+                if st.button("🔄 Different Playlist", key="mr_dp_shuffle_music", use_container_width=True):
+                    st.session_state.mr_dp_results = mr_dp_search(st.session_state.mr_dp_response)
+                    add_dopamine_points(5, "New vibes!")
                     st.rerun()
-        with btn_cols[2]:
-            if st.button("✕ Clear", key="mr_dp_clear_main", use_container_width=True):
-                st.session_state.mr_dp_results = []
-                st.session_state.mr_dp_response = None
-                st.session_state.mr_dp_chat_history = []
-                st.rerun()
+            with btn_cols[1]:
+                if st.button("✕ Clear", key="mr_dp_clear_music", use_container_width=True):
+                    st.session_state.mr_dp_results = []
+                    st.session_state.mr_dp_response = None
+                    st.session_state.mr_dp_chat_history = []
+                    st.rerun()
+        else:
+            # MOVIE RESULTS - Movie grid
+            cols = st.columns(6)
+            for i, movie in enumerate(results[:24]):
+                with cols[i % 6]:
+                    render_movie_card(movie)
+            
+            # Action buttons for movies
+            btn_cols = st.columns([1, 1, 1])
+            with btn_cols[0]:
+                if st.button("🔄 Different Picks", key="mr_dp_shuffle", use_container_width=True):
+                    st.session_state.mr_dp_results = mr_dp_search(st.session_state.mr_dp_response)
+                    add_dopamine_points(5, "Shuffled!")
+                    st.rerun()
+            with btn_cols[1]:
+                if isinstance(results, list) and len(results) >= 20:
+                    if st.button("📥 More Movies", key="mr_dp_more", use_container_width=True):
+                        more = discover_movies_fresh(
+                            current_feeling=response.get("current_feeling"),
+                            desired_feeling=response.get("desired_feeling")
+                        )
+                        st.session_state.mr_dp_results.extend(more)
+                        add_dopamine_points(5, "Exploring!")
+                        st.rerun()
+            with btn_cols[2]:
+                if st.button("✕ Clear", key="mr_dp_clear_main", use_container_width=True):
+                    st.session_state.mr_dp_results = []
+                    st.session_state.mr_dp_response = None
+                    st.session_state.mr_dp_chat_history = []
+                    st.rerun()
         
         st.markdown("---")
     
