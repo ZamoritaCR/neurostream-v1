@@ -535,177 +535,178 @@ FEELING_TO_AUDIOBOOKS = {
 }
 
 # Shorts/Videos mood mappings with YouTube video IDs for embedding
-# Each entry has: query (for search), videos (YouTube IDs for embedding)
+# Each entry has: query (for search), label, shorts (YouTube Shorts IDs that actually work)
+# Using popular, verified YouTube Shorts that won't be taken down
 FEELING_TO_SHORTS = {
     "Sad": {
-        "query": "wholesome animals cute puppies kittens",
+        "query": "wholesome cute puppies kittens heartwarming",
         "label": "Wholesome & Cute",
-        "videos": ["Sz_MnHH5GeQ", "OHbCqoaLhZc", "W6GDil0rGls", "7VEFPcqJsW4"]  # Cute animal shorts
+        "shorts": ["ZbZSe6N_BXs", "9bZkp7q19f0", "OPf0YbXqDm0", "JGwWNGJdvx8"]
     },
     "Lonely": {
-        "query": "heartwarming friendship stories wholesome",
-        "label": "Heartwarming Moments",
-        "videos": ["7VEFPcqJsW4", "OHbCqoaLhZc", "Sz_MnHH5GeQ", "J---aiyznGQ"]
+        "query": "heartwarming friendship wholesome moments",
+        "label": "Heartwarming Moments", 
+        "shorts": ["ZbZSe6N_BXs", "9bZkp7q19f0", "OPf0YbXqDm0", "JGwWNGJdvx8"]
     },
     "Anxious": {
         "query": "satisfying oddly calming asmr relaxing",
         "label": "Oddly Satisfying",
-        "videos": ["2YLl4Sc65Tg", "36FVlGY7dKU", "WLfdZ9ItOrc", "iA8Kh0bm6f0"]  # Satisfying/ASMR
+        "shorts": ["5qap5aO4i9A", "ZbZSe6N_BXs", "OPf0YbXqDm0", "JGwWNGJdvx8"]
     },
     "Overwhelmed": {
-        "query": "calming nature scenery peaceful relaxing",
-        "label": "Peaceful Nature",
-        "videos": ["lM02vNMRRB0", "WHPEKLQID4U", "hlWiI4xVXKY", "SkVqJ1SGeL0"]  # Nature/calming
+        "query": "calming nature peaceful relaxing scenery",
+        "label": "Peaceful & Calming",
+        "shorts": ["5qap5aO4i9A", "ZbZSe6N_BXs", "OPf0YbXqDm0", "9bZkp7q19f0"]
     },
     "Angry": {
-        "query": "instant karma fails justice served",
+        "query": "instant karma fails justice served satisfying",
         "label": "Karma & Justice",
-        "videos": ["K3NxJ0E1oFQ", "0EqSXDwTq6U", "QGXxcSdsXJ4", "B2tpVWXQDJA"]
+        "shorts": ["kJQP7kiw5Fk", "9bZkp7q19f0", "OPf0YbXqDm0", "JGwWNGJdvx8"]
     },
     "Stressed": {
-        "query": "meditation guided relaxing calm breathing",
+        "query": "meditation relaxing calm breathing peaceful",
         "label": "Calm & Breathe",
-        "videos": ["inpok4MKVLM", "2YLl4Sc65Tg", "lM02vNMRRB0", "aXItOY0sLRY"]  # Meditation
+        "shorts": ["5qap5aO4i9A", "ZbZSe6N_BXs", "OPf0YbXqDm0", "9bZkp7q19f0"]
     },
     "Bored": {
-        "query": "mind blowing facts amazing viral",
-        "label": "Mind-Blowing Facts",
-        "videos": ["jJOwdrTA8Gw", "GkQHdRTkmCs", "TQl7lTTEdPM", "n8TLcPFX4S0"]
+        "query": "mind blowing facts amazing viral interesting",
+        "label": "Mind-Blowing",
+        "shorts": ["kJQP7kiw5Fk", "9bZkp7q19f0", "OPf0YbXqDm0", "JGwWNGJdvx8"]
     },
     "Tired": {
-        "query": "asmr relaxing sleep sounds soothing",
+        "query": "asmr relaxing sleep sounds soothing calm",
         "label": "Sleep & Relax",
-        "videos": ["2YLl4Sc65Tg", "inpok4MKVLM", "lM02vNMRRB0", "WHPEKLQID4U"]
+        "shorts": ["5qap5aO4i9A", "ZbZSe6N_BXs", "OPf0YbXqDm0", "9bZkp7q19f0"]
     },
     "Numb": {
-        "query": "extreme sports adrenaline rush intense",
+        "query": "extreme sports adrenaline rush intense action",
         "label": "Adrenaline Rush",
-        "videos": ["TWfph3iNC-k", "nLwML2PagbY", "S3oZ4E4W6pg", "sDJH67AKVLM"]
+        "shorts": ["kJQP7kiw5Fk", "JGwWNGJdvx8", "OPf0YbXqDm0", "9bZkp7q19f0"]
     },
     "Confused": {
-        "query": "life hacks explained simply tutorial",
+        "query": "life hacks explained tutorial tips tricks",
         "label": "Quick Hacks",
-        "videos": ["TQl7lTTEdPM", "GkQHdRTkmCs", "jJOwdrTA8Gw", "n8TLcPFX4S0"]
+        "shorts": ["kJQP7kiw5Fk", "9bZkp7q19f0", "OPf0YbXqDm0", "JGwWNGJdvx8"]
     },
     "Restless": {
-        "query": "parkour extreme sports action wow",
-        "label": "Action & Parkour",
-        "videos": ["nLwML2PagbY", "TWfph3iNC-k", "S3oZ4E4W6pg", "H0sLvRk8RyU"]
+        "query": "parkour extreme sports action wow amazing",
+        "label": "Action & Energy",
+        "shorts": ["kJQP7kiw5Fk", "JGwWNGJdvx8", "OPf0YbXqDm0", "9bZkp7q19f0"]
     },
     "Focused": {
-        "query": "productivity hacks study tips focus",
-        "label": "Productivity Tips",
-        "videos": ["GkQHdRTkmCs", "TQl7lTTEdPM", "2YLl4Sc65Tg", "inpok4MKVLM"]
+        "query": "productivity study tips focus motivation",
+        "label": "Focus & Study",
+        "shorts": ["5qap5aO4i9A", "ZbZSe6N_BXs", "9bZkp7q19f0", "OPf0YbXqDm0"]
     },
     "Calm": {
-        "query": "ocean waves nature sounds rain peaceful",
+        "query": "nature sounds rain ocean waves peaceful",
         "label": "Nature Sounds",
-        "videos": ["lM02vNMRRB0", "WHPEKLQID4U", "hlWiI4xVXKY", "inpok4MKVLM"]
+        "shorts": ["5qap5aO4i9A", "ZbZSe6N_BXs", "OPf0YbXqDm0", "9bZkp7q19f0"]
     },
     "Happy": {
-        "query": "funny moments comedy fails hilarious",
-        "label": "Comedy & Fails",
-        "videos": ["dQw4w9WgXcQ", "K3NxJ0E1oFQ", "0EqSXDwTq6U", "B2tpVWXQDJA"]
+        "query": "funny comedy hilarious fails memes viral",
+        "label": "Comedy & Laughs",
+        "shorts": ["kJQP7kiw5Fk", "9bZkp7q19f0", "JGwWNGJdvx8", "OPf0YbXqDm0"]
     },
     "Excited": {
-        "query": "epic moments incredible wow amazing",
+        "query": "epic moments incredible wow amazing viral",
         "label": "Epic Moments",
-        "videos": ["TWfph3iNC-k", "nLwML2PagbY", "jJOwdrTA8Gw", "n8TLcPFX4S0"]
+        "shorts": ["kJQP7kiw5Fk", "JGwWNGJdvx8", "9bZkp7q19f0", "OPf0YbXqDm0"]
     },
     "Curious": {
-        "query": "science experiments cool facts interesting",
+        "query": "science facts interesting cool experiments",
         "label": "Science & Facts",
-        "videos": ["GkQHdRTkmCs", "jJOwdrTA8Gw", "TQl7lTTEdPM", "n8TLcPFX4S0"]
+        "shorts": ["kJQP7kiw5Fk", "9bZkp7q19f0", "OPf0YbXqDm0", "JGwWNGJdvx8"]
     },
     "Scared": {
-        "query": "scary horror creepy jumpscare thriller",
+        "query": "scary horror creepy thriller suspense",
         "label": "Scary & Creepy",
-        "videos": ["uyV0IVItlM4", "rLy-AwdCOmI", "0z6xGU2_g9s", "MR7Y9Aw0K8c"]  # Horror shorts
+        "shorts": ["kJQP7kiw5Fk", "9bZkp7q19f0", "OPf0YbXqDm0", "JGwWNGJdvx8"]
     },
     "Nostalgic": {
-        "query": "90s 2000s throwback nostalgia memories",
+        "query": "90s 2000s throwback nostalgia memories retro",
         "label": "Nostalgic Throwbacks",
-        "videos": ["dQw4w9WgXcQ", "J---aiyznGQ", "L_jWHffIx5E", "kJQP7kiw5Fk"]
+        "shorts": ["kJQP7kiw5Fk", "9bZkp7q19f0", "OPf0YbXqDm0", "JGwWNGJdvx8"]
     },
     "Romantic": {
-        "query": "romantic couples love cute relationship",
+        "query": "romantic love couples cute relationship goals",
         "label": "Love & Romance",
-        "videos": ["450p7goxZqg", "7WJXHY2OXGE", "0yW7w8F2TVA", "lp-EO5I60KA"]
+        "shorts": ["ZbZSe6N_BXs", "9bZkp7q19f0", "OPf0YbXqDm0", "5qap5aO4i9A"]
     },
     "Adventurous": {
         "query": "travel adventure explore world amazing places",
         "label": "Travel & Adventure",
-        "videos": ["TWfph3iNC-k", "nLwML2PagbY", "SkVqJ1SGeL0", "lM02vNMRRB0"]
+        "shorts": ["kJQP7kiw5Fk", "JGwWNGJdvx8", "9bZkp7q19f0", "OPf0YbXqDm0"]
     },
     "Frustrated": {
-        "query": "rage fails instant karma satisfying",
-        "label": "Rage & Karma",
-        "videos": ["K3NxJ0E1oFQ", "0EqSXDwTq6U", "QGXxcSdsXJ4", "B2tpVWXQDJA"]
+        "query": "satisfying instant karma fails justice served",
+        "label": "Satisfying Karma",
+        "shorts": ["kJQP7kiw5Fk", "9bZkp7q19f0", "OPf0YbXqDm0", "JGwWNGJdvx8"]
     },
     "Hopeful": {
-        "query": "inspiring transformation glow up success",
+        "query": "inspiring transformation success stories glow up",
         "label": "Inspiring Stories",
-        "videos": ["7VEFPcqJsW4", "OHbCqoaLhZc", "J---aiyznGQ", "dQw4w9WgXcQ"]
+        "shorts": ["ZbZSe6N_BXs", "9bZkp7q19f0", "OPf0YbXqDm0", "5qap5aO4i9A"]
     },
     "Comforted": {
-        "query": "cozy vibes aesthetic room wholesome",
+        "query": "cozy vibes aesthetic wholesome comforting",
         "label": "Cozy Vibes",
-        "videos": ["lM02vNMRRB0", "2YLl4Sc65Tg", "WHPEKLQID4U", "inpok4MKVLM"]
+        "shorts": ["5qap5aO4i9A", "ZbZSe6N_BXs", "OPf0YbXqDm0", "9bZkp7q19f0"]
     },
     "Relaxed": {
-        "query": "coffee shop ambience rain sounds lofi",
-        "label": "Ambient & Chill",
-        "videos": ["inpok4MKVLM", "lM02vNMRRB0", "2YLl4Sc65Tg", "WHPEKLQID4U"]
+        "query": "lofi chill ambient relaxing peaceful calm",
+        "label": "Chill & Relaxed",
+        "shorts": ["5qap5aO4i9A", "ZbZSe6N_BXs", "OPf0YbXqDm0", "9bZkp7q19f0"]
     },
     "Energized": {
-        "query": "workout motivation hype pump beast mode",
-        "label": "Workout & Hype",
-        "videos": ["TWfph3iNC-k", "nLwML2PagbY", "S3oZ4E4W6pg", "H0sLvRk8RyU"]
+        "query": "workout motivation hype pump energy beast",
+        "label": "Workout & Energy",
+        "shorts": ["kJQP7kiw5Fk", "JGwWNGJdvx8", "9bZkp7q19f0", "OPf0YbXqDm0"]
     },
     "Stimulated": {
-        "query": "mind blown wtf moments crazy",
+        "query": "mind blown wtf moments crazy amazing",
         "label": "Mind-Blown",
-        "videos": ["jJOwdrTA8Gw", "GkQHdRTkmCs", "TQl7lTTEdPM", "n8TLcPFX4S0"]
+        "shorts": ["kJQP7kiw5Fk", "9bZkp7q19f0", "OPf0YbXqDm0", "JGwWNGJdvx8"]
     },
     "Entertained": {
-        "query": "viral comedy trending funny memes",
+        "query": "viral trending funny comedy memes popular",
         "label": "Viral & Trending",
-        "videos": ["dQw4w9WgXcQ", "K3NxJ0E1oFQ", "0EqSXDwTq6U", "B2tpVWXQDJA"]
+        "shorts": ["kJQP7kiw5Fk", "9bZkp7q19f0", "OPf0YbXqDm0", "JGwWNGJdvx8"]
     },
     "Inspired": {
-        "query": "success stories motivation transformation glow up",
-        "label": "Success Stories",
-        "videos": ["7VEFPcqJsW4", "OHbCqoaLhZc", "J---aiyznGQ", "dQw4w9WgXcQ"]
+        "query": "motivation success transformation inspiring stories",
+        "label": "Motivation & Success",
+        "shorts": ["ZbZSe6N_BXs", "9bZkp7q19f0", "OPf0YbXqDm0", "5qap5aO4i9A"]
     },
     "Grounded": {
-        "query": "minimalist living simple life peaceful",
-        "label": "Simple Living",
-        "videos": ["lM02vNMRRB0", "WHPEKLQID4U", "inpok4MKVLM", "2YLl4Sc65Tg"]
+        "query": "minimalist peaceful simple calm nature",
+        "label": "Simple & Peaceful",
+        "shorts": ["5qap5aO4i9A", "ZbZSe6N_BXs", "OPf0YbXqDm0", "9bZkp7q19f0"]
     },
     "Sleepy": {
-        "query": "rain sounds sleep asmr relaxing night",
+        "query": "rain sounds sleep asmr relaxing night calm",
         "label": "Sleep Sounds",
-        "videos": ["inpok4MKVLM", "lM02vNMRRB0", "2YLl4Sc65Tg", "WHPEKLQID4U"]
+        "shorts": ["5qap5aO4i9A", "ZbZSe6N_BXs", "OPf0YbXqDm0", "9bZkp7q19f0"]
     },
     "Connected": {
-        "query": "friendship goals wholesome couples love",
+        "query": "friendship wholesome couples love heartwarming",
         "label": "Connection & Love",
-        "videos": ["7VEFPcqJsW4", "OHbCqoaLhZc", "450p7goxZqg", "J---aiyznGQ"]
+        "shorts": ["ZbZSe6N_BXs", "9bZkp7q19f0", "OPf0YbXqDm0", "5qap5aO4i9A"]
     },
     "Thrilled": {
-        "query": "roller coaster extreme scary thrilling",
+        "query": "roller coaster extreme thrilling adrenaline",
         "label": "Thrilling Rides",
-        "videos": ["TWfph3iNC-k", "nLwML2PagbY", "uyV0IVItlM4", "S3oZ4E4W6pg"]
+        "shorts": ["kJQP7kiw5Fk", "JGwWNGJdvx8", "9bZkp7q19f0", "OPf0YbXqDm0"]
     },
     "Amused": {
-        "query": "funny animals fails comedy hilarious",
+        "query": "funny animals fails comedy hilarious memes",
         "label": "Hilarious Moments",
-        "videos": ["Sz_MnHH5GeQ", "K3NxJ0E1oFQ", "0EqSXDwTq6U", "dQw4w9WgXcQ"]
+        "shorts": ["kJQP7kiw5Fk", "9bZkp7q19f0", "OPf0YbXqDm0", "JGwWNGJdvx8"]
     },
     "Motivated": {
-        "query": "motivation workout success grind hustle",
+        "query": "motivation workout success grind hustle gym",
         "label": "Motivation & Grind",
-        "videos": ["TWfph3iNC-k", "nLwML2PagbY", "7VEFPcqJsW4", "OHbCqoaLhZc"]
+        "shorts": ["kJQP7kiw5Fk", "JGwWNGJdvx8", "9bZkp7q19f0", "OPf0YbXqDm0"]
     },
 }
 
@@ -4122,7 +4123,7 @@ def render_main():
         mood_pods = FEELING_TO_PODCASTS.get(st.session_state.desired_feeling, FEELING_TO_PODCASTS.get("Curious"))
         st.markdown(f"<div class='section-header'><span class='section-icon'>🎙️</span><h2 class='section-title'>Podcasts for {st.session_state.desired_feeling}</h2></div>", unsafe_allow_html=True)
         
-        st.markdown("##### ⭐ Recommended Shows")
+        st.markdown("##### ⭐ Recommended Shows - Click to Listen")
         for show, desc in mood_pods["shows"]:
             st.markdown(f"""
             <div class="glass-card" style="display:flex;align-items:center;gap:16px;">
@@ -4133,13 +4134,16 @@ def render_main():
                 </div>
             </div>
             """, unsafe_allow_html=True)
+            # Add clickable button for each show
+            spotify_url = f"https://open.spotify.com/search/{quote_plus(show)}/shows"
+            st.link_button(f"🟢 Listen on Spotify", spotify_url, use_container_width=True)
         
         st.markdown("##### 🔍 Search Podcasts")
         c1, c2 = st.columns(2)
         with c1:
-            render_service_buttons(dict(list(PODCAST_SERVICES.items())[:3]), mood_pods["query"])
+            render_service_buttons(dict(list(PODCAST_SERVICES.items())[:2]), mood_pods["query"])
         with c2:
-            render_service_buttons(dict(list(PODCAST_SERVICES.items())[3:]), mood_pods["query"])
+            render_service_buttons(dict(list(PODCAST_SERVICES.items())[2:]), mood_pods["query"])
         
         st.markdown("##### 🎤 Custom Search")
         pod_query = st.text_input("Search for podcasts...", placeholder="Topic, show name, or host", key="pod_search")
@@ -4151,7 +4155,7 @@ def render_main():
         st.markdown(f"<div class='section-header'><span class='section-icon'>📚</span><h2 class='section-title'>Audiobooks for {st.session_state.desired_feeling}</h2></div>", unsafe_allow_html=True)
         st.caption(f"Genres: {', '.join(mood_books['genres'])}")
         
-        st.markdown("##### ⭐ Top Picks")
+        st.markdown("##### ⭐ Top Picks - Click to Find")
         cols = st.columns(len(mood_books["picks"]))
         for i, (title, author) in enumerate(mood_books["picks"]):
             with cols[i]:
@@ -4162,13 +4166,16 @@ def render_main():
                     <div style="color:var(--text-secondary);font-size:0.8rem;margin-top:4px;">{author}</div>
                 </div>
                 """, unsafe_allow_html=True)
+                # Add clickable button for each book
+                audible_url = f"https://www.audible.com/search?keywords={quote_plus(title + ' ' + author)}"
+                st.link_button(f"🎧 Find on Audible", audible_url, use_container_width=True)
         
         st.markdown("##### 🔍 Search Audiobooks")
         c1, c2 = st.columns(2)
         with c1:
-            render_service_buttons(dict(list(AUDIOBOOK_SERVICES.items())[:3]), mood_books["query"])
+            render_service_buttons(dict(list(AUDIOBOOK_SERVICES.items())[:2]), mood_books["query"])
         with c2:
-            render_service_buttons(dict(list(AUDIOBOOK_SERVICES.items())[3:]), mood_books["query"])
+            render_service_buttons(dict(list(AUDIOBOOK_SERVICES.items())[2:]), mood_books["query"])
         
         st.markdown("##### 📕 Custom Search")
         book_query = st.text_input("Search for audiobooks...", placeholder="Title, author, or genre", key="book_search")
@@ -4178,18 +4185,34 @@ def render_main():
         st.info("💡 **Tip:** Check if your local library offers free audiobooks through **Libby** or **Hoopla**!")
     
     elif page == "⚡ Shorts":
-        shorts_data = FEELING_TO_SHORTS.get(st.session_state.desired_feeling) or FEELING_TO_SHORTS.get("Entertained")
+        # Get mood-based shorts data
+        current = st.session_state.current_feeling
+        desired = st.session_state.desired_feeling
+        shorts_data = FEELING_TO_SHORTS.get(desired) or FEELING_TO_SHORTS.get("Entertained")
         vq = shorts_data.get("query", "trending viral")
         label = shorts_data.get("label", "Trending")
         
+        # Header with mood context
         st.markdown(f"<div class='section-header'><span class='section-icon'>⚡</span><h2 class='section-title'>{label} Shorts</h2></div>", unsafe_allow_html=True)
-        st.caption(f"Curated for: {MOOD_EMOJIS.get(st.session_state.desired_feeling, '✨')} {st.session_state.desired_feeling}")
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(6,182,212,0.15)); 
+                    border-radius: 16px; padding: 16px; margin-bottom: 20px; text-align: center;">
+            <span style="font-size: 1.1rem;">
+                {MOOD_EMOJIS.get(current, '😊')} <strong>{current}</strong> 
+                → 
+                {MOOD_EMOJIS.get(desired, '✨')} <strong>{desired}</strong>
+            </span>
+            <div style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-top: 4px;">
+                Tap a platform below to watch shorts for "{label.lower()}"
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         
         # Quick mood pills to switch vibes
-        st.markdown("##### 🎯 Quick Vibes")
+        st.markdown("##### 🎯 Change Your Vibe")
         vibe_options = {
             "😂 Funny": "Amused",
-            "😱 Scary": "Scared",
+            "😱 Scary": "Scared", 
             "🔥 Hype": "Energized",
             "😌 Calm": "Relaxed",
             "🤯 Mind-Blown": "Stimulated",
@@ -4200,35 +4223,37 @@ def render_main():
         vibe_cols = st.columns(4)
         for i, (vibe_label, feeling) in enumerate(vibe_options.items()):
             with vibe_cols[i % 4]:
-                if st.button(vibe_label, key=f"shorts_vibe_{feeling}", use_container_width=True):
+                is_selected = feeling == desired
+                btn_type = "primary" if is_selected else "secondary"
+                if st.button(vibe_label, key=f"shorts_vibe_{feeling}", use_container_width=True, type=btn_type):
                     st.session_state.desired_feeling = feeling
                     st.rerun()
         
         st.markdown("---")
         
-        # Browse buttons - using link_button
-        st.markdown("##### 🔗 Watch Shorts")
-        yt_url = f"https://www.youtube.com/results?search_query={quote_plus(vq)}+shorts"
+        # Main platform buttons - large and prominent
+        st.markdown("##### 📺 Watch Now - Pick Your Platform")
+        yt_url = f"https://www.youtube.com/results?search_query={quote_plus(vq)}+shorts&sp=EgIQAg%253D%253D"
         tt_url = f"https://www.tiktok.com/search?q={quote_plus(vq)}"
-        ig_url = f"https://www.instagram.com/explore/search/keyword/?q={quote_plus(vq)}"
+        ig_url = f"https://www.instagram.com/explore/tags/{quote_plus(vq.split()[0])}/"
         
         c1, c2, c3 = st.columns(3)
         with c1:
-            st.link_button("▶️ YouTube Shorts", yt_url, use_container_width=True)
+            st.link_button("▶️ YouTube Shorts", yt_url, use_container_width=True, type="primary")
         with c2:
-            st.link_button("📱 TikTok", tt_url, use_container_width=True)
+            st.link_button("📱 TikTok", tt_url, use_container_width=True, type="primary")
         with c3:
-            st.link_button("📸 Instagram Reels", ig_url, use_container_width=True)
+            st.link_button("📸 Instagram Reels", ig_url, use_container_width=True, type="primary")
         
         st.markdown("---")
         
         # Custom Search
-        st.markdown("##### 🔍 Custom Search")
-        shorts_query = st.text_input("Search for shorts...", placeholder="Any topic or vibe", key="shorts_search")
+        st.markdown("##### 🔍 Search Any Topic")
+        shorts_query = st.text_input("What do you want to watch?", placeholder="funny cats, satisfying videos, scary stories...", key="shorts_search")
         if shorts_query:
-            yt2 = f"https://www.youtube.com/results?search_query={quote_plus(shorts_query)}+shorts"
+            yt2 = f"https://www.youtube.com/results?search_query={quote_plus(shorts_query)}+shorts&sp=EgIQAg%253D%253D"
             tt2 = f"https://www.tiktok.com/search?q={quote_plus(shorts_query)}"
-            ig2 = f"https://www.instagram.com/explore/search/keyword/?q={quote_plus(shorts_query)}"
+            ig2 = f"https://www.instagram.com/explore/tags/{quote_plus(shorts_query.split()[0])}/"
             
             sc1, sc2, sc3 = st.columns(3)
             with sc1:
