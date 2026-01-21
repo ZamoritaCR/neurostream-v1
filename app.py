@@ -3072,17 +3072,8 @@ def render_hero(movie):
 def render_service_buttons(services, query):
     for name, data in services.items():
         url = data["url"].format(query=quote_plus(query))
-        color = data.get("color", "#8b5cf6")
         icon = data.get("icon", "🔗")
-        st.markdown(f"""
-        <a href="{url}" target="_blank" class="service-btn">
-            <div class="service-icon" style="background:{color};">{icon}</div>
-            <div>
-                <div class="service-name">{name}</div>
-                <div class="service-desc">Search "{query[:25]}..."</div>
-            </div>
-        </a>
-        """, unsafe_allow_html=True)
+        st.link_button(f"{icon} {name}", url, use_container_width=True)
 
 def render_share_card():
     current = st.session_state.current_feeling
