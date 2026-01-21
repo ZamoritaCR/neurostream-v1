@@ -351,19 +351,17 @@ MUSIC_SERVICES = {
 }
 
 PODCAST_SERVICES = {
-    "Spotify": {"url": "https://open.spotify.com/search/{query}/podcasts", "color": "#1DB954", "icon": "🟢"},
-    "Apple Podcasts": {"url": "https://podcasts.apple.com/search?term={query}", "color": "#9933CC", "icon": "🎙️"},
+    "Spotify": {"url": "https://open.spotify.com/search/{query}/shows", "color": "#1DB954", "icon": "🟢"},
+    "Apple Podcasts": {"url": "https://podcasts.apple.com/us/search?term={query}", "color": "#9933CC", "icon": "🎙️"},
     "YouTube": {"url": "https://www.youtube.com/results?search_query={query}+podcast", "color": "#FF0000", "icon": "▶️"},
-    "Pocket Casts": {"url": "https://pocketcasts.com/search/{query}", "color": "#F43E37", "icon": "📱"},
-    "Overcast": {"url": "https://overcast.fm/search?q={query}", "color": "#FC7E0F", "icon": "🎧"},
+    "Google Podcasts": {"url": "https://podcasts.google.com/search/{query}", "color": "#4285F4", "icon": "🎧"},
 }
 
 AUDIOBOOK_SERVICES = {
     "Audible": {"url": "https://www.audible.com/search?keywords={query}", "color": "#F8991D", "icon": "🎧"},
-    "Libro.fm": {"url": "https://libro.fm/search?q={query}", "color": "#00A651", "icon": "📗"},
-    "Google Play Books": {"url": "https://play.google.com/store/search?q={query}&c=audiobooks", "color": "#4285F4", "icon": "📘"},
-    "Kobo": {"url": "https://www.kobo.com/search?query={query}&fcsearchfield=Audiobook", "color": "#BF0000", "icon": "📕"},
-    "Chirp": {"url": "https://www.chirpbooks.com/search?query={query}", "color": "#FF6B6B", "icon": "🐦"},
+    "Apple Books": {"url": "https://books.apple.com/us/search?term={query}", "color": "#FA243C", "icon": "🍎"},
+    "Google Play": {"url": "https://play.google.com/store/search?q={query}&c=audiobooks", "color": "#4285F4", "icon": "📘"},
+    "Spotify": {"url": "https://open.spotify.com/search/{query}/audiobooks", "color": "#1DB954", "icon": "🟢"},
 }
 
 # --------------------------------------------------
