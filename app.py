@@ -351,19 +351,19 @@ MUSIC_SERVICES = {
 }
 
 PODCAST_SERVICES = {
-    "Spotify Podcasts": {"url": "https://open.spotify.com/search/{query}/shows", "color": "#1DB954", "icon": "🟢"},
-    "Apple Podcasts": {"url": "https://podcasts.apple.com/us/search?term={query}", "color": "#9933CC", "icon": "🎙️"},
-    "YouTube Podcasts": {"url": "https://www.youtube.com/results?search_query={query}+podcast", "color": "#FF0000", "icon": "▶️"},
-    "Google Podcasts": {"url": "https://podcasts.google.com/search/{query}", "color": "#4285F4", "icon": "🎧"},
-    "Pocket Casts": {"url": "https://pocketcasts.com/podcasts", "color": "#F43E37", "icon": "📱"},
+    "Spotify": {"url": "https://open.spotify.com/search/{query}/podcasts", "color": "#1DB954", "icon": "🟢"},
+    "Apple Podcasts": {"url": "https://podcasts.apple.com/search?term={query}", "color": "#9933CC", "icon": "🎙️"},
+    "YouTube": {"url": "https://www.youtube.com/results?search_query={query}+podcast", "color": "#FF0000", "icon": "▶️"},
+    "Pocket Casts": {"url": "https://pocketcasts.com/search/{query}", "color": "#F43E37", "icon": "📱"},
+    "Overcast": {"url": "https://overcast.fm/search?q={query}", "color": "#FC7E0F", "icon": "🎧"},
 }
 
 AUDIOBOOK_SERVICES = {
-    "Audible": {"url": "https://www.audible.com/search?keywords={query}&node=18573211011", "color": "#F8991D", "icon": "🎧"},
-    "Apple Books": {"url": "https://books.apple.com/us/search?term={query}", "color": "#FA243C", "icon": "🍎"},
+    "Audible": {"url": "https://www.audible.com/search?keywords={query}", "color": "#F8991D", "icon": "🎧"},
+    "Libro.fm": {"url": "https://libro.fm/search?q={query}", "color": "#00A651", "icon": "📗"},
     "Google Play Books": {"url": "https://play.google.com/store/search?q={query}&c=audiobooks", "color": "#4285F4", "icon": "📘"},
-    "Spotify Audiobooks": {"url": "https://open.spotify.com/search/{query}/audiobooks", "color": "#1DB954", "icon": "🟢"},
-    "Libro.fm": {"url": "https://libro.fm/audiobooks?q={query}", "color": "#00A651", "icon": "📗"},
+    "Kobo": {"url": "https://www.kobo.com/search?query={query}&fcsearchfield=Audiobook", "color": "#BF0000", "icon": "📕"},
+    "Chirp": {"url": "https://www.chirpbooks.com/search?query={query}", "color": "#FF6B6B", "icon": "🐦"},
 }
 
 # --------------------------------------------------
@@ -1717,6 +1717,18 @@ def render_premium_modal():
     if not st.session_state.get("show_premium_modal"):
         return
     
+    st.markdown("""
+    <div style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.8);
+        z-index: 9998;
+    "></div>
+    """, unsafe_allow_html=True)
+    
     with st.container():
         st.markdown("""
         <div style="
@@ -1780,9 +1792,13 @@ def render_premium_modal():
         </div>
         """, unsafe_allow_html=True)
         
-        # Stripe payment link
-        stripe_link = "https://buy.stripe.com/test_3cIaEZ0gE1aac6H5PU6Vq00"
-        st.link_button("⭐ Upgrade to Premium - $4.99/mo", stripe_link, use_container_width=True, type="primary")
+        # Single pricing button
+        if STRIPE_ENABLED and STRIPE_PAYMENT_LINK_MONTHLY:
+            if st.button("⭐ Upgrade to Premium", key="premium_monthly", use_container_width=True):
+                st.markdown(f'<meta http-equiv="refresh" content="0;url={STRIPE_PAYMENT_LINK_MONTHLY}">', unsafe_allow_html=True)
+        else:
+            if st.button("⭐ Upgrade to Premium", key="premium_monthly_placeholder", use_container_width=True):
+                st.toast("Payment coming soon! 🚀", icon="⭐")
         
         st.markdown("<br>", unsafe_allow_html=True)
         
@@ -2550,11 +2566,52 @@ section[data-testid="stSidebar"] .stTextArea textarea {
     50% { box-shadow: 0 8px 40px rgba(139, 92, 246, 0.6), 0 0 0 8px rgba(139, 92, 246, 0.15); }
 }
 
-/* Prevent scroll behavior on all elements */
-[data-testid="stAppViewContainer"],
-.main,
-section.main {
-    scroll-behavior: auto !important;
+/* Style Streamlit's chat input - position near Mr.DP on the right */
+.stChatInput {
+    position: fixed !important;
+    bottom: 24px !important;
+    right: 24px !important;
+    left: auto !important;
+    transform: none !important;
+    max-width: 340px !important;
+    width: 340px !important;
+    z-index: 9997 !important;
+}
+
+.stChatInput > div {
+    background: #0d0d12 !important;
+    border: 2px solid rgba(139, 92, 246, 0.4) !important;
+    border-radius: 24px !important;
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.25) !important;
+    padding: 4px !important;
+}
+
+.stChatInput > div:focus-within {
+    border-color: #8b5cf6 !important;
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4), 0 0 0 4px rgba(139, 92, 246, 0.15) !important;
+}
+
+.stChatInput input {
+    background: transparent !important;
+    color: white !important;
+    padding: 12px 16px !important;
+    font-size: 0.9rem !important;
+}
+
+.stChatInput input::placeholder {
+    color: rgba(255,255,255,0.5) !important;
+}
+
+.stChatInput button {
+    background: linear-gradient(135deg, #8b5cf6, #06b6d4) !important;
+    border-radius: 50% !important;
+    width: 36px !important;
+    height: 36px !important;
+    margin: 4px !important;
+}
+
+.stChatInput button svg {
+    fill: white !important;
 }
 
 /* Adjust main content to account for fixed elements */
@@ -3019,7 +3076,15 @@ def render_service_buttons(services, query):
         url = data["url"].format(query=quote_plus(query))
         color = data.get("color", "#8b5cf6")
         icon = data.get("icon", "🔗")
-        st.link_button(f"{icon} {name}", url, use_container_width=True)
+        st.markdown(f"""
+        <a href="{url}" target="_blank" class="service-btn">
+            <div class="service-icon" style="background:{color};">{icon}</div>
+            <div>
+                <div class="service-name">{name}</div>
+                <div class="service-desc">Search "{query[:25]}..."</div>
+            </div>
+        </a>
+        """, unsafe_allow_html=True)
 
 def render_share_card():
     current = st.session_state.current_feeling
@@ -3549,71 +3614,6 @@ def render_sidebar():
         
         st.markdown("---")
         
-        # MR.DP CHAT INPUT (in sidebar to avoid scroll bug)
-        st.markdown("#### 🧠 Chat with Mr.DP")
-        
-        # Check chat limit for free users
-        if not can_chat():
-            st.warning(f"Daily limit reached ({FREE_CHAT_LIMIT} chats). Go Premium for unlimited!")
-            if st.button("⭐ Go Premium", key="premium_chat_sidebar", use_container_width=True):
-                st.session_state.show_premium_modal = True
-                st.rerun()
-        else:
-            remaining = FREE_CHAT_LIMIT - get_daily_chat_count() if not st.session_state.get("is_premium") else "∞"
-            mr_dp_input = st.text_input(
-                "Tell me how you feel...",
-                placeholder="I'm bored and want excitement",
-                key="mr_dp_sidebar_input",
-                label_visibility="collapsed"
-            )
-            
-            if st.button("💬 Ask Mr.DP", use_container_width=True, key="mr_dp_send_btn"):
-                if mr_dp_input and mr_dp_input.strip():
-                    # Increment chat count for free users
-                    if not st.session_state.get("is_premium"):
-                        increment_chat_count()
-                    
-                    # Add user message to history
-                    st.session_state.mr_dp_chat_history.append({
-                        "role": "user",
-                        "content": mr_dp_input
-                    })
-                    
-                    # Get Mr.DP's response
-                    response = ask_mr_dp(mr_dp_input)
-                    
-                    if response:
-                        # Add assistant message to history
-                        st.session_state.mr_dp_chat_history.append({
-                            "role": "assistant",
-                            "content": response.get("message", "Let me find something for you!"),
-                            "current_feeling": response.get("current_feeling"),
-                            "desired_feeling": response.get("desired_feeling"),
-                            "genres": response.get("genres")
-                        })
-                        
-                        # Update mood state
-                        if response.get("current_feeling"):
-                            st.session_state.current_feeling = response["current_feeling"]
-                        if response.get("desired_feeling"):
-                            st.session_state.desired_feeling = response["desired_feeling"]
-                        
-                        # Store response and get results
-                        st.session_state.mr_dp_response = response
-                        st.session_state.mr_dp_results = mr_dp_search(response)
-                        st.session_state.movies_feed = []
-                        st.session_state.quick_hit = None
-                        st.session_state.search_results = []
-                        
-                        add_dopamine_points(10, "Chatted with Mr.DP!")
-                    
-                    st.rerun()
-            
-            if not st.session_state.get("is_premium"):
-                st.caption(f"💬 {remaining} chats remaining today")
-        
-        st.markdown("---")
-        
         # SHARE
         st.markdown("#### 📤 Share & Invite")
         ref_code = st.session_state.referral_code
@@ -3645,6 +3645,28 @@ def render_sidebar():
 # 17. MAIN CONTENT
 # --------------------------------------------------
 def render_main():
+    # Check if we need to scroll to top (after Mr.DP response)
+    if st.session_state.get("scroll_to_top"):
+        # Use components.html with LONGER delays to beat Streamlit's scroll
+        components.html("""
+        <script>
+            function scrollToTop() {
+                try {
+                    var container = window.parent.document.querySelector('[data-testid="stAppViewContainer"]');
+                    if (container) container.scrollTop = 0;
+                    var main = window.parent.document.querySelector('.main');
+                    if (main) main.scrollTop = 0;
+                    window.parent.scrollTo(0, 0);
+                } catch(e) {}
+            }
+            // Much longer delays to beat Streamlit's auto-focus on chat_input
+            setTimeout(scrollToTop, 500);
+            setTimeout(scrollToTop, 1000);
+            setTimeout(scrollToTop, 1500);
+        </script>
+        """, height=0)
+        st.session_state.scroll_to_top = False  # Clear flag
+    
     render_stats_bar()
     
     achievements = get_achievements()
@@ -4175,7 +4197,18 @@ def render_main():
         st.markdown(f"<div class='section-header'><span class='section-icon'>⚡</span><h2 class='section-title'>{label} Shorts</h2></div>", unsafe_allow_html=True)
         st.caption(f"Curated for: {MOOD_EMOJIS.get(st.session_state.desired_feeling, '✨')} {st.session_state.desired_feeling}")
         
-        # Quick mood pills to switch vibes FIRST
+        # Embed YouTube videos directly in the app
+        if video_ids:
+            st.markdown("##### 📺 Watch Now")
+            vid_cols = st.columns(2)
+            for i, vid_id in enumerate(video_ids[:4]):
+                with vid_cols[i % 2]:
+                    components.iframe(
+                        f"https://www.youtube.com/embed/{vid_id}?rel=0&modestbranding=1",
+                        height=400
+                    )
+        
+        # Quick mood pills to switch vibes
         st.markdown("##### 🎯 Quick Vibes")
         vibe_options = {
             "😂 Funny": "Amused",
@@ -4194,49 +4227,42 @@ def render_main():
                     st.session_state.desired_feeling = feeling
                     st.rerun()
         
-        st.markdown("---")
-        
-        # Embed YouTube videos directly in the app
-        if video_ids:
-            st.markdown("##### 📺 Watch Now")
-            vid_cols = st.columns(2)
-            for i, vid_id in enumerate(video_ids[:4]):
-                with vid_cols[i % 2]:
-                    st.video(f"https://www.youtube.com/watch?v={vid_id}")
-        
-        st.markdown("---")
-        
-        # Browse More - Using link_button for reliable clicks
         st.markdown("##### 🔗 Browse More")
         yt_url = f"https://www.youtube.com/results?search_query={quote_plus(vq)}+shorts"
         tt_url = f"https://www.tiktok.com/search?q={quote_plus(vq)}"
-        ig_url = f"https://www.instagram.com/explore/search/keyword/?q={quote_plus(vq)}"
+        ig_url = f"https://www.instagram.com/explore/tags/{quote_plus(vq.replace(' ', ''))}/"
         
         c1, c2, c3 = st.columns(3)
         with c1:
-            st.link_button("▶️ YouTube Shorts", yt_url, use_container_width=True)
+            st.markdown(f"""
+            <a href="{yt_url}" target="_blank" style="display:block;text-align:center;padding:16px;background:#FF0000;border-radius:16px;color:white;text-decoration:none;font-weight:700;">
+                ▶️ YouTube Shorts
+            </a>
+            """, unsafe_allow_html=True)
         with c2:
-            st.link_button("📱 TikTok", tt_url, use_container_width=True)
+            st.markdown(f"""
+            <a href="{tt_url}" target="_blank" style="display:block;text-align:center;padding:16px;background:linear-gradient(135deg,#ff0050,#00f2ea);border-radius:16px;color:white;text-decoration:none;font-weight:700;">
+                📱 TikTok
+            </a>
+            """, unsafe_allow_html=True)
         with c3:
-            st.link_button("📸 Instagram Reels", ig_url, use_container_width=True)
+            st.markdown(f"""
+            <a href="{ig_url}" target="_blank" style="display:block;text-align:center;padding:16px;background:linear-gradient(135deg,#833AB4,#FD1D1D);border-radius:16px;color:white;text-decoration:none;font-weight:700;">
+                📸 Reels
+            </a>
+            """, unsafe_allow_html=True)
         
-        st.markdown("---")
-        
-        # Custom Search
         st.markdown("##### 🔍 Custom Search")
         shorts_query = st.text_input("Search for shorts...", placeholder="Any topic or vibe", key="shorts_search")
         if shorts_query:
             yt2 = f"https://www.youtube.com/results?search_query={quote_plus(shorts_query)}+shorts"
             tt2 = f"https://www.tiktok.com/search?q={quote_plus(shorts_query)}"
-            ig2 = f"https://www.instagram.com/explore/search/keyword/?q={quote_plus(shorts_query)}"
-            
-            sc1, sc2, sc3 = st.columns(3)
-            with sc1:
-                st.link_button("▶️ YouTube", yt2, use_container_width=True)
-            with sc2:
-                st.link_button("📱 TikTok", tt2, use_container_width=True)
-            with sc3:
-                st.link_button("📸 Reels", ig2, use_container_width=True)
+            st.markdown(f"""
+            <div style="display:flex;gap:12px;margin-top:12px;">
+                <a href="{yt2}" target="_blank" style="flex:1;text-align:center;padding:12px;background:#FF0000;border-radius:12px;color:white;text-decoration:none;font-weight:600;">YouTube</a>
+                <a href="{tt2}" target="_blank" style="flex:1;text-align:center;padding:12px;background:linear-gradient(135deg,#ff0050,#00f2ea);border-radius:12px;color:white;text-decoration:none;font-weight:600;">TikTok</a>
+            </div>
+            """, unsafe_allow_html=True)
     
     # SHARE
     st.markdown("---")
@@ -4270,7 +4296,7 @@ def render_main():
             <h3 style="margin-top: 0; text-align: center;">Dopamine<span style="color: #ffd700;">+</span> Premium</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0;">
                 <div style="padding: 12px; background: var(--glass); border-radius: 12px;">🚫 No ads</div>
-                <div style="padding: 12px; background: var(--glass); border-radius: 12px;">💬 Unlimited Mr.DP</div>
+                <div style="padding: 12px; background: var(--glass); border-radius: 12px;">🤖 Advanced AI</div>
                 <div style="padding: 12px; background: var(--glass); border-radius: 12px;">📊 Mood analytics</div>
                 <div style="padding: 12px; background: var(--glass); border-radius: 12px;">🔥 2x DP earnings</div>
                 <div style="padding: 12px; background: var(--glass); border-radius: 12px;">🏆 Exclusive badges</div>
@@ -4289,9 +4315,9 @@ def render_main():
                 st.session_state.show_premium_modal = False
                 st.rerun()
         with col2:
-            # Use Stripe payment link
-            stripe_link = "https://buy.stripe.com/test_3cIaEZ0gE1aac6H5PU6Vq00"
-            st.link_button("🚀 Subscribe Now", stripe_link, use_container_width=True, type="primary")
+            if st.button("🚀 Subscribe", use_container_width=True, key="premium_subscribe"):
+                st.toast("Premium coming soon with Stripe! Join waitlist.", icon="⭐")
+                st.session_state.show_premium_modal = False
 
 # --------------------------------------------------
 # 18. MAIN ROUTER
@@ -4308,7 +4334,7 @@ if not st.session_state.get("user"):
 else:
     render_sidebar()
     
-    # Render floating Mr.DP chat widget (fixed position, won't cause scroll)
+    # Render floating Mr.DP chat widget FIRST (fixed position, won't cause scroll)
     render_mr_dp_chat_widget()
     
     # Render support resources modal (always available)
@@ -4319,3 +4345,69 @@ else:
     
     # Main content
     render_main()
+    
+    # MR.DP CHAT INPUT - Using st.chat_input for Enter key support
+    # Check chat limit for free users
+    if not can_chat():
+        st.markdown(f"""
+        <div style="
+            background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(139,92,246,0.1));
+            border: 1px solid rgba(239,68,68,0.3);
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+            margin: 16px 0;
+        ">
+            <div style="font-weight: 600; margin-bottom: 8px;">💬 Daily Chat Limit Reached</div>
+            <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">
+                Free users get {FREE_CHAT_LIMIT} Mr.DP chats per day. 
+                Upgrade to Premium for unlimited chats!
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("⭐ Go Premium for Unlimited Chats", use_container_width=True, key="premium_chat_limit"):
+            st.session_state.show_premium_modal = True
+            st.rerun()
+    elif user_input := st.chat_input("💬 Tell Mr.DP how you feel... (press Enter)", key="mr_dp_chat_input"):
+        # Increment chat count for free users
+        if not st.session_state.get("is_premium"):
+            increment_chat_count()
+        
+        # Open chat window
+        st.session_state.mr_dp_open = True
+        
+        # Add user message to history
+        st.session_state.mr_dp_chat_history.append({
+            "role": "user",
+            "content": user_input
+        })
+        
+        # Get Mr.DP's response
+        response = ask_mr_dp(user_input)
+        
+        if response:
+            # Add assistant message to history
+            st.session_state.mr_dp_chat_history.append({
+                "role": "assistant",
+                "content": response.get("message", "Let me find something for you!"),
+                "current_feeling": response.get("current_feeling"),
+                "desired_feeling": response.get("desired_feeling"),
+                "genres": response.get("genres")
+            })
+            
+            # Update mood state
+            if response.get("current_feeling"):
+                st.session_state.current_feeling = response["current_feeling"]
+            if response.get("desired_feeling"):
+                st.session_state.desired_feeling = response["desired_feeling"]
+            
+            # Store response and get results
+            st.session_state.mr_dp_response = response
+            st.session_state.mr_dp_results = mr_dp_search(response)
+            st.session_state.movies_feed = []  # Clear old feed
+            st.session_state.quick_hit = None
+            st.session_state.search_results = []
+            
+            add_dopamine_points(10, "Chatted with Mr.DP!")
+        
+        st.rerun()
