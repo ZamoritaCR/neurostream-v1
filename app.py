@@ -4181,21 +4181,9 @@ def render_main():
         shorts_data = FEELING_TO_SHORTS.get(st.session_state.desired_feeling) or FEELING_TO_SHORTS.get("Entertained")
         vq = shorts_data.get("query", "trending viral")
         label = shorts_data.get("label", "Trending")
-        video_ids = shorts_data.get("videos", [])
         
         st.markdown(f"<div class='section-header'><span class='section-icon'>⚡</span><h2 class='section-title'>{label} Shorts</h2></div>", unsafe_allow_html=True)
         st.caption(f"Curated for: {MOOD_EMOJIS.get(st.session_state.desired_feeling, '✨')} {st.session_state.desired_feeling}")
-        
-        # Embed YouTube videos directly in the app
-        if video_ids:
-            st.markdown("##### 📺 Watch Now")
-            vid_cols = st.columns(2)
-            for i, vid_id in enumerate(video_ids[:4]):
-                with vid_cols[i % 2]:
-                    components.iframe(
-                        f"https://www.youtube.com/embed/{vid_id}?rel=0&modestbranding=1",
-                        height=400
-                    )
         
         # Quick mood pills to switch vibes
         st.markdown("##### 🎯 Quick Vibes")
@@ -4216,42 +4204,39 @@ def render_main():
                     st.session_state.desired_feeling = feeling
                     st.rerun()
         
-        st.markdown("##### 🔗 Browse More")
+        st.markdown("---")
+        
+        # Browse buttons - using link_button
+        st.markdown("##### 🔗 Watch Shorts")
         yt_url = f"https://www.youtube.com/results?search_query={quote_plus(vq)}+shorts"
         tt_url = f"https://www.tiktok.com/search?q={quote_plus(vq)}"
-        ig_url = f"https://www.instagram.com/explore/tags/{quote_plus(vq.replace(' ', ''))}/"
+        ig_url = f"https://www.instagram.com/explore/search/keyword/?q={quote_plus(vq)}"
         
         c1, c2, c3 = st.columns(3)
         with c1:
-            st.markdown(f"""
-            <a href="{yt_url}" target="_blank" style="display:block;text-align:center;padding:16px;background:#FF0000;border-radius:16px;color:white;text-decoration:none;font-weight:700;">
-                ▶️ YouTube Shorts
-            </a>
-            """, unsafe_allow_html=True)
+            st.link_button("▶️ YouTube Shorts", yt_url, use_container_width=True)
         with c2:
-            st.markdown(f"""
-            <a href="{tt_url}" target="_blank" style="display:block;text-align:center;padding:16px;background:linear-gradient(135deg,#ff0050,#00f2ea);border-radius:16px;color:white;text-decoration:none;font-weight:700;">
-                📱 TikTok
-            </a>
-            """, unsafe_allow_html=True)
+            st.link_button("📱 TikTok", tt_url, use_container_width=True)
         with c3:
-            st.markdown(f"""
-            <a href="{ig_url}" target="_blank" style="display:block;text-align:center;padding:16px;background:linear-gradient(135deg,#833AB4,#FD1D1D);border-radius:16px;color:white;text-decoration:none;font-weight:700;">
-                📸 Reels
-            </a>
-            """, unsafe_allow_html=True)
+            st.link_button("📸 Instagram Reels", ig_url, use_container_width=True)
         
+        st.markdown("---")
+        
+        # Custom Search
         st.markdown("##### 🔍 Custom Search")
         shorts_query = st.text_input("Search for shorts...", placeholder="Any topic or vibe", key="shorts_search")
         if shorts_query:
             yt2 = f"https://www.youtube.com/results?search_query={quote_plus(shorts_query)}+shorts"
             tt2 = f"https://www.tiktok.com/search?q={quote_plus(shorts_query)}"
-            st.markdown(f"""
-            <div style="display:flex;gap:12px;margin-top:12px;">
-                <a href="{yt2}" target="_blank" style="flex:1;text-align:center;padding:12px;background:#FF0000;border-radius:12px;color:white;text-decoration:none;font-weight:600;">YouTube</a>
-                <a href="{tt2}" target="_blank" style="flex:1;text-align:center;padding:12px;background:linear-gradient(135deg,#ff0050,#00f2ea);border-radius:12px;color:white;text-decoration:none;font-weight:600;">TikTok</a>
-            </div>
-            """, unsafe_allow_html=True)
+            ig2 = f"https://www.instagram.com/explore/search/keyword/?q={quote_plus(shorts_query)}"
+            
+            sc1, sc2, sc3 = st.columns(3)
+            with sc1:
+                st.link_button("▶️ YouTube", yt2, use_container_width=True)
+            with sc2:
+                st.link_button("📱 TikTok", tt2, use_container_width=True)
+            with sc3:
+                st.link_button("📸 Reels", ig2, use_container_width=True)
     
     # SHARE
     st.markdown("---")
