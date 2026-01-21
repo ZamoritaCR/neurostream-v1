@@ -1717,18 +1717,6 @@ def render_premium_modal():
     if not st.session_state.get("show_premium_modal"):
         return
     
-    st.markdown("""
-    <div style="
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.8);
-        z-index: 9998;
-    "></div>
-    """, unsafe_allow_html=True)
-    
     with st.container():
         st.markdown("""
         <div style="
@@ -1792,13 +1780,9 @@ def render_premium_modal():
         </div>
         """, unsafe_allow_html=True)
         
-        # Single pricing button
-        if STRIPE_ENABLED and STRIPE_PAYMENT_LINK_MONTHLY:
-            if st.button("⭐ Upgrade to Premium", key="premium_monthly", use_container_width=True):
-                st.markdown(f'<meta http-equiv="refresh" content="0;url={STRIPE_PAYMENT_LINK_MONTHLY}">', unsafe_allow_html=True)
-        else:
-            if st.button("⭐ Upgrade to Premium", key="premium_monthly_placeholder", use_container_width=True):
-                st.toast("Payment coming soon! 🚀", icon="⭐")
+        # Stripe payment link
+        stripe_link = "https://buy.stripe.com/test_3cIaEZ0gE1aac6H5PU6Vq00"
+        st.link_button("⭐ Upgrade to Premium - $4.99/mo", stripe_link, use_container_width=True, type="primary")
         
         st.markdown("<br>", unsafe_allow_html=True)
         
@@ -4296,7 +4280,7 @@ def render_main():
             <h3 style="margin-top: 0; text-align: center;">Dopamine<span style="color: #ffd700;">+</span> Premium</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0;">
                 <div style="padding: 12px; background: var(--glass); border-radius: 12px;">🚫 No ads</div>
-                <div style="padding: 12px; background: var(--glass); border-radius: 12px;">🤖 Advanced AI</div>
+                <div style="padding: 12px; background: var(--glass); border-radius: 12px;">💬 Unlimited Mr.DP</div>
                 <div style="padding: 12px; background: var(--glass); border-radius: 12px;">📊 Mood analytics</div>
                 <div style="padding: 12px; background: var(--glass); border-radius: 12px;">🔥 2x DP earnings</div>
                 <div style="padding: 12px; background: var(--glass); border-radius: 12px;">🏆 Exclusive badges</div>
@@ -4315,9 +4299,9 @@ def render_main():
                 st.session_state.show_premium_modal = False
                 st.rerun()
         with col2:
-            if st.button("🚀 Subscribe", use_container_width=True, key="premium_subscribe"):
-                st.toast("Premium coming soon with Stripe! Join waitlist.", icon="⭐")
-                st.session_state.show_premium_modal = False
+            # Use Stripe payment link
+            stripe_link = "https://buy.stripe.com/test_3cIaEZ0gE1aac6H5PU6Vq00"
+            st.link_button("🚀 Subscribe Now", stripe_link, use_container_width=True, type="primary")
 
 # --------------------------------------------------
 # 18. MAIN ROUTER
