@@ -2562,6 +2562,18 @@ section[data-testid="stSidebar"] .stTextArea textarea {
     z-index: 9997 !important;
 }
 
+/* Prevent scroll on focus */
+.stChatInput input:focus {
+    scroll-margin: 0 !important;
+}
+
+/* Prevent scroll behavior on all elements */
+[data-testid="stAppViewContainer"],
+.main,
+section.main {
+    scroll-behavior: auto !important;
+}
+
 .stChatInput > div {
     background: #0d0d12 !important;
     border: 2px solid rgba(139, 92, 246, 0.4) !important;
@@ -2604,6 +2616,32 @@ section[data-testid="stSidebar"] .stTextArea textarea {
 }
 </style>
 """, unsafe_allow_html=True)
+
+# Inject scroll prevention script on every page load
+components.html("""
+<script>
+(function() {
+    // Override scrollIntoView to prevent auto-scroll
+    var originalScrollIntoView = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function(options) {
+        // Only allow explicit scroll calls, not auto-focus scrolls
+        if (this.tagName !== 'INPUT' && this.tagName !== 'TEXTAREA') {
+            originalScrollIntoView.call(this, options);
+        }
+    };
+    
+    // Prevent focus-induced scroll for chat input
+    document.addEventListener('focus', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            var scrollPos = window.parent.scrollY || window.parent.document.documentElement.scrollTop;
+            setTimeout(function() {
+                window.parent.scrollTo(0, scrollPos);
+            }, 0);
+        }
+    }, true);
+})();
+</script>
+""", height=0)
 
 # --------------------------------------------------
 # 13. HELPER FUNCTIONS
@@ -3631,22 +3669,44 @@ def render_sidebar():
 def render_main():
     # Check if we need to scroll to top (after Mr.DP response)
     if st.session_state.get("scroll_to_top"):
-        # Use components.html with LONGER delays to beat Streamlit's scroll
+        # Aggressive scroll to top with multiple attempts
         components.html("""
         <script>
-            function scrollToTop() {
-                try {
-                    var container = window.parent.document.querySelector('[data-testid="stAppViewContainer"]');
-                    if (container) container.scrollTop = 0;
-                    var main = window.parent.document.querySelector('.main');
-                    if (main) main.scrollTop = 0;
-                    window.parent.scrollTo(0, 0);
-                } catch(e) {}
-            }
-            // Much longer delays to beat Streamlit's auto-focus on chat_input
-            setTimeout(scrollToTop, 500);
-            setTimeout(scrollToTop, 1000);
-            setTimeout(scrollToTop, 1500);
+            (function() {
+                function forceScrollTop() {
+                    try {
+                        // Target all possible scroll containers
+                        var containers = [
+                            window.parent.document.querySelector('[data-testid="stAppViewContainer"]'),
+                            window.parent.document.querySelector('.main'),
+                            window.parent.document.querySelector('[data-testid="stMain"]'),
+                            window.parent.document.querySelector('section.main'),
+                            window.parent.document.body
+                        ];
+                        containers.forEach(function(el) {
+                            if (el) {
+                                el.scrollTop = 0;
+                                el.scrollTo({top: 0, behavior: 'instant'});
+                            }
+                        });
+                        window.parent.scrollTo(0, 0);
+                        
+                        // Also blur any focused input to prevent auto-scroll
+                        var focused = window.parent.document.activeElement;
+                        if (focused && focused.tagName === 'INPUT') {
+                            focused.blur();
+                        }
+                    } catch(e) {}
+                }
+                // Fire immediately and multiple times
+                forceScrollTop();
+                setTimeout(forceScrollTop, 50);
+                setTimeout(forceScrollTop, 150);
+                setTimeout(forceScrollTop, 300);
+                setTimeout(forceScrollTop, 500);
+                setTimeout(forceScrollTop, 800);
+                setTimeout(forceScrollTop, 1200);
+            })();
         </script>
         """, height=0)
         st.session_state.scroll_to_top = False  # Clear flag
@@ -4391,6 +4451,7 @@ else:
             st.session_state.movies_feed = []  # Clear old feed
             st.session_state.quick_hit = None
             st.session_state.search_results = []
+            st.session_state.scroll_to_top = True  # Flag to scroll to top after rerun
             
             add_dopamine_points(10, "Chatted with Mr.DP!")
         
