@@ -4192,24 +4192,26 @@ def render_main():
         vq = shorts_data.get("query", "trending viral")
         label = shorts_data.get("label", "Trending")
         
-        # Header with mood context
+        # Header
         st.markdown(f"<div class='section-header'><span class='section-icon'>⚡</span><h2 class='section-title'>{label} Shorts</h2></div>", unsafe_allow_html=True)
+        
+        # Mood context banner
         st.markdown(f"""
-        <div style="background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(6,182,212,0.15)); 
-                    border-radius: 16px; padding: 16px; margin-bottom: 20px; text-align: center;">
-            <span style="font-size: 1.1rem;">
+        <div style="background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(6,182,212,0.2)); 
+                    border-radius: 16px; padding: 20px; margin-bottom: 24px; text-align: center;">
+            <div style="font-size: 1.3rem; margin-bottom: 8px;">
                 {MOOD_EMOJIS.get(current, '😊')} <strong>{current}</strong> 
                 → 
                 {MOOD_EMOJIS.get(desired, '✨')} <strong>{desired}</strong>
-            </span>
-            <div style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-top: 4px;">
-                Tap a platform below to watch shorts for "{label.lower()}"
+            </div>
+            <div style="color: rgba(255,255,255,0.8); font-size: 1rem;">
+                🔍 Searching for: <strong>"{vq}"</strong>
             </div>
         </div>
         """, unsafe_allow_html=True)
         
-        # Quick mood pills to switch vibes
-        st.markdown("##### 🎯 Change Your Vibe")
+        # Quick vibe selector - changes the content
+        st.markdown("##### 🎯 Pick Your Vibe (changes content below)")
         vibe_options = {
             "😂 Funny": "Amused",
             "😱 Scary": "Scared", 
@@ -4231,37 +4233,103 @@ def render_main():
         
         st.markdown("---")
         
-        # Main platform buttons - large and prominent
-        st.markdown("##### 📺 Watch Now - Pick Your Platform")
-        yt_url = f"https://www.youtube.com/results?search_query={quote_plus(vq)}+shorts&sp=EgIQAg%253D%253D"
+        # EMBEDDED CONTENT SECTION
+        st.markdown("##### 📺 Watch Now")
+        
+        # Mood-based Spotify playlist (background vibes)
+        mood_playlists = {
+            "Amused": "37i9dQZF1DXdPec7aLTmlC",  # Happy Hits
+            "Scared": "37i9dQZF1DX6aTaZa0K6VA",  # Dark & Stormy
+            "Energized": "37i9dQZF1DX76Wlfdnj7AP",  # Beast Mode
+            "Relaxed": "37i9dQZF1DWZqd5JICZI0u",  # Peaceful Piano
+            "Stimulated": "37i9dQZF1DX0jgyAiPl8Af",  # Brain Food
+            "Comforted": "37i9dQZF1DX4WYpdgoIcn6",  # Chill Hits
+            "Sleepy": "37i9dQZF1DWZd79rJ6a7lp",  # Sleep
+            "Motivated": "37i9dQZF1DXdxcBWuJkbcy",  # Get Motivated
+        }
+        
+        playlist_id = mood_playlists.get(desired, "37i9dQZF1DXcBWIGoYBM5M")  # Today's Top Hits as fallback
+        
+        # Embed Spotify playlist
+        st.markdown(f"""
+        <div style="background: rgba(0,0,0,0.3); border-radius: 16px; padding: 16px; margin-bottom: 16px;">
+            <div style="font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.5rem;">🎵</span>
+                <span>Mood Music: {label}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        components.iframe(f"https://open.spotify.com/embed/playlist/{playlist_id}?theme=0", height=352)
+        
+        st.markdown("---")
+        
+        # YouTube Shorts - Direct links with clear CTA
+        st.markdown("##### 🎬 Video Shorts")
+        st.markdown(f"""
+        <div style="background: rgba(255,0,0,0.1); border: 1px solid rgba(255,0,0,0.3); 
+                    border-radius: 16px; padding: 20px; text-align: center; margin-bottom: 16px;">
+            <div style="font-size: 1.2rem; font-weight: 600; margin-bottom: 8px;">
+                🔎 Search: "{vq}"
+            </div>
+            <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">
+                Click below to watch {label.lower()} shorts on your favorite platform
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        yt_url = f"https://www.youtube.com/results?search_query={quote_plus(vq)}+shorts"
         tt_url = f"https://www.tiktok.com/search?q={quote_plus(vq)}"
         ig_url = f"https://www.instagram.com/explore/tags/{quote_plus(vq.split()[0])}/"
         
         c1, c2, c3 = st.columns(3)
         with c1:
-            st.link_button("▶️ YouTube Shorts", yt_url, use_container_width=True, type="primary")
+            st.markdown("""
+            <div style="text-align: center; padding: 16px; background: linear-gradient(135deg, #FF0000, #CC0000); 
+                        border-radius: 16px; margin-bottom: 12px;">
+                <div style="font-size: 2rem; margin-bottom: 8px;">▶️</div>
+                <div style="font-weight: 700; color: white;">YouTube Shorts</div>
+            </div>
+            """, unsafe_allow_html=True)
+            st.link_button("🔴 Open YouTube", yt_url, use_container_width=True, type="primary")
+        
         with c2:
-            st.link_button("📱 TikTok", tt_url, use_container_width=True, type="primary")
+            st.markdown("""
+            <div style="text-align: center; padding: 16px; background: linear-gradient(135deg, #ff0050, #00f2ea); 
+                        border-radius: 16px; margin-bottom: 12px;">
+                <div style="font-size: 2rem; margin-bottom: 8px;">📱</div>
+                <div style="font-weight: 700; color: white;">TikTok</div>
+            </div>
+            """, unsafe_allow_html=True)
+            st.link_button("⚫ Open TikTok", tt_url, use_container_width=True, type="primary")
+        
         with c3:
-            st.link_button("📸 Instagram Reels", ig_url, use_container_width=True, type="primary")
+            st.markdown("""
+            <div style="text-align: center; padding: 16px; background: linear-gradient(135deg, #833AB4, #FD1D1D, #F77737); 
+                        border-radius: 16px; margin-bottom: 12px;">
+                <div style="font-size: 2rem; margin-bottom: 8px;">📸</div>
+                <div style="font-weight: 700; color: white;">Instagram Reels</div>
+            </div>
+            """, unsafe_allow_html=True)
+            st.link_button("🟣 Open Instagram", ig_url, use_container_width=True, type="primary")
         
         st.markdown("---")
         
         # Custom Search
-        st.markdown("##### 🔍 Search Any Topic")
+        st.markdown("##### 🔍 Search Something Specific")
         shorts_query = st.text_input("What do you want to watch?", placeholder="funny cats, satisfying videos, scary stories...", key="shorts_search")
         if shorts_query:
-            yt2 = f"https://www.youtube.com/results?search_query={quote_plus(shorts_query)}+shorts&sp=EgIQAg%253D%253D"
+            st.success(f"Searching for: **{shorts_query}**")
+            yt2 = f"https://www.youtube.com/results?search_query={quote_plus(shorts_query)}+shorts"
             tt2 = f"https://www.tiktok.com/search?q={quote_plus(shorts_query)}"
-            ig2 = f"https://www.instagram.com/explore/tags/{quote_plus(shorts_query.split()[0])}/"
             
             sc1, sc2, sc3 = st.columns(3)
             with sc1:
-                st.link_button("▶️ YouTube", yt2, use_container_width=True)
+                st.link_button("▶️ YouTube", yt2, use_container_width=True, type="primary")
             with sc2:
-                st.link_button("📱 TikTok", tt2, use_container_width=True)
+                st.link_button("📱 TikTok", tt2, use_container_width=True, type="primary")
             with sc3:
-                st.link_button("📸 Reels", ig2, use_container_width=True)
+                ig2 = f"https://www.instagram.com/explore/tags/{quote_plus(shorts_query.replace(' ', ''))}/"
+                st.link_button("📸 Reels", ig2, use_container_width=True, type="primary")
     
     # SHARE
     st.markdown("---")
