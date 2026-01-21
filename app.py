@@ -2550,64 +2550,11 @@ section[data-testid="stSidebar"] .stTextArea textarea {
     50% { box-shadow: 0 8px 40px rgba(139, 92, 246, 0.6), 0 0 0 8px rgba(139, 92, 246, 0.15); }
 }
 
-/* Style Streamlit's chat input - position near Mr.DP on the right */
-.stChatInput {
-    position: fixed !important;
-    bottom: 24px !important;
-    right: 24px !important;
-    left: auto !important;
-    transform: none !important;
-    max-width: 340px !important;
-    width: 340px !important;
-    z-index: 9997 !important;
-}
-
-/* Prevent scroll on focus */
-.stChatInput input:focus {
-    scroll-margin: 0 !important;
-}
-
 /* Prevent scroll behavior on all elements */
 [data-testid="stAppViewContainer"],
 .main,
 section.main {
     scroll-behavior: auto !important;
-}
-
-.stChatInput > div {
-    background: #0d0d12 !important;
-    border: 2px solid rgba(139, 92, 246, 0.4) !important;
-    border-radius: 24px !important;
-    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.25) !important;
-    padding: 4px !important;
-}
-
-.stChatInput > div:focus-within {
-    border-color: #8b5cf6 !important;
-    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4), 0 0 0 4px rgba(139, 92, 246, 0.15) !important;
-}
-
-.stChatInput input {
-    background: transparent !important;
-    color: white !important;
-    padding: 12px 16px !important;
-    font-size: 0.9rem !important;
-}
-
-.stChatInput input::placeholder {
-    color: rgba(255,255,255,0.5) !important;
-}
-
-.stChatInput button {
-    background: linear-gradient(135deg, #8b5cf6, #06b6d4) !important;
-    border-radius: 50% !important;
-    width: 36px !important;
-    height: 36px !important;
-    margin: 4px !important;
-}
-
-.stChatInput button svg {
-    fill: white !important;
 }
 
 /* Adjust main content to account for fixed elements */
@@ -2616,32 +2563,6 @@ section.main {
 }
 </style>
 """, unsafe_allow_html=True)
-
-# Inject scroll prevention script on every page load
-components.html("""
-<script>
-(function() {
-    // Override scrollIntoView to prevent auto-scroll
-    var originalScrollIntoView = Element.prototype.scrollIntoView;
-    Element.prototype.scrollIntoView = function(options) {
-        // Only allow explicit scroll calls, not auto-focus scrolls
-        if (this.tagName !== 'INPUT' && this.tagName !== 'TEXTAREA') {
-            originalScrollIntoView.call(this, options);
-        }
-    };
-    
-    // Prevent focus-induced scroll for chat input
-    document.addEventListener('focus', function(e) {
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-            var scrollPos = window.parent.scrollY || window.parent.document.documentElement.scrollTop;
-            setTimeout(function() {
-                window.parent.scrollTo(0, scrollPos);
-            }, 0);
-        }
-    }, true);
-})();
-</script>
-""", height=0)
 
 # --------------------------------------------------
 # 13. HELPER FUNCTIONS
@@ -3636,6 +3557,71 @@ def render_sidebar():
         
         st.markdown("---")
         
+        # MR.DP CHAT INPUT (in sidebar to avoid scroll bug)
+        st.markdown("#### 🧠 Chat with Mr.DP")
+        
+        # Check chat limit for free users
+        if not can_chat():
+            st.warning(f"Daily limit reached ({FREE_CHAT_LIMIT} chats). Go Premium for unlimited!")
+            if st.button("⭐ Go Premium", key="premium_chat_sidebar", use_container_width=True):
+                st.session_state.show_premium_modal = True
+                st.rerun()
+        else:
+            remaining = FREE_CHAT_LIMIT - get_daily_chat_count() if not st.session_state.get("is_premium") else "∞"
+            mr_dp_input = st.text_input(
+                "Tell me how you feel...",
+                placeholder="I'm bored and want excitement",
+                key="mr_dp_sidebar_input",
+                label_visibility="collapsed"
+            )
+            
+            if st.button("💬 Ask Mr.DP", use_container_width=True, key="mr_dp_send_btn"):
+                if mr_dp_input and mr_dp_input.strip():
+                    # Increment chat count for free users
+                    if not st.session_state.get("is_premium"):
+                        increment_chat_count()
+                    
+                    # Add user message to history
+                    st.session_state.mr_dp_chat_history.append({
+                        "role": "user",
+                        "content": mr_dp_input
+                    })
+                    
+                    # Get Mr.DP's response
+                    response = ask_mr_dp(mr_dp_input)
+                    
+                    if response:
+                        # Add assistant message to history
+                        st.session_state.mr_dp_chat_history.append({
+                            "role": "assistant",
+                            "content": response.get("message", "Let me find something for you!"),
+                            "current_feeling": response.get("current_feeling"),
+                            "desired_feeling": response.get("desired_feeling"),
+                            "genres": response.get("genres")
+                        })
+                        
+                        # Update mood state
+                        if response.get("current_feeling"):
+                            st.session_state.current_feeling = response["current_feeling"]
+                        if response.get("desired_feeling"):
+                            st.session_state.desired_feeling = response["desired_feeling"]
+                        
+                        # Store response and get results
+                        st.session_state.mr_dp_response = response
+                        st.session_state.mr_dp_results = mr_dp_search(response)
+                        st.session_state.movies_feed = []
+                        st.session_state.quick_hit = None
+                        st.session_state.search_results = []
+                        
+                        add_dopamine_points(10, "Chatted with Mr.DP!")
+                    
+                    st.rerun()
+            
+            if not st.session_state.get("is_premium"):
+                st.caption(f"💬 {remaining} chats remaining today")
+        
+        st.markdown("---")
+        
         # SHARE
         st.markdown("#### 📤 Share & Invite")
         ref_code = st.session_state.referral_code
@@ -3667,50 +3653,6 @@ def render_sidebar():
 # 17. MAIN CONTENT
 # --------------------------------------------------
 def render_main():
-    # Check if we need to scroll to top (after Mr.DP response)
-    if st.session_state.get("scroll_to_top"):
-        # Aggressive scroll to top with multiple attempts
-        components.html("""
-        <script>
-            (function() {
-                function forceScrollTop() {
-                    try {
-                        // Target all possible scroll containers
-                        var containers = [
-                            window.parent.document.querySelector('[data-testid="stAppViewContainer"]'),
-                            window.parent.document.querySelector('.main'),
-                            window.parent.document.querySelector('[data-testid="stMain"]'),
-                            window.parent.document.querySelector('section.main'),
-                            window.parent.document.body
-                        ];
-                        containers.forEach(function(el) {
-                            if (el) {
-                                el.scrollTop = 0;
-                                el.scrollTo({top: 0, behavior: 'instant'});
-                            }
-                        });
-                        window.parent.scrollTo(0, 0);
-                        
-                        // Also blur any focused input to prevent auto-scroll
-                        var focused = window.parent.document.activeElement;
-                        if (focused && focused.tagName === 'INPUT') {
-                            focused.blur();
-                        }
-                    } catch(e) {}
-                }
-                // Fire immediately and multiple times
-                forceScrollTop();
-                setTimeout(forceScrollTop, 50);
-                setTimeout(forceScrollTop, 150);
-                setTimeout(forceScrollTop, 300);
-                setTimeout(forceScrollTop, 500);
-                setTimeout(forceScrollTop, 800);
-                setTimeout(forceScrollTop, 1200);
-            })();
-        </script>
-        """, height=0)
-        st.session_state.scroll_to_top = False  # Clear flag
-    
     render_stats_bar()
     
     achievements = get_achievements()
@@ -4378,7 +4320,7 @@ if not st.session_state.get("user"):
 else:
     render_sidebar()
     
-    # Render floating Mr.DP chat widget FIRST (fixed position, won't cause scroll)
+    # Render floating Mr.DP chat widget (fixed position, won't cause scroll)
     render_mr_dp_chat_widget()
     
     # Render support resources modal (always available)
@@ -4389,70 +4331,3 @@ else:
     
     # Main content
     render_main()
-    
-    # MR.DP CHAT INPUT - Using st.chat_input for Enter key support
-    # Check chat limit for free users
-    if not can_chat():
-        st.markdown(f"""
-        <div style="
-            background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(139,92,246,0.1));
-            border: 1px solid rgba(239,68,68,0.3);
-            border-radius: 16px;
-            padding: 16px;
-            text-align: center;
-            margin: 16px 0;
-        ">
-            <div style="font-weight: 600; margin-bottom: 8px;">💬 Daily Chat Limit Reached</div>
-            <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">
-                Free users get {FREE_CHAT_LIMIT} Mr.DP chats per day. 
-                Upgrade to Premium for unlimited chats!
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        if st.button("⭐ Go Premium for Unlimited Chats", use_container_width=True, key="premium_chat_limit"):
-            st.session_state.show_premium_modal = True
-            st.rerun()
-    elif user_input := st.chat_input("💬 Tell Mr.DP how you feel... (press Enter)", key="mr_dp_chat_input"):
-        # Increment chat count for free users
-        if not st.session_state.get("is_premium"):
-            increment_chat_count()
-        
-        # Open chat window
-        st.session_state.mr_dp_open = True
-        
-        # Add user message to history
-        st.session_state.mr_dp_chat_history.append({
-            "role": "user",
-            "content": user_input
-        })
-        
-        # Get Mr.DP's response
-        response = ask_mr_dp(user_input)
-        
-        if response:
-            # Add assistant message to history
-            st.session_state.mr_dp_chat_history.append({
-                "role": "assistant",
-                "content": response.get("message", "Let me find something for you!"),
-                "current_feeling": response.get("current_feeling"),
-                "desired_feeling": response.get("desired_feeling"),
-                "genres": response.get("genres")
-            })
-            
-            # Update mood state
-            if response.get("current_feeling"):
-                st.session_state.current_feeling = response["current_feeling"]
-            if response.get("desired_feeling"):
-                st.session_state.desired_feeling = response["desired_feeling"]
-            
-            # Store response and get results
-            st.session_state.mr_dp_response = response
-            st.session_state.mr_dp_results = mr_dp_search(response)
-            st.session_state.movies_feed = []  # Clear old feed
-            st.session_state.quick_hit = None
-            st.session_state.search_results = []
-            st.session_state.scroll_to_top = True  # Flag to scroll to top after rerun
-            
-            add_dopamine_points(10, "Chatted with Mr.DP!")
-        
-        st.rerun()
