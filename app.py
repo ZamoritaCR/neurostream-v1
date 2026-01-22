@@ -575,9 +575,10 @@ def search_movies(query, page=1):
 
 @st.cache_data(ttl=86400)
 def get_movie_providers(tmdb_id, media_type):
+    """Get streaming providers from TMDB with availability data."""
     api_key = get_tmdb_key()
     if not api_key:
-        return []
+        return [], None
     try:
         r = requests.get(
             f"{TMDB_BASE_URL}/{media_type}/{tmdb_id}/watch/providers",
@@ -586,19 +587,81 @@ def get_movie_providers(tmdb_id, media_type):
         )
         r.raise_for_status()
         data = r.json().get("results", {}).get("US", {})
-        return (data.get("flatrate", []) + data.get("rent", []))[:8]
+        
+        # Get the official TMDB watch page link (has real deep links via JustWatch)
+        tmdb_watch_link = f"https://www.themoviedb.org/{media_type}/{tmdb_id}/watch?locale=US"
+        
+        # Combine flatrate (subscription) and rent options
+        providers = []
+        
+        # Subscription services first (flatrate)
+        for p in data.get("flatrate", []):
+            p["availability"] = "stream"  # Available with subscription
+            providers.append(p)
+        
+        # Rent/buy options
+        for p in data.get("rent", []):
+            if not any(existing["provider_id"] == p["provider_id"] for existing in providers):
+                p["availability"] = "rent"
+                providers.append(p)
+        
+        return providers[:8], tmdb_watch_link
     except:
-        return []
+        return [], None
 
-def get_movie_deep_link(provider_name, title):
+
+def get_movie_deep_link(provider_name, title, tmdb_id=None, media_type="movie"):
+    """Generate the best possible link for a streaming service."""
     provider = (provider_name or "").strip()
-    safe_title = quote_plus(title)
-    if provider in MOVIE_SERVICES:
-        return MOVIE_SERVICES[provider].format(title=safe_title)
-    for key, template in MOVIE_SERVICES.items():
-        if key.lower() in provider.lower() or provider.lower() in key.lower():
-            return template.format(title=safe_title)
-    return None
+    
+    # Clean and encode title properly
+    clean_title = title.replace(":", "").replace("'", "").replace('"', "")
+    safe_title = quote_plus(clean_title)
+    
+    # Service-specific deep link patterns (optimized for each service)
+    DEEP_LINKS = {
+        "Netflix": f"https://www.netflix.com/search?q={safe_title}",
+        "Amazon Prime Video": f"https://www.amazon.com/s?k={safe_title}&i=instant-video&ref=nb_sb_noss",
+        "Disney Plus": f"https://www.disneyplus.com/search?q={safe_title}",
+        "Max": f"https://play.max.com/search?q={safe_title}&searchMode=full",
+        "Hulu": f"https://www.hulu.com/search?q={safe_title}",
+        "Peacock": f"https://www.peacocktv.com/search?q={safe_title}",
+        "Peacock Premium": f"https://www.peacocktv.com/search?q={safe_title}",
+        "Paramount Plus": f"https://www.paramountplus.com/shows/video/{safe_title}/",
+        "Paramount+ Amazon Channel": f"https://www.amazon.com/s?k={safe_title}&i=instant-video",
+        "Apple TV Plus": f"https://tv.apple.com/search?term={safe_title}",
+        "Apple TV": f"https://tv.apple.com/search?term={safe_title}",
+        "Starz": f"https://www.starz.com/search?q={safe_title}",
+        "MGM Plus": f"https://www.mgmplus.com/search?query={safe_title}",
+        "Tubi": f"https://tubitv.com/search/{safe_title}",
+        "Tubi TV": f"https://tubitv.com/search/{safe_title}",
+        "Pluto TV": f"https://pluto.tv/search/details/{safe_title}",
+        "Plex": f"https://watch.plex.tv/search?q={safe_title}",
+        "Crunchyroll": f"https://www.crunchyroll.com/search?q={safe_title}",
+        "Shudder": f"https://www.shudder.com/search?q={safe_title}",
+        "MUBI": f"https://mubi.com/search?query={safe_title}",
+        "Vudu": f"https://www.vudu.com/content/movies/search?searchString={safe_title}",
+        "Fandango At Home": f"https://www.vudu.com/content/movies/search?searchString={safe_title}",
+        "The Roku Channel": f"https://therokuchannel.roku.com/search/{safe_title}",
+        "Criterion Channel": f"https://www.criterionchannel.com/search?q={safe_title}",
+        "fuboTV": f"https://www.fubo.tv/search?q={safe_title}",
+        "Sling TV": f"https://watch.sling.com/browse/search?query={safe_title}",
+        "YouTube": f"https://www.youtube.com/results?search_query={safe_title}+full+movie",
+        "Google Play Movies": f"https://play.google.com/store/search?q={safe_title}&c=movies",
+    }
+    
+    # Direct match
+    if provider in DEEP_LINKS:
+        return DEEP_LINKS[provider]
+    
+    # Fuzzy match
+    provider_lower = provider.lower()
+    for key, link in DEEP_LINKS.items():
+        if key.lower() in provider_lower or provider_lower in key.lower():
+            return link
+    
+    # Fallback to Google search for this movie on the service
+    return f"https://www.google.com/search?q={safe_title}+{quote_plus(provider)}+watch"
 
 def get_movie_trailer(tmdb_id, media_type="movie"):
     """Fetch YouTube trailer key from TMDB."""
@@ -2064,6 +2127,29 @@ section[data-testid="stSidebar"] .stTextArea textarea {
     height: 22px;
     border-radius: 5px;
 }
+.avail-badge {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 14px;
+    height: 14px;
+    background: #10b981;
+    color: white;
+    font-size: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+.provider-btn {
+    position: relative;
+}
+.provider-btn.all-options {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    font-size: 14px;
+    color: white;
+}
 
 .service-btn {
     display: flex;
@@ -2794,20 +2880,25 @@ def render_movie_card(item, show_providers=True):
     
     providers_html = ""
     if show_providers:
-        providers = get_movie_providers(tmdb_id, media_type)
+        providers, tmdb_watch_link = get_movie_providers(tmdb_id, media_type)
         if providers:
             icons = ""
             for p in providers[:6]:
                 name = p.get("provider_name", "")
                 logo = p.get("logo_path")
+                availability = p.get("availability", "stream")
                 if not logo:
                     continue
-                link = get_movie_deep_link(name, title)
+                link = get_movie_deep_link(name, title, tmdb_id, media_type)
                 if not link:
                     continue
-                icons += f"<a href='{safe(link)}' target='_blank' class='provider-btn' title='{safe(name)}'><img src='{TMDB_LOGO_URL}{logo}' class='provider-icon'></a>"
+                # Add availability indicator
+                avail_icon = "✓" if availability == "stream" else "$"
+                icons += f"<a href='{safe(link)}' target='_blank' class='provider-btn' title='{safe(name)} ({availability})'><img src='{TMDB_LOGO_URL}{logo}' class='provider-icon'><span class='avail-badge'>{avail_icon}</span></a>"
             if icons:
-                providers_html = f"<div class='provider-grid'>{icons}</div>"
+                # Add "All Options" link to TMDB watch page
+                all_link = f"<a href='{tmdb_watch_link}' target='_blank' class='provider-btn all-options' title='See all watch options'>🔗</a>" if tmdb_watch_link else ""
+                providers_html = f"<div class='provider-grid'>{icons}{all_link}</div>"
     
     rating_html = f"<div class='movie-rating'>⭐ {rating:.1f}</div>" if rating > 0 else ""
     
@@ -3450,14 +3541,20 @@ def render_main():
         st.markdown("<div class='section-header'><span class='section-icon'>⚡</span><h2 class='section-title'>Your Perfect Match</h2></div>", unsafe_allow_html=True)
         render_hero(st.session_state.quick_hit)
         
-        providers = get_movie_providers(st.session_state.quick_hit.get("id"), st.session_state.quick_hit.get("type", "movie"))
+        providers, tmdb_watch_link = get_movie_providers(st.session_state.quick_hit.get("id"), st.session_state.quick_hit.get("type", "movie"))
         if providers:
-            provider_cols = st.columns(min(len(providers), 6))
+            provider_cols = st.columns(min(len(providers) + 1, 7))  # +1 for "All Options" button
             for i, p in enumerate(providers[:6]):
                 with provider_cols[i]:
-                    link = get_movie_deep_link(p.get("provider_name", ""), st.session_state.quick_hit.get("title", ""))
+                    link = get_movie_deep_link(p.get("provider_name", ""), st.session_state.quick_hit.get("title", ""), st.session_state.quick_hit.get("id"))
+                    availability = p.get("availability", "stream")
+                    avail_text = "✓ Stream" if availability == "stream" else "$ Rent"
                     if link:
-                        st.markdown(f"<a href='{link}' target='_blank' style='display:block; text-align:center; padding:12px; background:var(--glass); border:1px solid var(--glass-border); border-radius:12px; color:white; text-decoration:none; font-size:0.8rem;'>{p.get('provider_name', '')[:12]}</a>", unsafe_allow_html=True)
+                        st.markdown(f"<a href='{link}' target='_blank' style='display:block; text-align:center; padding:12px; background:var(--glass); border:1px solid var(--glass-border); border-radius:12px; color:white; text-decoration:none; font-size:0.8rem;'>{p.get('provider_name', '')[:12]}<br><small style='opacity:0.6'>{avail_text}</small></a>", unsafe_allow_html=True)
+            # Add "All Options" button
+            if tmdb_watch_link and len(providers) < 7:
+                with provider_cols[min(len(providers), 6)]:
+                    st.markdown(f"<a href='{tmdb_watch_link}' target='_blank' style='display:block; text-align:center; padding:12px; background:linear-gradient(135deg, var(--primary), var(--secondary)); border:none; border-radius:12px; color:white; text-decoration:none; font-size:0.8rem;'>🔗 All<br><small>Options</small></a>", unsafe_allow_html=True)
         
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
