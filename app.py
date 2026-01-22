@@ -1657,6 +1657,37 @@ if "init" not in st.session_state:
 if not st.session_state.get("referral_code"):
     st.session_state.referral_code = hashlib.md5(str(random.random()).encode()).hexdigest()[:8].upper()
 
+# --------------------------------------------------
+# AUTO-LOGIN FROM INDEX.HTML (read URL params)
+# --------------------------------------------------
+# If user comes from index.html with ?user=email or ?guest=1, auto-login them
+query_params = st.query_params
+if not st.session_state.get("user"):
+    # Check for user param from index.html login/signup
+    if query_params.get("user"):
+        user_email = query_params.get("user")
+        user_name = query_params.get("name", user_email.split("@")[0] if "@" in user_email else user_email)
+        st.session_state.user = {
+            "email": user_email,
+            "name": user_name
+        }
+        # Clear URL params so they don't show in browser
+        st.query_params.clear()
+        # Give welcome points
+        if query_params.get("new"):
+            st.session_state.dopamine_points = 50
+            st.session_state.streak_days = 1
+        st.rerun()
+    
+    # Check for guest param
+    elif query_params.get("guest"):
+        st.session_state.user = {
+            "email": "guest",
+            "name": "Guest"
+        }
+        st.query_params.clear()
+        st.rerun()
+
 # Handle OAuth callback (check URL for tokens)
 if SUPABASE_ENABLED and not st.session_state.get("user"):
     oauth_result = handle_oauth_callback()
