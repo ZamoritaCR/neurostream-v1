@@ -1777,6 +1777,14 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
+/* Prevent scroll jumps */
+html, body {
+    scroll-behavior: auto !important;
+}
+.main .block-container {
+    scroll-behavior: auto !important;
+}
+
 :root {
     --bg-primary: #050508;
     --bg-secondary: #0a0a10;
@@ -2612,7 +2620,7 @@ def get_mr_dp_expression(current_feeling, desired_feeling):
     return "happy"
 
 def render_mr_dp_chat_widget():
-    """Render the floating Mr.DP chat widget - simplified for Streamlit."""
+    """Render the floating Mr.DP chat widget - fixed position, no scroll interference."""
     
     # Get current expression based on last detected mood
     response = st.session_state.get("mr_dp_response")
@@ -2626,125 +2634,274 @@ def render_mr_dp_chat_widget():
     
     avatar_img = get_mr_dp_svg(expression)
     history = st.session_state.get("mr_dp_chat_history", [])
-    show_chat = len(history) > 0
     
-    # Floating button CSS + HTML (positioned above the chat input)
-    st.markdown(f'''
-    <style>
-    .mr-dp-float-btn {{
-        position: fixed;
-        bottom: 80px;
-        right: 32px;
-        width: 64px;
-        height: 64px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 50%, #10b981 100%);
-        box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        animation: mrDpFloat 3s ease-in-out infinite;
-    }}
-    .mr-dp-float-btn img {{
-        width: 48px !important;
-        height: 48px !important;
-        max-width: 48px !important;
-        max-height: 48px !important;
-    }}
-    @keyframes mrDpFloat {{
-        0%, 100% {{ transform: translateY(0); }}
-        50% {{ transform: translateY(-6px); }}
-    }}
-    </style>
-    <div class="mr-dp-float-btn">{avatar_img}</div>
-    ''', unsafe_allow_html=True)
-    
-    # If there's chat history, show it in a popup above the button
-    if show_chat:
-        # Build messages HTML - only last 4 to fit without scroll
-        messages_html = ""
+    # Build messages HTML - only last 4 to fit without scroll
+    messages_html = ""
+    if history:
         for msg in history[-4:]:
             if msg["role"] == "user":
-                messages_html += f'<div style="background:linear-gradient(135deg,#8b5cf6,#06b6d4);color:white;padding:10px 14px;border-radius:16px;border-bottom-right-radius:4px;margin:6px 0;margin-left:15%;text-align:right;font-size:0.9rem;">{safe(msg["content"])}</div>'
+                messages_html += f'<div class="mr-dp-msg user">{safe(msg["content"])}</div>'
             else:
                 content = safe(msg["content"])
                 # Add mood tags if present
                 if msg.get("current_feeling") or msg.get("desired_feeling"):
-                    content += '<div style="margin-top:6px;font-size:0.7rem;color:rgba(255,255,255,0.6);">'
+                    content += '<div class="mr-dp-mood-tags">'
                     if msg.get("current_feeling"):
                         content += f'{MOOD_EMOJIS.get(msg["current_feeling"], "😊")} {msg["current_feeling"]} '
                     if msg.get("desired_feeling"):
                         content += f'→ {MOOD_EMOJIS.get(msg["desired_feeling"], "✨")} {msg["desired_feeling"]}'
                     content += '</div>'
-                messages_html += f'<div style="background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.25);color:white;padding:10px 14px;border-radius:16px;border-bottom-left-radius:4px;margin:6px 0;margin-right:15%;font-size:0.9rem;">{content}</div>'
-        
-        # Render popup - messages pushed to bottom
-        st.markdown(f'''
-        <style>
-        .mr-dp-chat-popup {{
-            position: fixed;
-            bottom: 155px;
-            right: 24px;
-            width: 340px;
-            height: 380px;
-            background: #0d0d14;
-            border: 1px solid rgba(139, 92, 246, 0.35);
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-            z-index: 9998;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
+                messages_html += f'<div class="mr-dp-msg assistant">{content}</div>'
+    
+    # Determine if chat panel should be open (controlled by session state, not auto)
+    # Start closed - user clicks avatar to toggle
+    is_open = st.session_state.get("mr_dp_open", False)
+    show_chat = "open" if is_open else ""
+    has_messages = len(history) > 0
+    
+    # Single HTML injection with all CSS and content - no separate components.html call
+    st.markdown(f'''
+    <style>
+    /* Mr.DP Floating Container - completely decoupled from page flow */
+    .mr-dp-container {{
+        position: fixed;
+        bottom: 100px;
+        right: 24px;
+        z-index: 99999;
+        pointer-events: none;
+    }}
+    .mr-dp-container * {{
+        pointer-events: auto;
+    }}
+    
+    /* Floating Avatar Button */
+    .mr-dp-avatar {{
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 50%, #10b981 100%);
+        box-shadow: 0 8px 32px rgba(139, 92, 246, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        animation: mrDpBounce 3s ease-in-out infinite;
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }}
+    .mr-dp-avatar:hover {{
+        transform: scale(1.1);
+        box-shadow: 0 12px 40px rgba(139, 92, 246, 0.6);
+    }}
+    .mr-dp-avatar img {{
+        width: 48px !important;
+        height: 48px !important;
+        max-width: 48px !important;
+        max-height: 48px !important;
+    }}
+    @keyframes mrDpBounce {{
+        0%, 100% {{ transform: translateY(0); }}
+        50% {{ transform: translateY(-8px); }}
+    }}
+    .mr-dp-avatar:hover {{
+        animation: none;
+    }}
+    
+    /* Notification Badge */
+    .mr-dp-badge {{
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        min-width: 22px;
+        height: 22px;
+        background: #ef4444;
+        color: white;
+        font-size: 12px;
+        font-weight: 700;
+        border-radius: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 6px;
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+        animation: badgePulse 2s ease-in-out infinite;
+    }}
+    @keyframes badgePulse {{
+        0%, 100% {{ transform: scale(1); }}
+        50% {{ transform: scale(1.1); }}
+    }}
+    
+    /* Chat Popup */
+    .mr-dp-popup {{
+        position: absolute;
+        bottom: 80px;
+        right: 0;
+        width: 320px;
+        max-height: 400px;
+        background: rgba(13, 13, 20, 0.98);
+        border: 1px solid rgba(139, 92, 246, 0.4);
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+        overflow: hidden;
+        display: none;
+        flex-direction: column;
+        backdrop-filter: blur(20px);
+    }}
+    .mr-dp-popup.open {{
+        display: flex;
+    }}
+    
+    /* Chat Header */
+    .mr-dp-header {{
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(6, 182, 212, 0.2));
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border-bottom: 1px solid rgba(139, 92, 246, 0.25);
+    }}
+    .mr-dp-header-img {{
+        width: 40px;
+        height: 40px;
+    }}
+    .mr-dp-header-img img {{
+        width: 40px !important;
+        height: 40px !important;
+    }}
+    .mr-dp-header-name {{
+        font-weight: 700;
+        font-size: 1rem;
+        background: linear-gradient(135deg, #a78bfa, #06b6d4);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }}
+    .mr-dp-header-status {{
+        font-size: 0.7rem;
+        color: #10b981;
+    }}
+    
+    /* Chat Messages */
+    .mr-dp-messages {{
+        padding: 16px;
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-height: 280px;
+    }}
+    .mr-dp-msg {{
+        padding: 12px 16px;
+        border-radius: 18px;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        max-width: 85%;
+        word-wrap: break-word;
+    }}
+    .mr-dp-msg.user {{
+        background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+        color: white;
+        margin-left: auto;
+        border-bottom-right-radius: 6px;
+    }}
+    .mr-dp-msg.assistant {{
+        background: rgba(139, 92, 246, 0.15);
+        border: 1px solid rgba(139, 92, 246, 0.25);
+        color: white;
+        margin-right: auto;
+        border-bottom-left-radius: 6px;
+    }}
+    .mr-dp-mood-tags {{
+        margin-top: 8px;
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.6);
+    }}
+    
+    /* Empty State */
+    .mr-dp-empty {{
+        text-align: center;
+        padding: 30px 20px;
+        color: rgba(255, 255, 255, 0.5);
+    }}
+    .mr-dp-empty-icon {{
+        font-size: 2.5rem;
+        margin-bottom: 12px;
+    }}
+    
+    /* Tip at bottom */
+    .mr-dp-tip {{
+        padding: 10px 16px;
+        background: rgba(139, 92, 246, 0.1);
+        border-top: 1px solid rgba(139, 92, 246, 0.2);
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.5);
+        text-align: center;
+    }}
+    
+    /* Hide on mobile to prevent overlap */
+    @media (max-width: 500px) {{
+        .mr-dp-container {{
+            bottom: 80px;
+            right: 12px;
         }}
-        .mr-dp-chat-header {{
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(6, 182, 212, 0.15));
-            padding: 12px 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border-bottom: 1px solid rgba(139, 92, 246, 0.2);
-            flex-shrink: 0;
+        .mr-dp-popup {{
+            width: 280px;
+            right: -8px;
         }}
-        .mr-dp-header-avatar {{
-            width: 36px;
-            height: 36px;
-            flex-shrink: 0;
-        }}
-        .mr-dp-header-avatar img {{
-            width: 36px !important;
-            height: 36px !important;
-        }}
-        .mr-dp-chat-msgs {{
-            padding: 12px;
-            flex: 1;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-        }}
-        </style>
-        <div class="mr-dp-chat-popup">
-            <div class="mr-dp-chat-header">
-                <div class="mr-dp-header-avatar">{avatar_img}</div>
+    }}
+    </style>
+    
+    <div class="mr-dp-container" id="mrDpContainer">
+        <!-- Chat Popup -->
+        <div class="mr-dp-popup {show_chat}" id="mrDpPopup">
+            <div class="mr-dp-header">
+                <div class="mr-dp-header-img">{avatar_img}</div>
                 <div>
-                    <div style="font-weight:700;background:linear-gradient(135deg,#8b5cf6,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Mr.DP</div>
-                    <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);">● Online</div>
+                    <div class="mr-dp-header-name">Mr.DP</div>
+                    <div class="mr-dp-header-status">● Online - Your Dopamine Buddy</div>
                 </div>
             </div>
-            <div class="mr-dp-chat-msgs">{messages_html}</div>
+            <div class="mr-dp-messages" id="mrDpMessages">
+                {messages_html if messages_html else '<div class="mr-dp-empty"><div class="mr-dp-empty-icon">🧠</div><div>Type below to chat with me!<br>I\'ll help find your perfect content.</div></div>'}
+            </div>
+            <div class="mr-dp-tip">💡 Use the chat input at the bottom of the page</div>
         </div>
-        ''', unsafe_allow_html=True)
         
-        # Scroll chat to bottom using components.html for reliable execution
-        components.html("""
-        <script>
-            setTimeout(function() {
-                var msgs = window.parent.document.querySelector('.mr-dp-chat-msgs');
-                if (msgs) msgs.scrollTop = msgs.scrollHeight;
-            }, 150);
-        </script>
-        """, height=0)
+        <!-- Floating Avatar with notification badge -->
+        <div class="mr-dp-avatar" onclick="toggleMrDp()" title="Chat with Mr.DP">
+            {avatar_img}
+            {'<span class="mr-dp-badge">' + str(len(history)) + '</span>' if has_messages and not is_open else ''}
+        </div>
+    </div>
+    
+    <script>
+    function toggleMrDp() {{
+        var popup = document.getElementById('mrDpPopup');
+        popup.classList.toggle('open');
+        
+        // Hide badge when opened
+        var badge = document.querySelector('.mr-dp-badge');
+        if (badge) badge.style.display = 'none';
+        
+        // Scroll messages to bottom
+        if (popup.classList.contains('open')) {{
+            var msgs = document.getElementById('mrDpMessages');
+            if (msgs) msgs.scrollTop = msgs.scrollHeight;
+        }}
+    }}
+    
+    // Auto-scroll messages on load if popup is open
+    (function() {{
+        var popup = document.getElementById('mrDpPopup');
+        if (popup && popup.classList.contains('open')) {{
+            var msgs = document.getElementById('mrDpMessages');
+            if (msgs) msgs.scrollTop = msgs.scrollHeight;
+        }}
+    }})();
+    </script>
+    ''', unsafe_allow_html=True)
 
 def render_support_resources_modal():
     """Render mental health support resources modal with government hotlines."""
