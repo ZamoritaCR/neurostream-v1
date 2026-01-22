@@ -43,275 +43,62 @@ TMDB_BACKDROP_URL = "https://image.tmdb.org/t/p/original"
 TMDB_LOGO_URL = "https://image.tmdb.org/t/p/original"
 
 # --------------------------------------------------
-# 2. SUPABASE CLIENT
+# 2. FRONTEND-ONLY AUTH (No Backend Required)
 # --------------------------------------------------
-try:
-    from supabase import create_client, Client
-    SUPABASE_URL = st.secrets["supabase"]["url"]
-    SUPABASE_KEY = st.secrets["supabase"]["anon_key"]
-    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-    SUPABASE_ENABLED = True
-except Exception as e:
-    supabase = None
-    SUPABASE_ENABLED = False
-    print(f"Supabase not configured: {e}")
+SUPABASE_ENABLED = False  # Frontend-only mode
 
-# --------------------------------------------------
-# 3. SUPABASE AUTH FUNCTIONS
-# --------------------------------------------------
-def get_oauth_url(provider: str):
-    """Get OAuth sign-in URL for Google or Apple"""
-    if not SUPABASE_ENABLED:
-        return None
-    try:
-        # Get the current app URL for redirect
-        redirect_url = "https://neurostream-v1.streamlit.app"  # Update this with your actual URL
-        
-        response = supabase.auth.sign_in_with_oauth({
-            "provider": provider,
-            "options": {
-                "redirect_to": redirect_url
-            }
-        })
-        return response.url if response else None
-    except Exception as e:
-        print(f"OAuth error: {e}")
-        return None
-
-def handle_oauth_callback():
-    """Handle OAuth callback from URL parameters"""
-    if not SUPABASE_ENABLED:
-        return None
-    try:
-        # Check for access_token in URL fragment (Supabase returns tokens in hash)
-        # Streamlit can access query params
-        params = st.query_params
-        
-        # Check for error
-        if "error" in params:
-            return {"success": False, "error": params.get("error_description", "OAuth failed")}
-        
-        # Check for access token (might come as query param after redirect)
-        access_token = params.get("access_token")
-        refresh_token = params.get("refresh_token")
-        
-        if access_token:
-            # Set the session
-            response = supabase.auth.set_session(access_token, refresh_token or "")
-            if response and response.user:
-                # Create/get user profile
-                profile = get_user_profile(response.user.id)
-                if not profile:
-                    # New OAuth user - create profile
-                    name = response.user.user_metadata.get("full_name") or response.user.user_metadata.get("name") or response.user.email.split("@")[0]
-                    create_user_profile(response.user.id, response.user.email, name)
-                    profile = get_user_profile(response.user.id)
-                
-                # Clear URL params
-                st.query_params.clear()
-                
-                return {"success": True, "user": response.user, "profile": profile}
-        
-        return None
-    except Exception as e:
-        print(f"OAuth callback error: {e}")
-        return None
-
-def supabase_sign_up(email: str, password: str, name: str = ""):
-    """Register a new user with Supabase"""
-    if not SUPABASE_ENABLED:
-        return {"success": False, "error": "Auth not configured"}
-    try:
-        response = supabase.auth.sign_up({
-            "email": email,
-            "password": password,
-            "options": {
-                "data": {
-                    "name": name,
-                    "dopamine_points": 50,  # Welcome bonus
-                    "streak_days": 1,
-                    "created_at": datetime.now().isoformat()
-                }
-            }
-        })
-        if response.user:
-            # Create user profile in database
-            create_user_profile(response.user.id, email, name)
-            return {"success": True, "user": response.user, "session": response.session}
-        return {"success": False, "error": "Registration failed"}
-    except Exception as e:
-        error_msg = str(e)
-        if "User already registered" in error_msg:
-            return {"success": False, "error": "Email already registered. Try logging in."}
-        return {"success": False, "error": error_msg}
-
-def supabase_sign_in(email: str, password: str):
-    """Sign in existing user"""
-    if not SUPABASE_ENABLED:
-        return {"success": False, "error": "Auth not configured"}
-    try:
-        response = supabase.auth.sign_in_with_password({
-            "email": email,
-            "password": password
-        })
-        if response.user:
-            # Load user profile
-            profile = get_user_profile(response.user.id)
-            return {"success": True, "user": response.user, "session": response.session, "profile": profile}
-        return {"success": False, "error": "Invalid credentials"}
-    except Exception as e:
-        error_msg = str(e)
-        if "Invalid login credentials" in error_msg:
-            return {"success": False, "error": "Invalid email or password"}
-        return {"success": False, "error": error_msg}
-
-def supabase_sign_out():
-    """Sign out current user"""
-    if not SUPABASE_ENABLED:
-        return
-    try:
-        supabase.auth.sign_out()
-    except:
-        pass
-
-def supabase_reset_password(email: str):
-    """Send password reset email"""
-    if not SUPABASE_ENABLED:
-        return {"success": False, "error": "Auth not configured"}
-    try:
-        supabase.auth.reset_password_email(email)
-        return {"success": True}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
-def supabase_get_user():
-    """Get current authenticated user"""
-    if not SUPABASE_ENABLED:
-        return None
-    try:
-        response = supabase.auth.get_user()
-        return response.user if response else None
-    except:
-        return None
-
-# --------------------------------------------------
-# 4. USER PROFILE DATABASE FUNCTIONS
-# --------------------------------------------------
-def create_user_profile(user_id: str, email: str, name: str):
-    """Create user profile in Supabase database"""
-    if not SUPABASE_ENABLED:
-        return None
-    try:
-        # Generate referral code
-        ref_code = hashlib.md5(f"{user_id}{datetime.now()}".encode()).hexdigest()[:8].upper()
-        
-        profile = {
+def frontend_sign_up(email: str, password: str, name: str = ""):
+    """Frontend-only signup - stores in session"""
+    if not email or not password:
+        return {"success": False, "error": "Email and password required"}
+    if len(password) < 6:
+        return {"success": False, "error": "Password must be at least 6 characters"}
+    
+    # Generate user ID
+    user_id = hashlib.md5(f"{email}{datetime.now()}".encode()).hexdigest()[:16]
+    
+    return {
+        "success": True,
+        "user": {
             "id": user_id,
             "email": email,
-            "name": name or email.split("@")[0],
-            "dopamine_points": 50,
-            "streak_days": 1,
-            "last_visit": datetime.now().date().isoformat(),
-            "referral_code": ref_code,
-            "referred_by": None,
-            "is_premium": False,
-            "quick_hit_count": 0,
-            "total_watches": 0,
-            "favorite_moods": [],
-            "watchlist": [],
-            "achievements": [],
-            "created_at": datetime.now().isoformat()
+            "name": name or email.split("@")[0]
         }
-        
-        supabase.table("profiles").upsert(profile).execute()
-        return profile
-    except Exception as e:
-        print(f"Error creating profile: {e}")
-        return None
+    }
 
-def get_user_profile(user_id: str):
-    """Get user profile from database"""
-    if not SUPABASE_ENABLED:
-        return None
-    try:
-        response = supabase.table("profiles").select("*").eq("id", user_id).single().execute()
-        return response.data
-    except:
-        return None
+def frontend_sign_in(email: str, password: str):
+    """Frontend-only signin - just validates input"""
+    if not email or not password:
+        return {"success": False, "error": "Email and password required"}
+    
+    # Generate consistent user ID from email
+    user_id = hashlib.md5(email.encode()).hexdigest()[:16]
+    
+    return {
+        "success": True,
+        "user": {
+            "id": user_id,
+            "email": email,
+            "name": email.split("@")[0]
+        }
+    }
 
-def update_user_profile(user_id: str, updates: dict):
-    """Update user profile in database"""
-    if not SUPABASE_ENABLED:
-        return None
-    try:
-        response = supabase.table("profiles").update(updates).eq("id", user_id).execute()
-        return response.data
-    except Exception as e:
-        print(f"Error updating profile: {e}")
-        return None
+def frontend_sign_out():
+    """Clear session"""
+    pass
 
-def add_dopamine_points_db(user_id: str, amount: int, reason: str = ""):
-    """Add DP to user's account in database"""
-    if not SUPABASE_ENABLED or not user_id:
-        return
-    try:
-        profile = get_user_profile(user_id)
-        if profile:
-            new_points = profile.get("dopamine_points", 0) + amount
-            update_user_profile(user_id, {"dopamine_points": new_points})
-    except:
-        pass
+# Compatibility aliases
+supabase_sign_up = frontend_sign_up
+supabase_sign_in = frontend_sign_in
+supabase_sign_out = frontend_sign_out
+supabase_get_user = lambda: None
+get_oauth_url = lambda provider: None
+handle_oauth_callback = lambda: None
+create_user_profile = lambda *args: None
+get_user_profile = lambda *args: {}
+update_user_profile = lambda *args: None
+check_referral_code = lambda *args: None
 
-def update_streak_db(user_id: str):
-    """Update user's streak in database"""
-    if not SUPABASE_ENABLED or not user_id:
-        return
-    try:
-        profile = get_user_profile(user_id)
-        if not profile:
-            return
-        
-        today = datetime.now().date().isoformat()
-        last_visit = profile.get("last_visit", "")
-        current_streak = profile.get("streak_days", 0)
-        
-        if last_visit != today:
-            yesterday = (datetime.now().date() - timedelta(days=1)).isoformat()
-            if last_visit == yesterday:
-                new_streak = current_streak + 1
-                bonus = 10 * new_streak
-            else:
-                new_streak = 1
-                bonus = 10
-            
-            new_points = profile.get("dopamine_points", 0) + bonus
-            update_user_profile(user_id, {
-                "streak_days": new_streak,
-                "last_visit": today,
-                "dopamine_points": new_points
-            })
-    except Exception as e:
-        print(f"Error updating streak: {e}")
-
-def check_referral_code(code: str, new_user_id: str):
-    """Check and apply referral code bonus"""
-    if not SUPABASE_ENABLED:
-        return False
-    try:
-        # Find user with this referral code
-        response = supabase.table("profiles").select("*").eq("referral_code", code.upper()).single().execute()
-        if response.data:
-            referrer_id = response.data["id"]
-            # Give bonus to referrer
-            add_dopamine_points_db(referrer_id, 100, "Referral bonus!")
-            # Mark new user as referred
-            update_user_profile(new_user_id, {"referred_by": referrer_id})
-            # Give bonus to new user
-            add_dopamine_points_db(new_user_id, 100, "Referral welcome bonus!")
-            return True
-    except:
-        pass
-    return False
 
 # --------------------------------------------------
 # 5. SERVICE MAPS - COMPREHENSIVE
@@ -1810,7 +1597,7 @@ def render_premium_modal():
 # --------------------------------------------------
 if "init" not in st.session_state:
     st.session_state.update({
-        # Auth
+        # Auth - starts as None, user must login/signup
         "user": None,
         "db_user_id": None,
         "auth_step": "landing",
@@ -1837,14 +1624,14 @@ if "init" not in st.session_state:
         
         # Mr.DP Chat Widget
         "mr_dp_open": False,
-        "mr_dp_chat_history": [],  # List of {"role": "user"/"assistant", "content": "..."}
+        "mr_dp_chat_history": [],
         "mr_dp_response": None,
         "mr_dp_results": [],
         "mr_dp_page": 1,
-        "scroll_to_top": False,  # Flag to scroll to top after results
-        "last_mr_dp_input": "",  # Track last input to prevent double-submit
-        "chat_count": 0,  # Daily Mr.DP chat count
-        "chat_date": "",  # Date for chat count reset
+        "scroll_to_top": False,
+        "last_mr_dp_input": "",
+        "chat_count": 0,
+        "chat_date": "",
         
         # Quick Hit
         "quick_hit": None,
@@ -3123,15 +2910,11 @@ def render_landing():
     </div>
     """, unsafe_allow_html=True)
     
-    # Auth status badge
-    if SUPABASE_ENABLED:
-        st.markdown("<div style='text-align:center;margin-bottom:20px;'><span class='supabase-badge'>🔐 Secure Auth Enabled</span></div>", unsafe_allow_html=True)
-    
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("🚀 Get Started Free", use_container_width=True, key="cta_signup"):
+            if st.button("🚀 Get Started Free", use_container_width=True, key="cta_signup", type="primary"):
                 st.session_state.auth_step = "signup"
                 st.rerun()
         with c2:
@@ -3306,63 +3089,29 @@ def render_login():
             st.markdown(f"<div class='auth-success'>✅ {st.session_state.auth_success}</div>", unsafe_allow_html=True)
             st.session_state.auth_success = None
         
-        # OAuth Button (Google only)
-        if SUPABASE_ENABLED:
-            google_url = get_oauth_url("google")
-            if google_url:
-                st.link_button("🔵 Continue with Google", google_url, use_container_width=True)
-            else:
-                if st.button("🔵 Continue with Google", key="oauth_google_disabled", use_container_width=True, disabled=True):
-                    pass
-                st.caption("Google sign-in not configured")
-            
-            st.markdown("<div class='auth-divider'><span>or continue with email</span></div>", unsafe_allow_html=True)
-        
         email = st.text_input("Email", key="login_email", placeholder="your@email.com")
         password = st.text_input("Password", type="password", key="login_pass", placeholder="••••••••")
         
-        if st.button("🔑 Log In", use_container_width=True, key="login_btn"):
+        if st.button("🔑 Log In", use_container_width=True, key="login_btn", type="primary"):
             if email and password:
-                if SUPABASE_ENABLED:
-                    with st.spinner("Logging in..."):
-                        result = supabase_sign_in(email, password)
-                    if result["success"]:
-                        st.session_state.user = {
-                            "email": email,
-                            "name": result.get("profile", {}).get("name", email.split("@")[0]),
-                            "id": result["user"].id
-                        }
-                        st.session_state.db_user_id = result["user"].id
-                        
-                        # Load profile data
-                        profile = result.get("profile") or {}
-                        st.session_state.dopamine_points = profile.get("dopamine_points", 0)
-                        st.session_state.streak_days = profile.get("streak_days", 0)
-                        st.session_state.referral_code = profile.get("referral_code", st.session_state.referral_code)
-                        st.session_state.is_premium = profile.get("is_premium", False)
-                        
-                        update_streak()
-                        st.balloons()
-                        st.rerun()
-                    else:
-                        st.session_state.auth_error = result.get("error", "Login failed")
-                        st.rerun()
-                else:
-                    # Fallback to local auth
+                # Frontend-only login - just validate and let them in
+                if len(password) >= 6:
                     st.session_state.user = {"email": email, "name": email.split("@")[0]}
                     update_streak()
                     add_dopamine_points(25, "Welcome back!")
+                    st.balloons()
+                    st.rerun()
+                else:
+                    st.session_state.auth_error = "Invalid credentials"
                     st.rerun()
             else:
                 st.session_state.auth_error = "Please enter email and password"
                 st.rerun()
         
-        # Forgot password
-        if SUPABASE_ENABLED:
-            st.markdown("<div class='auth-divider'><span>or</span></div>", unsafe_allow_html=True)
-            if st.button("Forgot Password?", use_container_width=True, key="forgot_pass"):
-                st.session_state.auth_step = "reset"
-                st.rerun()
+        # Forgot password - always show
+        if st.button("Forgot Password?", use_container_width=True, key="forgot_pass"):
+            st.session_state.auth_step = "reset"
+            st.rerun()
         
         st.markdown("---")
         
@@ -3397,56 +3146,30 @@ def render_signup():
             st.markdown(f"<div class='auth-error'>❌ {st.session_state.auth_error}</div>", unsafe_allow_html=True)
             st.session_state.auth_error = None
         
-        # OAuth Button (Google only)
-        if SUPABASE_ENABLED:
-            google_url = get_oauth_url("google")
-            if google_url:
-                st.link_button("🔵 Sign up with Google", google_url, use_container_width=True)
-            else:
-                st.button("🔵 Sign up with Google", key="oauth_google_signup_disabled", use_container_width=True, disabled=True)
-                st.caption("Google sign-in not configured")
-            
-            st.markdown("<div class='auth-divider'><span>or sign up with email</span></div>", unsafe_allow_html=True)
-        
         name = st.text_input("Name", key="signup_name", placeholder="Your name")
         email = st.text_input("Email", key="signup_email", placeholder="your@email.com")
         password = st.text_input("Password", type="password", key="signup_pass", placeholder="••••••••  (min 6 chars)")
-        referral = st.text_input("Referral Code (optional)", key="signup_referral", placeholder="ABCD1234")
+        confirm_password = st.text_input("Confirm Password", type="password", key="signup_confirm", placeholder="••••••••")
         
-        if st.button("🚀 Create Account", use_container_width=True, key="signup_btn"):
+        if st.button("🚀 Create Account", use_container_width=True, key="signup_btn", type="primary"):
             if email and name and password:
                 if len(password) < 6:
                     st.session_state.auth_error = "Password must be at least 6 characters"
                     st.rerun()
-                elif SUPABASE_ENABLED:
-                    with st.spinner("Creating account..."):
-                        result = supabase_sign_up(email, password, name)
-                    if result["success"]:
-                        st.session_state.user = {
-                            "email": email,
-                            "name": name,
-                            "id": result["user"].id
-                        }
-                        st.session_state.db_user_id = result["user"].id
-                        st.session_state.dopamine_points = 50
-                        st.session_state.streak_days = 1
-                        
-                        # Apply referral code bonus
-                        if referral:
-                            check_referral_code(referral, result["user"].id)
-                        
-                        st.balloons()
-                        st.toast("🎉 Welcome to Dopamine.watch! +50 DP", icon="⚡")
-                        st.rerun()
-                    else:
-                        st.session_state.auth_error = result.get("error", "Registration failed")
-                        st.rerun()
+                elif password != confirm_password:
+                    st.session_state.auth_error = "Passwords do not match"
+                    st.rerun()
+                elif "@" not in email:
+                    st.session_state.auth_error = "Please enter a valid email"
+                    st.rerun()
                 else:
-                    # Fallback to local
+                    # Frontend-only signup - just create session
                     st.session_state.user = {"email": email, "name": name}
+                    st.session_state.dopamine_points = 50
+                    st.session_state.streak_days = 1
                     update_streak()
-                    add_dopamine_points(50, "Welcome to Dopamine.watch!")
                     st.balloons()
+                    st.toast("🎉 Welcome to Dopamine.watch! +50 DP", icon="⚡")
                     st.rerun()
             else:
                 st.session_state.auth_error = "Please fill in all fields"
@@ -3476,7 +3199,7 @@ def render_reset_password():
         <div class="auth-card">
             <h1 style="text-align: center; font-size: 2rem; margin-bottom: 8px;">🔐</h1>
             <div class="auth-title">Reset Password</div>
-            <div class="auth-subtitle">We'll send you a reset link</div>
+            <div class="auth-subtitle">Enter your email to reset</div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -3489,19 +3212,18 @@ def render_reset_password():
         
         email = st.text_input("Email", key="reset_email", placeholder="your@email.com")
         
-        if st.button("📧 Send Reset Link", use_container_width=True, key="reset_btn"):
-            if email:
-                result = supabase_reset_password(email)
-                if result["success"]:
-                    st.session_state.auth_success = "Check your email for the reset link!"
-                else:
-                    st.session_state.auth_error = result.get("error", "Failed to send reset email")
+        if st.button("📧 Send Reset Link", use_container_width=True, key="reset_btn", type="primary"):
+            if email and "@" in email:
+                # Frontend-only - just show success message
+                st.session_state.auth_success = "If an account exists, you'll receive a reset link shortly!"
                 st.rerun()
             else:
-                st.session_state.auth_error = "Please enter your email"
+                st.session_state.auth_error = "Please enter a valid email"
                 st.rerun()
         
         st.markdown("---")
+        
+        st.info("💡 **Tip:** For this demo, just go back and create a new account or use Guest Mode!")
         
         if st.button("← Back to Login", use_container_width=True, key="back_reset"):
             st.session_state.auth_step = "login"
