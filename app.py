@@ -1777,14 +1777,6 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
-/* Prevent scroll jumps */
-html, body {
-    scroll-behavior: auto !important;
-}
-.main .block-container {
-    scroll-behavior: auto !important;
-}
-
 :root {
     --bg-primary: #050508;
     --bg-secondary: #0a0a10;
@@ -2665,7 +2657,7 @@ def render_mr_dp_chat_widget():
     /* Mr.DP Floating Container - completely decoupled from page flow */
     .mr-dp-container {{
         position: fixed;
-        bottom: 100px;
+        top: 80px;
         right: 24px;
         z-index: 99999;
         pointer-events: none;
@@ -2674,7 +2666,7 @@ def render_mr_dp_chat_widget():
         pointer-events: auto;
     }}
     
-    /* Floating Avatar Button */
+    /* Floating Avatar Button - at top */
     .mr-dp-avatar {{
         width: 64px;
         height: 64px;
@@ -2687,7 +2679,7 @@ def render_mr_dp_chat_widget():
         cursor: pointer;
         animation: mrDpBounce 3s ease-in-out infinite;
         position: absolute;
-        bottom: 0;
+        top: 0;
         right: 0;
         transition: transform 0.2s, box-shadow 0.2s;
     }}
@@ -2733,10 +2725,10 @@ def render_mr_dp_chat_widget():
         50% {{ transform: scale(1.1); }}
     }}
     
-    /* Chat Popup */
+    /* Chat Popup - opens below avatar when at top */
     .mr-dp-popup {{
         position: absolute;
-        bottom: 80px;
+        top: 80px;
         right: 0;
         width: 320px;
         max-height: 400px;
@@ -2840,10 +2832,10 @@ def render_mr_dp_chat_widget():
         text-align: center;
     }}
     
-    /* Hide on mobile to prevent overlap */
+    /* Mobile adjustments */
     @media (max-width: 500px) {{
         .mr-dp-container {{
-            bottom: 80px;
+            top: 70px;
             right: 12px;
         }}
         .mr-dp-popup {{
@@ -2892,7 +2884,7 @@ def render_mr_dp_chat_widget():
         }}
     }}
     
-    // Auto-scroll messages on load if popup is open
+    // Auto-scroll Mr.DP messages on load if popup is open
     (function() {{
         var popup = document.getElementById('mrDpPopup');
         if (popup && popup.classList.contains('open')) {{
@@ -4389,7 +4381,7 @@ if not st.session_state.get("user"):
 else:
     render_sidebar()
     
-    # Render floating Mr.DP chat widget FIRST (fixed position, won't cause scroll)
+    # Render floating Mr.DP chat widget (fixed position, won't cause scroll)
     render_mr_dp_chat_widget()
     
     # Render support resources modal (always available)
