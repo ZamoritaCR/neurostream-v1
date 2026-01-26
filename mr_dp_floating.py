@@ -465,9 +465,24 @@ initMrDp();
 </html>
 '''
 
-    # Render the floating widget (small height since it uses fixed positioning)
-    components.html(widget_html, height=1, scrolling=False)
+    # Inject directly into page using st.markdown (avoids iframe issues)
+    st.markdown(widget_html, unsafe_allow_html=True)
 
-    # Check URL hash for Mr.DP actions
-    # This is a workaround since components.html doesn't support bidirectional communication easily
+    # Add invisible button handler for toggling (CSS will position it over the avatar)
+    toggle_col1, toggle_col2 = st.columns([10, 1])
+    with toggle_col2:
+        if st.button("🧠", key="mr_dp_toggle_btn", help="Chat with Mr.DP"):
+            st.session_state.mr_dp_open = not st.session_state.mr_dp_open
+            st.rerun()
+
+    # Show chat input in sidebar when open
+    if is_open:
+        with st.sidebar:
+            st.markdown("### 💬 Mr.DP Chat")
+            with st.form(key="mr_dp_chat_form"):
+                user_input = st.text_input("How are you feeling?", key="mr_dp_input_field")
+                submitted = st.form_submit_button("Send")
+                if submitted and user_input:
+                    return user_input
+
     return None
