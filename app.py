@@ -1689,6 +1689,7 @@ if "init" not in st.session_state:
         "search_page": 1,
         
         # Mr.DP Chat & Recommendations
+        "mr_dp_open": False,
         "mr_dp_chat_history": [],
         "mr_dp_response": None,
         "mr_dp_results": [],
