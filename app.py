@@ -2532,8 +2532,8 @@ def safe(s):
 
 def get_mr_dp_svg(expression="happy"):
     """
-    Generate Mr.DP's cute neuron character SVG as a base64 data URL.
-    Returns an img tag that will render properly in Streamlit.
+    Generate Mr.DP's cute neuron character as raw SVG markup.
+    Returns SVG code directly for insertion into HTML.
     """
     # Eye/mouth based on expression
     expressions = {
@@ -2557,30 +2557,31 @@ def get_mr_dp_svg(expression="happy"):
     
     blush = '<circle cx="18" cy="36" r="5" fill="#ff6b9d" opacity="0.3"/><circle cx="46" cy="36" r="5" fill="#ff6b9d" opacity="0.3"/>' if expr["blush"] else ""
     
-    svg = f'''<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    # Return raw SVG markup (no img tag, no base64) for direct HTML insertion
+    svg = f'''<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="48" height="48">
 <defs>
-<linearGradient id="ng" x1="0%" y1="0%" x2="100%" y2="100%">
+<linearGradient id="ng-{expression}" x1="0%" y1="0%" x2="100%" y2="100%">
 <stop offset="0%" style="stop-color:#a78bfa"/><stop offset="50%" style="stop-color:#8b5cf6"/><stop offset="100%" style="stop-color:#7c3aed"/>
 </linearGradient>
-<linearGradient id="ag" x1="0%" y1="0%" x2="100%" y2="0%">
+<linearGradient id="ag-{expression}" x1="0%" y1="0%" x2="100%" y2="0%">
 <stop offset="0%" style="stop-color:#8b5cf6"/><stop offset="100%" style="stop-color:#06b6d4"/>
 </linearGradient>
 </defs>
 <g>
-<path d="M32 12 Q28 4 20 2" stroke="url(#ag)" stroke-width="3" fill="none" stroke-linecap="round"/>
+<path d="M32 12 Q28 4 20 2" stroke="url(#ag-{expression})" stroke-width="3" fill="none" stroke-linecap="round"/>
 <circle cx="20" cy="2" r="3" fill="#06b6d4"/>
-<path d="M32 12 Q36 4 44 2" stroke="url(#ag)" stroke-width="3" fill="none" stroke-linecap="round"/>
+<path d="M32 12 Q36 4 44 2" stroke="url(#ag-{expression})" stroke-width="3" fill="none" stroke-linecap="round"/>
 <circle cx="44" cy="2" r="3" fill="#06b6d4"/>
-<path d="M32 12 Q32 6 32 0" stroke="url(#ag)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<path d="M32 12 Q32 6 32 0" stroke="url(#ag-{expression})" stroke-width="2.5" fill="none" stroke-linecap="round"/>
 <circle cx="32" cy="0" r="2.5" fill="#10b981"/>
-<path d="M12 28 Q4 24 0 20" stroke="url(#ag)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<path d="M12 28 Q4 24 0 20" stroke="url(#ag-{expression})" stroke-width="2.5" fill="none" stroke-linecap="round"/>
 <circle cx="0" cy="20" r="2.5" fill="#f59e0b"/>
-<path d="M52 28 Q60 24 64 20" stroke="url(#ag)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<path d="M52 28 Q60 24 64 20" stroke="url(#ag-{expression})" stroke-width="2.5" fill="none" stroke-linecap="round"/>
 <circle cx="64" cy="20" r="2.5" fill="#f59e0b"/>
 </g>
-<path d="M32 52 Q32 58 28 62" stroke="url(#ag)" stroke-width="4" fill="none" stroke-linecap="round"/>
+<path d="M32 52 Q32 58 28 62" stroke="url(#ag-{expression})" stroke-width="4" fill="none" stroke-linecap="round"/>
 <circle cx="28" cy="62" r="3" fill="#10b981"/>
-<ellipse cx="32" cy="32" rx="22" ry="20" fill="url(#ng)"/>
+<ellipse cx="32" cy="32" rx="22" ry="20" fill="url(#ng-{expression})"/>
 <ellipse cx="26" cy="24" rx="8" ry="5" fill="white" opacity="0.3"/>
 <text x="22" y="32" font-size="10" fill="white" text-anchor="middle" font-family="Arial">{expr["left_eye"]}</text>
 <text x="42" y="32" font-size="10" fill="white" text-anchor="middle" font-family="Arial">{expr["right_eye"]}</text>
@@ -2591,11 +2592,9 @@ def get_mr_dp_svg(expression="happy"):
 <text x="54" y="14" font-size="8" fill="#ffd700" opacity="0.8">✦</text>
 <text x="8" y="18" font-size="6" fill="#ffd700" opacity="0.6">✦</text>
 </svg>'''
-    
-    # Convert to base64 data URL
-    svg_bytes = svg.encode('utf-8')
-    b64 = base64.b64encode(svg_bytes).decode('utf-8')
-    return f'<img src="data:image/svg+xml;base64,{b64}" alt="Mr.DP"/>'
+
+    # Return raw SVG for direct HTML insertion (no img wrapper)
+    return svg
 
 def get_mr_dp_expression(current_feeling, desired_feeling):
     """Determine Mr.DP's expression based on the user's feelings."""
@@ -2687,11 +2686,12 @@ def render_mr_dp_chat_widget():
         box-shadow: 0 12px 40px rgba(139, 92, 246, 0.6);
         animation: none;
     }}
-    .mr-dp-avatar img {{
+    .mr-dp-avatar svg {{
         width: 48px !important;
         height: 48px !important;
         max-width: 48px !important;
         max-height: 48px !important;
+        display: block;
     }}
     @keyframes mrDpBounce {{
         0%, 100% {{ transform: translateY(0); }}
@@ -2756,9 +2756,10 @@ def render_mr_dp_chat_widget():
         width: 40px;
         height: 40px;
     }}
-    .mr-dp-header-img img {{
+    .mr-dp-header-img svg {{
         width: 40px !important;
         height: 40px !important;
+        display: block;
     }}
     .mr-dp-header-name {{
         font-weight: 700;
