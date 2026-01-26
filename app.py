@@ -2612,8 +2612,8 @@ def get_mr_dp_expression(current_feeling, desired_feeling):
     return "happy"
 
 def render_mr_dp_chat_widget():
-    """Render the floating Mr.DP chat widget - fixed position, no scroll interference."""
-    
+    """Render the floating Mr.DP chat widget with embedded chat input - matches front-end index.html."""
+
     # Get current expression based on last detected mood
     response = st.session_state.get("mr_dp_response")
     if response:
@@ -2623,14 +2623,14 @@ def render_mr_dp_chat_widget():
         )
     else:
         expression = "happy"
-    
+
     avatar_img = get_mr_dp_svg(expression)
     history = st.session_state.get("mr_dp_chat_history", [])
-    
-    # Build messages HTML - only last 4 to fit without scroll
+
+    # Build messages HTML - show last 5 messages to fit with new input area
     messages_html = ""
     if history:
-        for msg in history[-4:]:
+        for msg in history[-5:]:
             if msg["role"] == "user":
                 messages_html += f'<div class="mr-dp-msg user">{safe(msg["content"])}</div>'
             else:
@@ -2644,14 +2644,13 @@ def render_mr_dp_chat_widget():
                         content += f'→ {MOOD_EMOJIS.get(msg["desired_feeling"], "✨")} {msg["desired_feeling"]}'
                     content += '</div>'
                 messages_html += f'<div class="mr-dp-msg assistant">{content}</div>'
-    
-    # Determine if chat panel should be open (controlled by session state, not auto)
-    # Start closed - user clicks avatar to toggle
+
+    # Determine if chat panel should be open
     is_open = st.session_state.get("mr_dp_open", False)
     show_chat = "open" if is_open else ""
     has_messages = len(history) > 0
-    
-    # Single HTML injection with all CSS and content - no separate components.html call
+
+    # Single HTML injection with all CSS and content
     st.markdown(f'''
     <style>
     /* Mr.DP Floating Container - completely decoupled from page flow */
@@ -2665,8 +2664,8 @@ def render_mr_dp_chat_widget():
     .mr-dp-container * {{
         pointer-events: auto;
     }}
-    
-    /* Floating Avatar Button - at top */
+
+    /* Floating Avatar Button */
     .mr-dp-avatar {{
         width: 64px;
         height: 64px;
@@ -2686,6 +2685,7 @@ def render_mr_dp_chat_widget():
     .mr-dp-avatar:hover {{
         transform: scale(1.1);
         box-shadow: 0 12px 40px rgba(139, 92, 246, 0.6);
+        animation: none;
     }}
     .mr-dp-avatar img {{
         width: 48px !important;
@@ -2697,10 +2697,7 @@ def render_mr_dp_chat_widget():
         0%, 100% {{ transform: translateY(0); }}
         50% {{ transform: translateY(-8px); }}
     }}
-    .mr-dp-avatar:hover {{
-        animation: none;
-    }}
-    
+
     /* Notification Badge */
     .mr-dp-badge {{
         position: absolute;
@@ -2724,17 +2721,17 @@ def render_mr_dp_chat_widget():
         0%, 100% {{ transform: scale(1); }}
         50% {{ transform: scale(1.1); }}
     }}
-    
-    /* Chat Popup - opens below avatar when at top */
+
+    /* Chat Popup - opens below avatar, input area positioned separately below */
     .mr-dp-popup {{
         position: absolute;
         top: 80px;
         right: 0;
-        width: 320px;
-        max-height: 400px;
-        background: rgba(13, 13, 20, 0.98);
+        width: 340px;
+        max-height: 350px;
+        background: rgba(15, 15, 20, 0.98);
         border: 1px solid rgba(139, 92, 246, 0.4);
-        border-radius: 20px;
+        border-radius: 20px 20px 0 0;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
         overflow: hidden;
         display: none;
@@ -2744,7 +2741,7 @@ def render_mr_dp_chat_widget():
     .mr-dp-popup.open {{
         display: flex;
     }}
-    
+
     /* Chat Header */
     .mr-dp-header {{
         background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(6, 182, 212, 0.2));
@@ -2753,6 +2750,7 @@ def render_mr_dp_chat_widget():
         align-items: center;
         gap: 12px;
         border-bottom: 1px solid rgba(139, 92, 246, 0.25);
+        flex-shrink: 0;
     }}
     .mr-dp-header-img {{
         width: 40px;
@@ -2773,7 +2771,7 @@ def render_mr_dp_chat_widget():
         font-size: 0.7rem;
         color: #10b981;
     }}
-    
+
     /* Chat Messages */
     .mr-dp-messages {{
         padding: 16px;
@@ -2782,13 +2780,14 @@ def render_mr_dp_chat_widget():
         display: flex;
         flex-direction: column;
         gap: 10px;
-        max-height: 280px;
+        min-height: 200px;
+        max-height: 320px;
     }}
     .mr-dp-msg {{
         padding: 12px 16px;
         border-radius: 18px;
         font-size: 0.9rem;
-        line-height: 1.5;
+        line-height: 1.6;
         max-width: 85%;
         word-wrap: break-word;
     }}
@@ -2801,7 +2800,7 @@ def render_mr_dp_chat_widget():
     .mr-dp-msg.assistant {{
         background: rgba(139, 92, 246, 0.15);
         border: 1px solid rgba(139, 92, 246, 0.25);
-        color: white;
+        color: #f5f5f7;
         margin-right: auto;
         border-bottom-left-radius: 6px;
     }}
@@ -2810,28 +2809,19 @@ def render_mr_dp_chat_widget():
         font-size: 0.75rem;
         color: rgba(255, 255, 255, 0.6);
     }}
-    
+
     /* Empty State */
     .mr-dp-empty {{
         text-align: center;
         padding: 30px 20px;
         color: rgba(255, 255, 255, 0.5);
+        line-height: 1.6;
     }}
     .mr-dp-empty-icon {{
         font-size: 2.5rem;
         margin-bottom: 12px;
     }}
-    
-    /* Tip at bottom */
-    .mr-dp-tip {{
-        padding: 10px 16px;
-        background: rgba(139, 92, 246, 0.1);
-        border-top: 1px solid rgba(139, 92, 246, 0.2);
-        font-size: 0.75rem;
-        color: rgba(255, 255, 255, 0.5);
-        text-align: center;
-    }}
-    
+
     /* Mobile adjustments */
     @media (max-width: 500px) {{
         .mr-dp-container {{
@@ -2839,14 +2829,14 @@ def render_mr_dp_chat_widget():
             right: 12px;
         }}
         .mr-dp-popup {{
-            width: 280px;
+            width: 300px;
             right: -8px;
         }}
     }}
     </style>
-    
+
     <div class="mr-dp-container" id="mrDpContainer">
-        <!-- Chat Popup -->
+        <!-- Chat Popup with Embedded Input -->
         <div class="mr-dp-popup {show_chat}" id="mrDpPopup">
             <div class="mr-dp-header">
                 <div class="mr-dp-header-img">{avatar_img}</div>
@@ -2856,34 +2846,33 @@ def render_mr_dp_chat_widget():
                 </div>
             </div>
             <div class="mr-dp-messages" id="mrDpMessages">
-                {messages_html if messages_html else '<div class="mr-dp-empty"><div class="mr-dp-empty-icon">🧠</div><div>Type below to chat with me!<br>I\'ll help find your perfect content.</div></div>'}
+                {messages_html if messages_html else '<div class="mr-dp-empty"><div class="mr-dp-empty-icon">🧠</div><div>Hey! I\'m Mr.DP. Tell me how you\'re feeling and I\'ll find the perfect content for you!</div></div>'}
             </div>
-            <div class="mr-dp-tip">💡 Use the chat input at the bottom of the page</div>
         </div>
-        
+
         <!-- Floating Avatar with notification badge -->
         <div class="mr-dp-avatar" onclick="toggleMrDp()" title="Chat with Mr.DP">
             {avatar_img}
             {'<span class="mr-dp-badge">' + str(len(history)) + '</span>' if has_messages and not is_open else ''}
         </div>
     </div>
-    
+
     <script>
     function toggleMrDp() {{
         var popup = document.getElementById('mrDpPopup');
         popup.classList.toggle('open');
-        
+
         // Hide badge when opened
         var badge = document.querySelector('.mr-dp-badge');
         if (badge) badge.style.display = 'none';
-        
-        // Scroll messages to bottom
+
+        // Scroll messages to bottom and focus input
         if (popup.classList.contains('open')) {{
             var msgs = document.getElementById('mrDpMessages');
             if (msgs) msgs.scrollTop = msgs.scrollHeight;
         }}
     }}
-    
+
     // Auto-scroll Mr.DP messages on load if popup is open
     (function() {{
         var popup = document.getElementById('mrDpPopup');
@@ -2894,6 +2883,126 @@ def render_mr_dp_chat_widget():
     }})();
     </script>
     ''', unsafe_allow_html=True)
+
+    # EMBEDDED INPUT FIELD - Streamlit form positioned to appear in widget
+    if is_open:
+        if not can_chat():
+            st.markdown('<div class="mr-dp-limit-notice">💬 Daily chat limit reached. <a href="#premium">Upgrade</a> for unlimited chats!</div>', unsafe_allow_html=True)
+        else:
+            # Create form for Mr.DP chat input - positioned with CSS to appear in popup
+            with st.form(key=f"mr_dp_form_{len(history)}", clear_on_submit=True):
+                col1, col2 = st.columns([4, 1])
+                with col1:
+                    user_input = st.text_input("", placeholder="How are you feeling?", label_visibility="collapsed", key=f"mr_dp_input_{len(history)}")
+                with col2:
+                    submit = st.form_submit_button("Send", use_container_width=True)
+
+                if submit and user_input and user_input.strip():
+                    # Increment chat count for free users
+                    if not st.session_state.get("is_premium"):
+                        increment_chat_count()
+
+                    # Add user message to history
+                    st.session_state.mr_dp_chat_history.append({
+                        "role": "user",
+                        "content": user_input
+                    })
+
+                    # Get Mr.DP's response
+                    response = ask_mr_dp(user_input)
+
+                    if response:
+                        # Add assistant message to history
+                        st.session_state.mr_dp_chat_history.append({
+                            "role": "assistant",
+                            "content": response.get("message", "Let me find something for you!"),
+                            "current_feeling": response.get("current_feeling"),
+                            "desired_feeling": response.get("desired_feeling"),
+                            "genres": response.get("genres")
+                        })
+
+                        # Update mood state
+                        if response.get("current_feeling"):
+                            st.session_state.current_feeling = response["current_feeling"]
+                        if response.get("desired_feeling"):
+                            st.session_state.desired_feeling = response["desired_feeling"]
+
+                        # Store response and get results
+                        st.session_state.mr_dp_response = response
+                        st.session_state.mr_dp_results = mr_dp_search(response)
+                        st.session_state.movies_feed = []  # Clear old feed
+                        st.session_state.quick_hit = None
+                        st.session_state.search_results = []
+
+                        add_dopamine_points(10, "Chatted with Mr.DP!")
+
+                    st.rerun()
+
+            # CSS to position the form inside the Mr.DP widget
+            st.markdown('''
+            <style>
+            /* Position Mr.DP form to appear in the floating widget */
+            [data-testid="stForm"] {
+                position: fixed !important;
+                top: 440px;
+                right: 40px;
+                width: 308px;
+                padding: 12px 16px;
+                background: rgba(22, 22, 29, 0.95);
+                border-top: 1px solid rgba(139, 92, 246, 0.25);
+                border-radius: 0 0 20px 20px;
+                z-index: 99999;
+                margin: 0;
+            }
+            [data-testid="stForm"] [data-testid="column"] {
+                padding: 0 !important;
+            }
+            [data-testid="stForm"] input[type="text"] {
+                background: rgba(255, 255, 255, 0.08) !important;
+                border: 1px solid rgba(139, 92, 246, 0.3) !important;
+                border-radius: 12px !important;
+                color: #f5f5f7 !important;
+                font-size: 0.9rem !important;
+                padding: 10px 14px !important;
+            }
+            [data-testid="stForm"] input[type="text"]:focus {
+                background: rgba(255, 255, 255, 0.12) !important;
+                border-color: rgba(139, 92, 246, 0.6) !important;
+                box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1) !important;
+            }
+            [data-testid="stForm"] button[kind="formSubmit"] {
+                background: linear-gradient(135deg, #8b5cf6, #06b6d4) !important;
+                border: none !important;
+                border-radius: 12px !important;
+                color: white !important;
+                font-weight: 600 !important;
+                padding: 10px 18px !important;
+                transition: all 0.2s !important;
+            }
+            [data-testid="stForm"] button[kind="formSubmit"]:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+            }
+            .mr-dp-limit-notice {
+                position: fixed;
+                top: 440px;
+                right: 40px;
+                width: 308px;
+                padding: 14px;
+                background: rgba(239, 68, 68, 0.1);
+                border: 1px solid rgba(239, 68, 68, 0.3);
+                border-radius: 0 0 20px 20px;
+                z-index: 99999;
+                text-align: center;
+                font-size: 0.85rem;
+                color: rgba(255, 255, 255, 0.8);
+            }
+            .mr-dp-limit-notice a {
+                color: #10b981;
+                text-decoration: underline;
+            }
+            </style>
+            ''', unsafe_allow_html=True)
 
 def render_support_resources_modal():
     """Render mental health support resources modal with government hotlines."""
@@ -4393,68 +4502,5 @@ else:
     # Main content
     render_main()
     
-    # MR.DP CHAT INPUT - Using st.chat_input for Enter key support
-    # Check chat limit for free users
-    if not can_chat():
-        st.markdown(f"""
-        <div style="
-            background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(139,92,246,0.1));
-            border: 1px solid rgba(239,68,68,0.3);
-            border-radius: 16px;
-            padding: 16px;
-            text-align: center;
-            margin: 16px 0;
-        ">
-            <div style="font-weight: 600; margin-bottom: 8px;">💬 Daily Chat Limit Reached</div>
-            <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">
-                Free users get {FREE_CHAT_LIMIT} Mr.DP chats per day. 
-                Upgrade to Premium for unlimited chats!
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        if st.button("⭐ Go Premium for Unlimited Chats", use_container_width=True, key="premium_chat_limit"):
-            st.session_state.show_premium_modal = True
-            st.rerun()
-    elif user_input := st.chat_input("💬 Tell Mr.DP how you feel... (press Enter)", key="mr_dp_chat_input"):
-        # Increment chat count for free users
-        if not st.session_state.get("is_premium"):
-            increment_chat_count()
-        
-        # Open chat window
-        st.session_state.mr_dp_open = True
-        
-        # Add user message to history
-        st.session_state.mr_dp_chat_history.append({
-            "role": "user",
-            "content": user_input
-        })
-        
-        # Get Mr.DP's response
-        response = ask_mr_dp(user_input)
-        
-        if response:
-            # Add assistant message to history
-            st.session_state.mr_dp_chat_history.append({
-                "role": "assistant",
-                "content": response.get("message", "Let me find something for you!"),
-                "current_feeling": response.get("current_feeling"),
-                "desired_feeling": response.get("desired_feeling"),
-                "genres": response.get("genres")
-            })
-            
-            # Update mood state
-            if response.get("current_feeling"):
-                st.session_state.current_feeling = response["current_feeling"]
-            if response.get("desired_feeling"):
-                st.session_state.desired_feeling = response["desired_feeling"]
-            
-            # Store response and get results
-            st.session_state.mr_dp_response = response
-            st.session_state.mr_dp_results = mr_dp_search(response)
-            st.session_state.movies_feed = []  # Clear old feed
-            st.session_state.quick_hit = None
-            st.session_state.search_results = []
-            
-            add_dopamine_points(10, "Chatted with Mr.DP!")
-        
-        st.rerun()
+    # MR.DP CHAT INPUT - Now embedded in the floating widget! (see render_mr_dp_chat_widget function)
+    # Chat input is displayed inside the Mr.DP popup when opened, matching the front-end index.html design
