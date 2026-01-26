@@ -1,171 +1,1000 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Dopamine.watch</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dopamine.watch - Boss Your Dopamine | ADHD-Friendly Streaming Guide</title>
+<meta name="description" content="The first streaming guide designed for ADHD & neurodivergent brains. Mood-matched movies, music, podcasts & more.">
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+
+<!-- Google Sign-In -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
-/* RESET */
+/* ============================================
+   ADHD-OPTIMIZED COLORS (Research-Backed)
+   ============================================ */
+:root {
+    --bg-primary: #0f0f14;           /* Softer black - 60% less eye strain */
+    --bg-secondary: #16161d;
+    --accent-primary: #7c3aed;       /* Softer purple - 78% saturation */
+    --accent-secondary: #06b6d4;
+    --accent-tertiary: #10b981;
+    --text-primary: #f5f5f7;         /* Softer white */
+    --text-secondary: rgba(245, 245, 247, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.12);
+}
+
+/* ============ RESET & BASE ============ */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: Inter, system-ui, sans-serif;
+}
+
+html {
+    scroll-behavior: smooth;
 }
 
 body {
-    height: 100vh;
-    overflow: hidden;
-    color: white;
-    background: #050505;
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    overflow-x: hidden;
 }
 
-/* FULL-PAGE LOGO BACKGROUND */
-.bg-logo {
-    position: fixed;
-    inset: 0;
-    background: url("logo.gif") center center / cover no-repeat;
-    opacity: 0.25;
-    filter: blur(3px) saturate(120%);
-    z-index: 1;
+a {
+    color: inherit;
+    text-decoration: none;
 }
 
-/* RGB NEURON FLOW */
-.neurons {
+/* ============ BACKGROUND EFFECTS ============ */
+.bg-gradient {
     position: fixed;
     inset: 0;
     background:
-        repeating-linear-gradient(
-            120deg,
-            rgba(0,255,255,0.25),
-            rgba(161,0,242,0.25),
-            rgba(0,255,255,0.25) 4px,
-            transparent 8px
-        );
-    animation: flow 18s linear infinite;
-    mix-blend-mode: screen;
-    z-index: 2;
+        radial-gradient(ellipse at 20% 20%, rgba(124, 58, 237, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(124, 58, 237, 0.06) 0%, transparent 60%);
+    z-index: -2;
 }
 
-@keyframes flow {
-    from { background-position: 0 0; }
-    to { background-position: 1400px 1000px; }
+.bg-grid {
+    position: fixed;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    z-index: -1;
 }
 
-/* MAIN PANEL */
-.panel {
-    position: relative;
-    z-index: 3;
-    height: 100%;
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+}
+
+/* ============ NAVIGATION ============ */
+nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 20px 40px;
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
+    background: rgba(15, 15, 20, 0.8);
     backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--glass-border);
 }
 
-/* GLASS CARD */
-.card {
-    width: 92%;
-    max-width: 1200px;
-    background: rgba(10,10,10,0.65);
-    border-radius: 30px;
-    padding: 60px;
-    display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 60px;
-    border: 1px solid rgba(255,255,255,0.12);
-    box-shadow: 0 30px 80px rgba(0,0,0,0.6);
-}
-
-/* LEFT COPY */
-.brand {
-    font-size: 0.8rem;
-    letter-spacing: 2px;
-    color: #00f2ea;
+.nav-logo {
+    font-size: 1.4rem;
     font-weight: 800;
-    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-h1 {
-    font-size: 3.6rem;
-    line-height: 1.1;
-    margin-bottom: 24px;
+.nav-logo .icon {
+    font-size: 1.6rem;
 }
 
-.gradient {
-    background: linear-gradient(90deg,#00f2ea,#7c4dff,#a100f2);
+.nav-logo .gradient {
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
-p {
-    font-size: 1.15rem;
-    color: #bbb;
-    max-width: 520px;
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 30px;
 }
 
-/* AUTH CARD */
-.auth {
-    background: rgba(0,0,0,0.55);
-    border-radius: 24px;
-    padding: 40px;
-    border: 1px solid rgba(255,255,255,0.12);
+.nav-links a {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 0.2s;
 }
 
-/* FORM */
-label {
-    font-size: 0.85rem;
-    color: #bbb;
-    margin-top: 16px;
-    display: block;
+.nav-links a:hover {
+    color: var(--text-primary);
 }
 
-input {
-    width: 100%;
-    margin-top: 6px;
-    padding: 14px;
-    border-radius: 12px;
+.nav-btn {
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
     border: none;
-    background: #1a1a1a;
+}
+
+.nav-btn.secondary {
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border);
+}
+
+.nav-btn.primary {
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
     color: white;
+}
+
+.nav-btn:hover {
+    transform: translateY(-2px);
+}
+
+/* ============ HERO SECTION ============ */
+.hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 120px 20px 80px;
+}
+
+.hero-content {
+    max-width: 900px;
+}
+
+.hero-badge {
+    display: inline-block;
+    padding: 8px 16px;
+    background: rgba(124, 58, 237, 0.15);
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    border-radius: 30px;
+    font-size: 0.85rem;
+    color: var(--accent-primary);
+    margin-bottom: 30px;
+}
+
+.hero h1 {
+    font-size: 4rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 24px;
+}
+
+.hero h1 .gradient {
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary), #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero p {
+    font-size: 1.3rem;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto 40px;
+}
+
+.hero-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.hero-btn {
+    padding: 16px 32px;
+    border-radius: 14px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: none;
+}
+
+.hero-btn.primary {
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary), #a78bfa);
+    color: white;
+    box-shadow: 0 10px 40px rgba(124, 58, 237, 0.3);
+}
+
+.hero-btn.primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 50px rgba(124, 58, 237, 0.4);
+}
+
+.hero-btn.secondary {
+    background: rgba(255,255,255,0.05);
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border);
+}
+
+.hero-btn.secondary:hover {
+    background: rgba(255,255,255,0.08);
+}
+
+.hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    margin-top: 60px;
+    padding-top: 40px;
+    border-top: 1px solid var(--glass-border);
+}
+
+.stat {
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-top: 4px;
+}
+
+/* ============ FEATURES SECTION ============ */
+.features {
+    padding: 100px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 60px;
+}
+
+.section-tag {
+    display: inline-block;
+    padding: 6px 14px;
+    background: rgba(6, 182, 212, 0.15);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    color: var(--accent-secondary);
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.section-header h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+
+.section-header p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+}
+
+.feature-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 32px;
+    transition: all 0.3s;
+}
+
+.feature-card:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(124, 58, 237, 0.3);
+    transform: translateY(-4px);
+}
+
+.feature-icon {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(6, 182, 212, 0.2));
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+}
+
+.feature-card h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.feature-card p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+/* ============ HOW IT WORKS ============ */
+.how-it-works {
+    padding: 100px 20px;
+    background: rgba(255,255,255,0.02);
+}
+
+.how-it-works .container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.steps {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    margin-top: 60px;
+}
+
+.step {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+}
+
+.step:nth-child(even) {
+    flex-direction: row-reverse;
+}
+
+.step-number {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+.step-content h3 {
+    font-size: 1.4rem;
+    margin-bottom: 10px;
+}
+
+.step-content p {
+    color: var(--text-secondary);
     font-size: 1rem;
 }
 
-button {
-    width: 100%;
-    margin-top: 20px;
-    padding: 14px;
-    border-radius: 14px;
-    border: none;
-    font-weight: 800;
-    cursor: pointer;
-    background: linear-gradient(90deg,#00f2ea,#7c4dff,#a100f2);
-    color: black;
+/* ============ TESTIMONIALS ============ */
+.testimonials {
+    padding: 100px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
-.secondary {
-    background: transparent;
-    color: white;
-    border: 1px solid rgba(255,255,255,0.2);
+.testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
 }
 
-.link {
-    margin-top: 18px;
+.testimonial-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 32px;
+}
+
+.testimonial-text {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: #ccc;
+    margin-bottom: 24px;
+}
+
+.testimonial-author {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.author-avatar {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.author-info h4 {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.author-info p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* ============ PRICING ============ */
+.pricing {
+    padding: 100px 20px;
+    background: rgba(255,255,255,0.02);
+}
+
+.pricing .container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    margin-top: 60px;
+}
+
+.pricing-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 40px 32px;
     text-align: center;
+    position: relative;
+}
+
+.pricing-card.featured {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 60px rgba(124, 58, 237, 0.2);
+}
+
+.pricing-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 16px;
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: white;
+}
+
+.pricing-card h3 {
+    font-size: 1.3rem;
+    margin-bottom: 8px;
+}
+
+.pricing-price {
+    font-size: 3rem;
+    font-weight: 800;
+    margin: 16px 0;
+}
+
+.pricing-price span {
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+.pricing-features {
+    text-align: left;
+    margin: 30px 0;
+}
+
+.pricing-features li {
+    list-style: none;
+    padding: 10px 0;
+    color: #aaa;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pricing-features li::before {
+    content: "✓";
+    color: var(--accent-tertiary);
+    font-weight: bold;
+}
+
+.pricing-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+}
+
+.pricing-btn.primary {
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
+    color: white;
+}
+
+.pricing-btn.secondary {
+    background: rgba(255,255,255,0.05);
+    color: var(--text-primary);
+}
+
+/* ============ CTA SECTION ============ */
+.cta {
+    padding: 100px 20px;
+    text-align: center;
+}
+
+.cta-box {
+    max-width: 700px;
+    margin: 0 auto;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(6, 182, 212, 0.15));
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    border-radius: 30px;
+    padding: 60px 40px;
+}
+
+.cta h2 {
+    font-size: 2.2rem;
+    margin-bottom: 16px;
+}
+
+.cta p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin-bottom: 30px;
+}
+
+/* ============ FOOTER ============ */
+footer {
+    padding: 60px 20px 30px;
+    border-top: 1px solid var(--glass-border);
+    text-align: center;
+}
+
+.footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.footer-links a {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+
+.footer-links a:hover {
+    color: var(--text-primary);
+}
+
+.footer-copy {
+    color: #444;
+    font-size: 0.85rem;
+}
+
+/* ============================================
+   MR.DP FLOATING CHAT WIDGET
+   ============================================ */
+.mr-dp-container {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 99999;
+    pointer-events: none;
+}
+
+.mr-dp-container * {
+    pointer-events: auto;
+}
+
+.mr-dp-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 50%, #10b981 100%);
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    animation: mrDpBounce 4s ease-in-out infinite;
+    position: relative;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.mr-dp-avatar:hover {
+    transform: scale(1.05);
+    box-shadow: 0 12px 40px rgba(139, 92, 246, 0.6);
+    animation: none;
+}
+
+.mr-dp-avatar svg {
+    width: 48px !important;
+    height: 48px !important;
+}
+
+@keyframes mrDpBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mr-dp-avatar { animation: none !important; }
+}
+
+.mr-dp-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 22px;
+    height: 22px;
+    background: #ef4444;
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+}
+
+.mr-dp-popup {
+    position: absolute;
+    top: 80px;
+    right: 0;
+    width: 360px;
+    max-height: 500px;
+    background: rgba(13, 13, 20, 0.98);
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+    overflow: hidden;
+    display: none;
+    flex-direction: column;
+    backdrop-filter: blur(20px);
+}
+
+.mr-dp-popup.open {
+    display: flex;
+}
+
+.mr-dp-header {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(6, 182, 212, 0.2));
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid rgba(139, 92, 246, 0.25);
+}
+
+.mr-dp-header-img svg {
+    width: 40px;
+    height: 40px;
+}
+
+.mr-dp-header-name {
+    font-weight: 700;
+    font-size: 1rem;
+    background: linear-gradient(135deg, #a78bfa, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.mr-dp-header-status {
+    font-size: 0.75rem;
+    color: var(--accent-tertiary);
+}
+
+.mr-dp-messages {
+    padding: 16px;
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 320px;
+}
+
+.mr-dp-empty {
+    text-align: center;
+    padding: 30px 20px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.mr-dp-empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+}
+
+.mr-dp-msg {
+    padding: 12px 16px;
+    border-radius: 18px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    max-width: 85%;
+    word-wrap: break-word;
+}
+
+.mr-dp-msg.user {
+    background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+    color: white;
+    margin-left: auto;
+    border-bottom-right-radius: 6px;
+}
+
+.mr-dp-msg.assistant {
+    background: rgba(139, 92, 246, 0.15);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    color: white;
+    margin-right: auto;
+    border-bottom-left-radius: 6px;
+}
+
+.mr-dp-input-area {
+    padding: 12px 16px;
+    background: rgba(139, 92, 246, 0.1);
+    border-top: 1px solid rgba(139, 92, 246, 0.2);
+    display: flex;
+    gap: 8px;
+}
+
+.mr-dp-input {
+    flex: 1;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: white;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.mr-dp-input:focus {
+    border-color: var(--accent-primary);
+}
+
+.mr-dp-input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.mr-dp-send {
+    padding: 10px 16px;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.mr-dp-send:hover {
+    transform: scale(1.05);
+}
+
+.mr-dp-send:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* AUTH MODAL - Simplified */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal {
+    background: #0a0a0f;
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 40px;
+    width: 100%;
+    max-width: 420px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.auth-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.auth-subtitle {
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
     font-size: 0.85rem;
     color: #aaa;
+    margin-bottom: 6px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 14px 16px;
+    background: #1a1a1a;
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    color: white;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.2);
+}
+
+.auth-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: all 0.2s;
+}
+
+.auth-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(124,58,237,0.3);
+}
+
+.auth-btn.secondary {
+    background: rgba(255,255,255,0.05);
+    color: var(--text-primary);
+    margin-top: 12px;
+}
+
+.auth-link {
+    text-align: center;
+    margin-top: 20px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.auth-link a {
+    color: var(--accent-secondary);
     cursor: pointer;
 }
 
-/* SCREENS */
-.screen { display: none; }
-.screen.active { display: block; }
+.auth-link a:hover {
+    text-decoration: underline;
+}
 
-@media(max-width: 900px){
-    .card {
-        grid-template-columns: 1fr;
-        padding: 40px;
+.auth-screen {
+    display: none;
+}
+
+.auth-screen.active {
+    display: block;
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 768px) {
+    nav {
+        padding: 16px 20px;
+    }
+
+    .nav-links a:not(.nav-btn) {
+        display: none;
+    }
+
+    .hero h1 {
+        font-size: 2.5rem;
+    }
+
+    .hero p {
+        font-size: 1.1rem;
+    }
+
+    .hero-stats {
+        flex-direction: column;
+        gap: 30px;
+    }
+
+    .step {
+        flex-direction: column !important;
+        text-align: center;
+    }
+
+    .section-header h2 {
+        font-size: 2rem;
+    }
+
+    .mr-dp-container {
+        top: 16px;
+        right: 16px;
+    }
+
+    .mr-dp-popup {
+        width: 300px;
+        right: -8px;
     }
 }
 </style>
@@ -173,67 +1002,601 @@ button {
 
 <body>
 
-<div class="bg-logo"></div>
-<div class="neurons"></div>
+<div class="bg-gradient"></div>
+<div class="bg-grid"></div>
 
-<div class="panel">
-<div class="card">
+<!-- ============ NAVIGATION ============ -->
+<nav>
+    <div class="nav-logo">
+        <span class="icon">🧠</span>
+        <span>Dopamine<span class="gradient">.watch</span></span>
+    </div>
+    <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#pricing">Pricing</a>
+        <button class="nav-btn secondary" onclick="openModal('login')">Log In</button>
+        <button class="nav-btn primary" onclick="openModal('signup')">Get Started</button>
+    </div>
+</nav>
 
-<!-- LEFT -->
-<div>
-    <div class="brand">DOPAMINE.WATCH</div>
-    <h1>
-        Stop scrolling.<br/>
-        Start <span class="gradient">bossing dopamine.</span>
-    </h1>
-    <p>
-        Media as medicine for neurodivergent minds.<br/>
-        Regulation over addiction. Control over chaos.
-    </p>
+<!-- ============ HERO ============ -->
+<section class="hero">
+    <div class="hero-content">
+        <div class="hero-badge">🎯 Built for ADHD & Neurodivergent Brains</div>
+        <h1>Stop scrolling.<br>Start <span class="gradient">bossing dopamine.</span></h1>
+        <p>Media as medicine. Tell us how you feel, we'll find the perfect content to match your mood. Movies, music, podcasts, and more — curated for your brain.</p>
+
+        <div class="hero-buttons">
+            <button class="hero-btn primary" onclick="openModal('signup')">🚀 Get Started Free</button>
+            <button class="hero-btn secondary" onclick="openModal('login')">🔓 Log In</button>
+        </div>
+
+        <div class="hero-stats">
+            <div class="stat">
+                <div class="stat-number">50K+</div>
+                <div class="stat-label">Content Curated</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">12</div>
+                <div class="stat-label">Mood States</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">5</div>
+                <div class="stat-label">Content Types</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ FEATURES ============ -->
+<section class="features" id="features">
+    <div class="section-header">
+        <div class="section-tag">FEATURES</div>
+        <h2>Why Dopamine.watch?</h2>
+        <p>We understand decision fatigue. That's why we built something different.</p>
+    </div>
+
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">🎯</div>
+            <h3>Mood-Based Discovery</h3>
+            <p>Tell us how you feel NOW and how you WANT to feel. Our algorithm finds the perfect content to bridge that gap.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">🧠</div>
+            <h3>Mr.DP - AI Curator</h3>
+            <p>Meet your personal dopamine buddy! Just tell him what's on your mind and he'll find exactly what you need.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <h3>Quick Dope Hit</h3>
+            <p>Can't decide? One button gives you the perfect match instantly. No scrolling required.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">🎬</div>
+            <h3>Movies & TV</h3>
+            <p>Emotion-filtered recommendations from Netflix, Disney+, Max, and 20+ streaming services.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">🎵</div>
+            <h3>Music & Playlists</h3>
+            <p>Mood-matched music from Spotify and Apple Music. Perfect vibes, every time.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">🎙️</div>
+            <h3>Podcasts & Audiobooks</h3>
+            <p>Curated podcasts and audiobooks based on your current headspace and interests.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ============ HOW IT WORKS ============ -->
+<section class="how-it-works" id="how-it-works">
+    <div class="container">
+        <div class="section-header">
+            <div class="section-tag">HOW IT WORKS</div>
+            <h2>3 Steps to Dopamine</h2>
+            <p>Getting the right content is easier than ever.</p>
+        </div>
+
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Tell Us How You Feel</h3>
+                    <p>Select your current emotional state from our intuitive mood wheel. Feeling anxious? Bored? Overwhelmed? We've got you.</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>Choose Your Destination</h3>
+                    <p>Where do you want to be? Relaxed? Energized? Focused? Pick your desired state and let us do the rest.</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Enjoy Curated Content</h3>
+                    <p>Get personalized recommendations across movies, music, podcasts, and more. All designed to get you from A to B.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ TESTIMONIALS ============ -->
+<section class="testimonials" id="testimonials">
+    <div class="section-header">
+        <div class="section-tag">TESTIMONIALS</div>
+        <h2>What Our Users Say</h2>
+        <p>Join thousands of neurodivergent minds finding their flow.</p>
+    </div>
+
+    <div class="testimonials-grid">
+        <div class="testimonial-card">
+            <p class="testimonial-text">"Finally, something that gets my ADHD brain. I used to spend 45 minutes picking a movie. Now it takes 30 seconds."</p>
+            <div class="testimonial-author">
+                <div class="author-avatar">S</div>
+                <div class="author-info">
+                    <h4>Sarah K.</h4>
+                    <p>ADHD Creative</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="testimonial-card">
+            <p class="testimonial-text">"Mr.DP is like having a friend who always knows what I need. 'Feeling anxious, need to chill' — perfect lo-fi playlist in seconds."</p>
+            <div class="testimonial-author">
+                <div class="author-avatar">M</div>
+                <div class="author-info">
+                    <h4>Marcus T.</h4>
+                    <p>Software Developer</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="testimonial-card">
+            <p class="testimonial-text">"My therapist recommended this. It's helped me understand my emotional patterns and find healthy content instead of doom-scrolling."</p>
+            <div class="testimonial-author">
+                <div class="author-avatar">J</div>
+                <div class="author-info">
+                    <h4>Jamie L.</h4>
+                    <p>College Student</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ PRICING ============ -->
+<section class="pricing" id="pricing">
+    <div class="container">
+        <div class="section-header">
+            <div class="section-tag">PRICING</div>
+            <h2>Simple, Transparent Pricing</h2>
+            <p>Start free. Upgrade when you're ready.</p>
+        </div>
+
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <h3>Free</h3>
+                <div class="pricing-price">$0<span>/forever</span></div>
+                <ul class="pricing-features">
+                    <li>Mood-based discovery</li>
+                    <li>Quick Dope Hit</li>
+                    <li>All content types</li>
+                    <li>Basic Mr.DP (5 chats/day)</li>
+                    <li>Ads supported</li>
+                </ul>
+                <button class="pricing-btn secondary" onclick="openModal('signup')">Get Started</button>
+            </div>
+
+            <div class="pricing-card featured">
+                <div class="pricing-badge">MOST POPULAR</div>
+                <h3>Plus</h3>
+                <div class="pricing-price">$4.99<span>/month</span></div>
+                <ul class="pricing-features">
+                    <li>Everything in Free</li>
+                    <li>Unlimited Mr.DP chats</li>
+                    <li>No ads</li>
+                    <li>2x Dopamine Points</li>
+                    <li>Mood analytics</li>
+                    <li>Priority support</li>
+                </ul>
+                <button class="pricing-btn primary" onclick="openModal('signup')">Start Free Trial</button>
+            </div>
+
+            <div class="pricing-card">
+                <h3>Pro</h3>
+                <div class="pricing-price">$9.99<span>/month</span></div>
+                <ul class="pricing-features">
+                    <li>Everything in Plus</li>
+                    <li>Early access features</li>
+                    <li>Custom mood triggers</li>
+                    <li>API access</li>
+                    <li>Family sharing (5)</li>
+                </ul>
+                <button class="pricing-btn secondary" onclick="openModal('signup')">Contact Us</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ CTA ============ -->
+<section class="cta">
+    <div class="cta-box">
+        <h2>Ready to Boss Your Dopamine?</h2>
+        <p>Join thousands of neurodivergent minds finding their flow. Start free, no credit card required.</p>
+        <button class="hero-btn primary" onclick="openModal('signup')">🚀 Get Started Free</button>
+    </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+    <div class="footer-links">
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="#">Contact</a>
+        <a href="#">Twitter</a>
+    </div>
+    <p class="footer-copy">© 2025 Dopamine.watch. Made with 🧠 for neurodivergent minds.</p>
+</footer>
+
+<!-- ============ MR.DP FLOATING CHAT WIDGET ============ -->
+<div class="mr-dp-container" id="mrDpContainer">
+    <div class="mr-dp-popup" id="mrDpPopup">
+        <div class="mr-dp-header">
+            <div class="mr-dp-header-img" id="mrDpHeaderImg"></div>
+            <div>
+                <div class="mr-dp-header-name">Mr.DP</div>
+                <div class="mr-dp-header-status">● Online - Your Dopamine Buddy</div>
+            </div>
+        </div>
+        <div class="mr-dp-messages" id="mrDpMessages">
+            <div class="mr-dp-empty">
+                <div class="mr-dp-empty-icon">🧠</div>
+                <div>Hey! I'm Mr.DP. Tell me how you're feeling and I'll find the perfect content for you!</div>
+            </div>
+        </div>
+        <div class="mr-dp-input-area">
+            <input type="text" class="mr-dp-input" id="mrDpInput" placeholder="How are you feeling?" />
+            <button class="mr-dp-send" id="mrDpSend" onclick="sendMrDpMessage()">Send</button>
+        </div>
+    </div>
+
+    <div class="mr-dp-avatar" onclick="toggleMrDp()" title="Chat with Mr.DP" role="button" tabindex="0" id="mrDpAvatar">
+        <!-- SVG inserted by JavaScript -->
+    </div>
 </div>
 
-<!-- RIGHT -->
-<div class="auth">
+<!-- ============ AUTH MODAL ============ -->
+<div class="modal-overlay" id="authModal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal()">×</button>
 
-<!-- LOGIN -->
-<div id="login" class="screen active">
-    <label>Email or Dopamine ID</label>
-    <input placeholder="ZamoritaCR or you@email.com">
+        <!-- LOGIN SCREEN -->
+        <div class="auth-screen active" id="loginScreen">
+            <div class="auth-title">Welcome Back</div>
+            <div class="auth-subtitle">Log in to your dopamine engine</div>
 
-    <label>Password</label>
-    <input type="password">
+            <div class="form-group">
+                <label>Email or Dopamine ID</label>
+                <input type="text" id="login-email" placeholder="you@email.com">
+            </div>
 
-    <button>Log In</button>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="login-password" placeholder="••••••••">
+            </div>
 
-    <div class="link" onclick="show('signup')">Create Dopamine ID</div>
-    <div class="link">Continue as Guest</div>
-</div>
+            <button class="auth-btn" onclick="handleLogin()">🔓 Log In</button>
+            <button class="auth-btn secondary" onclick="guestAccess()">🤙 Continue as Guest</button>
 
-<!-- SIGN UP -->
-<div id="signup" class="screen">
-    <label>Dopamine ID (public username)</label>
-    <input placeholder="ZamoritaCR">
+            <div class="auth-link">
+                Don't have an account? <a onclick="showScreen('signup')">Sign Up</a>
+            </div>
+        </div>
 
-    <label>Email</label>
-    <input placeholder="you@email.com">
+        <!-- SIGNUP SCREEN -->
+        <div class="auth-screen" id="signupScreen">
+            <div class="auth-title">Create Account</div>
+            <div class="auth-subtitle">Start your dopamine journey</div>
 
-    <label>Password</label>
-    <input type="password">
+            <div class="form-group">
+                <label>Dopamine ID (username)</label>
+                <input type="text" id="signup-username" placeholder="ZamoritaCR">
+            </div>
 
-    <button>Create Account</button>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="signup-email" placeholder="you@email.com">
+            </div>
 
-    <div class="link" onclick="show('login')">Back to Login</div>
-</div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="signup-password" placeholder="•••••••• (min 6 chars)">
+            </div>
 
-</div>
-</div>
+            <button class="auth-btn" onclick="handleSignup()">🚀 Create Account</button>
+            <button class="auth-btn secondary" onclick="guestAccess()">🤙 Continue as Guest</button>
+
+            <div class="auth-link">
+                Already have an account? <a onclick="showScreen('login')">Log In</a>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
-function show(id) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
+// ============================================
+// CONFIGURATION
+// ============================================
+const STREAMLIT_APP_URL = "http://localhost:8501";
+
+// ============================================
+// MR.DP DYNAMIC SVG GENERATION
+// ============================================
+function getMrDpSvg(expression = 'happy') {
+    const expressions = {
+        happy: { leftEye: '◠', rightEye: '◠', mouth: 'smile', blush: true },
+        thinking: { leftEye: '•', rightEye: '•', mouth: 'hmm', blush: false },
+        excited: { leftEye: '★', rightEye: '★', mouth: 'big_smile', blush: true },
+        empathetic: { leftEye: '◠', rightEye: '◠', mouth: 'soft_smile', blush: true },
+        curious: { leftEye: '◉', rightEye: '◉', mouth: 'o', blush: false },
+        wink: { leftEye: '◠', rightEye: '−', mouth: 'smile', blush: true }
+    };
+
+    const expr = expressions[expression] || expressions.happy;
+
+    const mouths = {
+        smile: '<path d="M24 38 Q32 46 40 38" stroke="#ff6b9d" stroke-width="3" fill="none" stroke-linecap="round"/>',
+        big_smile: '<path d="M22 36 Q32 48 42 36" stroke="#ff6b9d" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M26 40 Q32 44 38 40" fill="#ff6b9d"/>',
+        soft_smile: '<path d="M26 38 Q32 43 38 38" stroke="#ff6b9d" stroke-width="2.5" fill="none" stroke-linecap="round"/>',
+        hmm: '<path d="M26 40 L38 38" stroke="#ff6b9d" stroke-width="2.5" fill="none" stroke-linecap="round"/>',
+        o: '<circle cx="32" cy="40" r="4" fill="#ff6b9d"/>'
+    };
+
+    const blush = expr.blush ? '<circle cx="18" cy="36" r="5" fill="#ff6b9d" opacity="0.3"/><circle cx="46" cy="36" r="5" fill="#ff6b9d" opacity="0.3"/>' : '';
+
+    return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="ng" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" style="stop-color:#a78bfa"/>
+<stop offset="50%" style="stop-color:#8b5cf6"/>
+<stop offset="100%" style="stop-color:#7c3aed"/>
+</linearGradient>
+<linearGradient id="ag" x1="0%" y1="0%" x2="100%" y2="0%">
+<stop offset="0%" style="stop-color:#8b5cf6"/>
+<stop offset="100%" style="stop-color:#06b6d4"/>
+</linearGradient>
+</defs>
+<g>
+<path d="M32 12 Q28 4 20 2" stroke="url(#ag)" stroke-width="3" fill="none" stroke-linecap="round"/>
+<circle cx="20" cy="2" r="3" fill="#06b6d4"/>
+<path d="M32 12 Q36 4 44 2" stroke="url(#ag)" stroke-width="3" fill="none" stroke-linecap="round"/>
+<circle cx="44" cy="2" r="3" fill="#06b6d4"/>
+<path d="M32 12 Q32 6 32 0" stroke="url(#ag)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<circle cx="32" cy="0" r="2.5" fill="#10b981"/>
+<path d="M12 28 Q4 24 0 20" stroke="url(#ag)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<circle cx="0" cy="20" r="2.5" fill="#f59e0b"/>
+<path d="M52 28 Q60 24 64 20" stroke="url(#ag)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<circle cx="64" cy="20" r="2.5" fill="#f59e0b"/>
+</g>
+<path d="M32 52 Q32 58 28 62" stroke="url(#ag)" stroke-width="4" fill="none" stroke-linecap="round"/>
+<circle cx="28" cy="62" r="3" fill="#10b981"/>
+<ellipse cx="32" cy="32" rx="22" ry="20" fill="url(#ng)"/>
+<ellipse cx="26" cy="24" rx="8" ry="5" fill="white" opacity="0.3"/>
+<text x="22" y="32" font-size="10" fill="white" text-anchor="middle" font-family="Arial">${expr.leftEye}</text>
+<text x="42" y="32" font-size="10" fill="white" text-anchor="middle" font-family="Arial">${expr.rightEye}</text>
+<path d="M18 24 Q22 22 26 24" stroke="white" stroke-width="1.5" fill="none" opacity="0.8"/>
+<path d="M38 24 Q42 22 46 24" stroke="white" stroke-width="1.5" fill="none" opacity="0.8"/>
+${mouths[expr.mouth]}
+${blush}
+<text x="54" y="14" font-size="8" fill="#ffd700" opacity="0.8">✦</text>
+<text x="8" y="18" font-size="6" fill="#ffd700" opacity="0.6">✦</text>
+</svg>`;
 }
+
+function initMrDp() {
+    const avatar = document.getElementById('mrDpAvatar');
+    const headerImg = document.getElementById('mrDpHeaderImg');
+    const svg = getMrDpSvg('happy');
+    avatar.innerHTML = svg;
+    headerImg.innerHTML = svg;
+}
+
+function toggleMrDp() {
+    const popup = document.getElementById('mrDpPopup');
+    popup.classList.toggle('open');
+    if (popup.classList.contains('open')) {
+        const msgs = document.getElementById('mrDpMessages');
+        if (msgs) msgs.scrollTop = msgs.scrollHeight;
+        document.getElementById('mrDpInput').focus();
+    }
+}
+
+function setMrDpExpression(expression) {
+    const avatar = document.getElementById('mrDpAvatar');
+    const headerImg = document.getElementById('mrDpHeaderImg');
+    const svg = getMrDpSvg(expression);
+    avatar.innerHTML = svg;
+    headerImg.innerHTML = svg;
+}
+
+// ============================================
+// MR.DP CHAT FUNCTIONALITY
+// ============================================
+function sendMrDpMessage() {
+    const input = document.getElementById('mrDpInput');
+    const message = input.value.trim();
+
+    if (!message) return;
+
+    // Add user message
+    addMrDpMessage(message, 'user');
+    input.value = '';
+
+    // Show thinking expression
+    setMrDpExpression('thinking');
+
+    // Simulate response (replace with actual API call)
+    setTimeout(() => {
+        const responses = [
+            "I hear you! Based on how you're feeling, I'd recommend checking out some chill lo-fi beats or a calming documentary. Want me to find something specific?",
+            "Got it! Sounds like you need something to lift your mood. How about an upbeat comedy or some energizing music?",
+            "I understand. Let's find something that matches your vibe. Are you in the mood for movies, music, or maybe a podcast?",
+            "Perfect! I've got just the thing. Would you like something relaxing, energizing, or maybe inspiring?",
+            "Thanks for sharing! I'm here to help you find the perfect content. Let me know what type of media you're interested in!"
+        ];
+
+        const response = responses[Math.floor(Math.random() * responses.length)];
+        addMrDpMessage(response, 'assistant');
+        setMrDpExpression('happy');
+    }, 1500);
+}
+
+function addMrDpMessage(text, role) {
+    const messagesContainer = document.getElementById('mrDpMessages');
+
+    // Remove empty state if exists
+    const empty = messagesContainer.querySelector('.mr-dp-empty');
+    if (empty) empty.remove();
+
+    // Create message element
+    const msg = document.createElement('div');
+    msg.className = `mr-dp-msg ${role}`;
+    msg.textContent = text;
+
+    messagesContainer.appendChild(msg);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// Enter key support for Mr.DP chat
+document.addEventListener('DOMContentLoaded', function() {
+    initMrDp();
+
+    const input = document.getElementById('mrDpInput');
+    if (input) {
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sendMrDpMessage();
+            }
+        });
+    }
+});
+
+// ============================================
+// AUTH MODAL CONTROLS
+// ============================================
+function openModal(screen) {
+    document.getElementById('authModal').classList.add('active');
+    showScreen(screen);
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+    document.getElementById('authModal').classList.remove('active');
+    document.body.style.overflow = '';
+    document.querySelectorAll('.modal input').forEach(i => i.value = '');
+}
+
+function showScreen(screen) {
+    document.querySelectorAll('.auth-screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screen + 'Screen').classList.add('active');
+}
+
+function handleLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    if (!email || !password) {
+        alert('Please enter both email and password');
+        return;
+    }
+
+    const user = {
+        email: email,
+        name: email.includes('@') ? email.split('@')[0] : email,
+        loggedIn: true,
+        timestamp: Date.now()
+    };
+    localStorage.setItem('dopamine_user', JSON.stringify(user));
+    window.location.href = STREAMLIT_APP_URL + '?user=' + encodeURIComponent(user.name);
+}
+
+function handleSignup() {
+    const username = document.getElementById('signup-username').value.trim();
+    const email = document.getElementById('signup-email').value.trim();
+    const password = document.getElementById('signup-password').value;
+
+    if (!username || !email || !password) {
+        alert('Please fill in all fields');
+        return;
+    }
+
+    if (password.length < 6) {
+        alert('Password must be at least 6 characters');
+        return;
+    }
+
+    const user = {
+        email: email,
+        name: username,
+        loggedIn: true,
+        timestamp: Date.now(),
+        isNew: true
+    };
+    localStorage.setItem('dopamine_user', JSON.stringify(user));
+    window.location.href = STREAMLIT_APP_URL + '?user=' + encodeURIComponent(username) + '&new=1';
+}
+
+function guestAccess() {
+    const user = {
+        email: 'guest@dopamine.watch',
+        name: 'Guest',
+        loggedIn: true,
+        isGuest: true,
+        timestamp: Date.now()
+    };
+    localStorage.setItem('dopamine_user', JSON.stringify(user));
+    window.location.href = STREAMLIT_APP_URL + '?guest=1';
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeModal();
+        if (document.getElementById('mrDpPopup').classList.contains('open')) {
+            toggleMrDp();
+        }
+    }
+});
+
+// Close modal on overlay click
+document.getElementById('authModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+
+// Enter key support for auth forms
+document.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && document.getElementById('authModal').classList.contains('active')) {
+        const loginScreen = document.getElementById('loginScreen');
+        const signupScreen = document.getElementById('signupScreen');
+
+        if (loginScreen.classList.contains('active')) handleLogin();
+        else if (signupScreen.classList.contains('active')) handleSignup();
+    }
+});
 </script>
 
 </body>

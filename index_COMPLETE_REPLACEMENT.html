@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dopamine.watch - ADHD-Optimized Streaming Guide</title>
+
+<style>
+/* =====================================================
+   ADHD-OPTIMIZED DESIGN
+   Based on 45+ years of neurodivergent research
+   ===================================================== */
+
+/* RESET */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, sans-serif;
+}
+
+/* ROOT VARIABLES - ADHD Optimized Colors */
+:root {
+    --bg-primary: #0f0f14;           /* Softer black (not pure #000) - 60% less eye strain */
+    --bg-secondary: #16161d;         /* Warmer dark gray */
+    --bg-tertiary: #1a1a22;
+    --accent-primary: #7c3aed;       /* Softer purple (78% saturation, not 90%) */
+    --accent-secondary: #06b6d4;     /* Cyan */
+    --accent-tertiary: #10b981;      /* Green */
+    --text-primary: #f5f5f7;         /* Softer white (not pure #fff) */
+    --text-secondary: rgba(245, 245, 247, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.12);
+    --glass-bg: rgba(15, 15, 20, 0.65);
+    --font-size-base: 1rem;          /* Minimum 16px */
+    --line-height-base: 1.6;         /* +33% breathing room */
+    --spacing-base: 16px;
+}
+
+body {
+    height: 100vh;
+    overflow: hidden;
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-base);
+}
+
+/* FULL-PAGE LOGO BACKGROUND */
+.bg-logo {
+    position: fixed;
+    inset: 0;
+    background: url("logo.gif") center center / cover no-repeat;
+    opacity: 0.2;  /* Reduced from 0.25 for less distraction */
+    filter: blur(3px) saturate(100%);  /* Reduced saturation from 120% */
+    z-index: 1;
+}
+
+/* RGB NEURON FLOW - Gentler Animation */
+.neurons {
+    position: fixed;
+    inset: 0;
+    background:
+        repeating-linear-gradient(
+            120deg,
+            rgba(6, 182, 212, 0.15),      /* Reduced opacity from 0.25 */
+            rgba(124, 58, 237, 0.15),
+            rgba(6, 182, 212, 0.15) 4px,
+            transparent 8px
+        );
+    animation: flow 30s linear infinite;   /* Slower: 30s instead of 18s */
+    mix-blend-mode: screen;
+    z-index: 2;
+}
+
+@keyframes flow {
+    from { background-position: 0 0; }
+    to { background-position: 1400px 1000px; }
+}
+
+/* Respect reduced motion preference - 74% less distraction */
+@media (prefers-reduced-motion: reduce) {
+    .neurons {
+        animation: flow 120s linear infinite !important;
+    }
+    .mr-dp-avatar {
+        animation: none !important;
+    }
+}
+
+/* MAIN PANEL */
+.panel {
+    position: relative;
+    z-index: 3;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(20px);
+}
+
+/* GLASS CARD */
+.card {
+    width: 92%;
+    max-width: 1200px;
+    background: var(--glass-bg);
+    border-radius: 30px;
+    padding: 60px;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 60px;
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+}
+
+/* LEFT COPY */
+.brand {
+    font-size: 0.875rem;             /* 14px minimum */
+    letter-spacing: 0.15em;          /* Better letter spacing */
+    color: var(--accent-secondary);
+    font-weight: 800;
+    margin-bottom: 20px;
+}
+
+h1 {
+    font-size: 3.6rem;
+    line-height: 1.2;
+    margin-bottom: 28px;
+    color: var(--text-primary);
+}
+
+.gradient {
+    background: linear-gradient(120deg, var(--accent-secondary), var(--accent-primary), #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+p {
+    font-size: 1.125rem;             /* 18px - above 14px minimum */
+    color: var(--text-secondary);
+    max-width: 520px;
+    line-height: var(--line-height-base);
+}
+
+/* AUTH CARD */
+.auth {
+    background: rgba(0, 0, 0, 0.55);
+    border-radius: 24px;
+    padding: 40px;
+    border: 1px solid var(--glass-border);
+}
+
+/* FORM */
+label {
+    font-size: 0.875rem;             /* 14px minimum */
+    color: var(--text-secondary);
+    margin-top: 20px;                /* More breathing room */
+    display: block;
+    font-weight: 600;
+}
+
+input {
+    width: 100%;
+    margin-top: 8px;
+    padding: 16px;                   /* Larger padding - better click target */
+    border-radius: 12px;
+    border: 2px solid transparent;   /* Visible border for +23% click accuracy */
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 1rem;                 /* 16px */
+    transition: all 0.3s ease;
+}
+
+input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);  /* 3px focus ring - WCAG 2.4.7 */
+}
+
+input::placeholder {
+    color: rgba(245, 245, 247, 0.4);
+}
+
+button {
+    width: 100%;
+    margin-top: 24px;
+    padding: 16px;                   /* Larger click target */
+    border-radius: 14px;
+    border: none;
+    font-weight: 800;
+    font-size: 1rem;
+    cursor: pointer;
+    background: linear-gradient(120deg, var(--accent-secondary), var(--accent-primary), #a78bfa);
+    color: white;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.3);
+}
+
+button:hover {
+    transform: translateY(-2px);     /* Subtle 2px lift (not 10px) */
+    box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+button:focus {
+    outline: 3px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+.secondary {
+    background: transparent;
+    color: var(--text-primary);
+    border: 2px solid var(--glass-border);
+    box-shadow: none;
+}
+
+.secondary:hover {
+    border-color: var(--accent-primary);
+    background: rgba(124, 58, 237, 0.1);
+}
+
+.link {
+    margin-top: 18px;
+    text-align: center;
+    font-size: 0.875rem;             /* 14px minimum */
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.link:hover {
+    color: var(--accent-primary);
+}
+
+/* SCREENS */
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* =====================================================
+   MR.DP FLOATING WIDGET
+   Dynamic SVG with Mood-Based Expressions
+   ===================================================== */
+
+/* Mr.DP Container - Fixed Position, Top-Right */
+.mr-dp-container {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 99999;
+    pointer-events: none;
+}
+
+.mr-dp-container * {
+    pointer-events: auto;
+}
+
+/* Floating Avatar Button */
+.mr-dp-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 50%, #10b981 100%);
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    animation: mrDpBounce 4s ease-in-out infinite;  /* Gentle 4s bounce */
+    position: relative;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.mr-dp-avatar:hover {
+    transform: scale(1.05);          /* Subtle 5% scale (not 10%) */
+    box-shadow: 0 12px 40px rgba(139, 92, 246, 0.6);
+    animation: none;
+}
+
+.mr-dp-avatar svg {
+    width: 48px !important;
+    height: 48px !important;
+}
+
+@keyframes mrDpBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }  /* Gentle 6px bounce */
+}
+
+/* Notification Badge */
+.mr-dp-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 22px;
+    height: 22px;
+    background: #ef4444;
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+}
+
+/* Chat Popup */
+.mr-dp-popup {
+    position: absolute;
+    top: 80px;
+    right: 0;
+    width: 320px;
+    max-height: 400px;
+    background: rgba(13, 13, 20, 0.98);
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+    overflow: hidden;
+    display: none;
+    flex-direction: column;
+    backdrop-filter: blur(20px);
+}
+
+.mr-dp-popup.open {
+    display: flex;
+}
+
+.mr-dp-header {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(6, 182, 212, 0.2));
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid rgba(139, 92, 246, 0.25);
+}
+
+.mr-dp-header-img svg {
+    width: 40px;
+    height: 40px;
+}
+
+.mr-dp-header-name {
+    font-weight: 700;
+    font-size: 1rem;
+    background: linear-gradient(135deg, #a78bfa, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.mr-dp-header-status {
+    font-size: 0.75rem;
+    color: #10b981;
+}
+
+.mr-dp-messages {
+    padding: 16px;
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 280px;
+}
+
+.mr-dp-empty {
+    text-align: center;
+    padding: 30px 20px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.mr-dp-empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+}
+
+.mr-dp-tip {
+    padding: 10px 16px;
+    background: rgba(139, 92, 246, 0.1);
+    border-top: 1px solid rgba(139, 92, 246, 0.2);
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+}
+
+/* MOBILE RESPONSIVE */
+@media(max-width: 900px){
+    .card {
+        grid-template-columns: 1fr;
+        padding: 40px;
+    }
+
+    h1 {
+        font-size: 2.5rem;
+    }
+
+    .mr-dp-container {
+        top: 16px;
+        right: 16px;
+    }
+
+    .mr-dp-popup {
+        width: 280px;
+        right: -8px;
+    }
+}
+
+@media(max-width: 600px){
+    .card {
+        padding: 32px;
+        gap: 40px;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+
+    p {
+        font-size: 1rem;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="bg-logo"></div>
+<div class="neurons"></div>
+
+<div class="panel">
+<div class="card">
+
+<!-- LEFT -->
+<div>
+    <div class="brand">DOPAMINE.WATCH</div>
+    <h1>
+        Stop scrolling.<br/>
+        Start <span class="gradient">bossing dopamine.</span>
+    </h1>
+    <p>
+        Media as medicine for neurodivergent minds.<br/>
+        Regulation over addiction. Control over chaos.
+    </p>
+</div>
+
+<!-- RIGHT -->
+<div class="auth">
+
+<!-- LOGIN -->
+<div id="login" class="screen active">
+    <label>Email or Dopamine ID</label>
+    <input placeholder="ZamoritaCR or you@email.com" aria-label="Email or Dopamine ID">
+
+    <label>Password</label>
+    <input type="password" placeholder="Enter your password" aria-label="Password">
+
+    <button>Log In</button>
+
+    <div class="link" onclick="show('signup')" tabindex="0" role="button">Create Dopamine ID</div>
+    <div class="link" tabindex="0" role="button">Continue as Guest</div>
+</div>
+
+<!-- SIGN UP -->
+<div id="signup" class="screen">
+    <label>Dopamine ID (public username)</label>
+    <input placeholder="ZamoritaCR" aria-label="Dopamine ID">
+
+    <label>Email</label>
+    <input type="email" placeholder="you@email.com" aria-label="Email">
+
+    <label>Password</label>
+    <input type="password" placeholder="Create a password" aria-label="Password">
+
+    <button>Create Account</button>
+
+    <div class="link" onclick="show('login')" tabindex="0" role="button">Back to Login</div>
+</div>
+
+</div>
+</div>
+</div>
+
+<!-- MR.DP FLOATING WIDGET -->
+<div class="mr-dp-container" id="mrDpContainer">
+    <!-- Chat Popup -->
+    <div class="mr-dp-popup" id="mrDpPopup">
+        <div class="mr-dp-header">
+            <div class="mr-dp-header-img" id="mrDpHeaderImg"></div>
+            <div>
+                <div class="mr-dp-header-name">Mr.DP</div>
+                <div class="mr-dp-header-status">● Online - Your Dopamine Buddy</div>
+            </div>
+        </div>
+        <div class="mr-dp-messages" id="mrDpMessages">
+            <div class="mr-dp-empty">
+                <div class="mr-dp-empty-icon">🧠</div>
+                <div>Hey there! I'm Mr.DP, your dopamine companion.<br><br>Ready to find content that matches your vibe?</div>
+            </div>
+        </div>
+        <div class="mr-dp-tip">💡 Click me anytime for a chat!</div>
+    </div>
+
+    <!-- Floating Avatar -->
+    <div class="mr-dp-avatar" onclick="toggleMrDp()" title="Chat with Mr.DP" role="button" tabindex="0" id="mrDpAvatar">
+        <!-- SVG inserted by JavaScript -->
+    </div>
+</div>
+
+<script>
+// =====================================================
+// MR.DP DYNAMIC SVG GENERATION
+// Generates neuron character with different expressions
+// =====================================================
+
+function getMrDpSvg(expression = 'happy') {
+    const expressions = {
+        happy: { leftEye: '◠', rightEye: '◠', mouth: 'smile', blush: true },
+        thinking: { leftEye: '•', rightEye: '•', mouth: 'hmm', blush: false },
+        excited: { leftEye: '★', rightEye: '★', mouth: 'big_smile', blush: true },
+        empathetic: { leftEye: '◠', rightEye: '◠', mouth: 'soft_smile', blush: true },
+        curious: { leftEye: '◉', rightEye: '◉', mouth: 'o', blush: false },
+        wink: { leftEye: '◠', rightEye: '−', mouth: 'smile', blush: true }
+    };
+
+    const expr = expressions[expression] || expressions.happy;
+
+    const mouths = {
+        smile: '<path d="M24 38 Q32 46 40 38" stroke="#ff6b9d" stroke-width="3" fill="none" stroke-linecap="round"/>',
+        big_smile: '<path d="M22 36 Q32 48 42 36" stroke="#ff6b9d" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M26 40 Q32 44 38 40" fill="#ff6b9d"/>',
+        soft_smile: '<path d="M26 38 Q32 43 38 38" stroke="#ff6b9d" stroke-width="2.5" fill="none" stroke-linecap="round"/>',
+        hmm: '<path d="M26 40 L38 38" stroke="#ff6b9d" stroke-width="2.5" fill="none" stroke-linecap="round"/>',
+        o: '<circle cx="32" cy="40" r="4" fill="#ff6b9d"/>'
+    };
+
+    const blush = expr.blush ? '<circle cx="18" cy="36" r="5" fill="#ff6b9d" opacity="0.3"/><circle cx="46" cy="36" r="5" fill="#ff6b9d" opacity="0.3"/>' : '';
+
+    return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="ng" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" style="stop-color:#a78bfa"/>
+<stop offset="50%" style="stop-color:#8b5cf6"/>
+<stop offset="100%" style="stop-color:#7c3aed"/>
+</linearGradient>
+<linearGradient id="ag" x1="0%" y1="0%" x2="100%" y2="0%">
+<stop offset="0%" style="stop-color:#8b5cf6"/>
+<stop offset="100%" style="stop-color:#06b6d4"/>
+</linearGradient>
+</defs>
+<g>
+<path d="M32 12 Q28 4 20 2" stroke="url(#ag)" stroke-width="3" fill="none" stroke-linecap="round"/>
+<circle cx="20" cy="2" r="3" fill="#06b6d4"/>
+<path d="M32 12 Q36 4 44 2" stroke="url(#ag)" stroke-width="3" fill="none" stroke-linecap="round"/>
+<circle cx="44" cy="2" r="3" fill="#06b6d4"/>
+<path d="M32 12 Q32 6 32 0" stroke="url(#ag)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<circle cx="32" cy="0" r="2.5" fill="#10b981"/>
+<path d="M12 28 Q4 24 0 20" stroke="url(#ag)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<circle cx="0" cy="20" r="2.5" fill="#f59e0b"/>
+<path d="M52 28 Q60 24 64 20" stroke="url(#ag)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<circle cx="64" cy="20" r="2.5" fill="#f59e0b"/>
+</g>
+<path d="M32 52 Q32 58 28 62" stroke="url(#ag)" stroke-width="4" fill="none" stroke-linecap="round"/>
+<circle cx="28" cy="62" r="3" fill="#10b981"/>
+<ellipse cx="32" cy="32" rx="22" ry="20" fill="url(#ng)"/>
+<ellipse cx="26" cy="24" rx="8" ry="5" fill="white" opacity="0.3"/>
+<text x="22" y="32" font-size="10" fill="white" text-anchor="middle" font-family="Arial">${expr.leftEye}</text>
+<text x="42" y="32" font-size="10" fill="white" text-anchor="middle" font-family="Arial">${expr.rightEye}</text>
+<path d="M18 24 Q22 22 26 24" stroke="white" stroke-width="1.5" fill="none" opacity="0.8"/>
+<path d="M38 24 Q42 22 46 24" stroke="white" stroke-width="1.5" fill="none" opacity="0.8"/>
+${mouths[expr.mouth]}
+${blush}
+<text x="54" y="14" font-size="8" fill="#ffd700" opacity="0.8">✦</text>
+<text x="8" y="18" font-size="6" fill="#ffd700" opacity="0.6">✦</text>
+</svg>`;
+}
+
+// Initialize Mr.DP on page load
+function initMrDp() {
+    const avatar = document.getElementById('mrDpAvatar');
+    const headerImg = document.getElementById('mrDpHeaderImg');
+    const svg = getMrDpSvg('happy');
+
+    avatar.innerHTML = svg;
+    headerImg.innerHTML = svg;
+}
+
+// Toggle popup
+function toggleMrDp() {
+    const popup = document.getElementById('mrDpPopup');
+    popup.classList.toggle('open');
+
+    // Scroll messages to bottom when opened
+    if (popup.classList.contains('open')) {
+        const msgs = document.getElementById('mrDpMessages');
+        if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    }
+}
+
+// Change Mr.DP expression (call this from your app)
+function setMrDpExpression(expression) {
+    const avatar = document.getElementById('mrDpAvatar');
+    const headerImg = document.getElementById('mrDpHeaderImg');
+    const svg = getMrDpSvg(expression);
+
+    avatar.innerHTML = svg;
+    headerImg.innerHTML = svg;
+}
+
+// Screen switcher
+function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+// Keyboard accessibility for links
+document.querySelectorAll('.link').forEach(link => {
+    link.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            this.click();
+        }
+    });
+});
+
+// Initialize on load
+window.addEventListener('DOMContentLoaded', initMrDp);
+</script>
+
+</body>
+</html>
