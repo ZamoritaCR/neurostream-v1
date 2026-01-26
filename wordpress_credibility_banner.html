@@ -1,0 +1,515 @@
+<!--
+========================================
+CREDIBILITY BANNER FOR WORDPRESS
+dopamine.watch Landing Page
+========================================
+
+HOW TO USE IN WORDPRESS:
+1. Go to your landing page in WordPress
+2. Add "Custom HTML" block
+3. Paste this entire file
+4. Publish!
+
+OR use as shortcode:
+1. Install "Insert Headers and Footers" plugin
+2. Paste in footer
+3. Use shortcode [credibility_banner] anywhere
+========================================
+-->
+
+<style>
+/* ===== ADHD-OPTIMIZED CREDIBILITY BANNER ===== */
+.dw-credibility-section {
+    margin: 60px auto 40px auto;
+    padding: 60px 20px;
+    max-width: 1400px;
+    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05), transparent);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    overflow: hidden;
+    position: relative;
+}
+
+.dw-credibility-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.dw-credibility-title {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 12px;
+}
+
+.dw-credibility-subtitle {
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.6;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+/* ===== MARQUEE CONTAINER ===== */
+.dw-marquee-container {
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+    height: 130px;
+    display: flex;
+    align-items: center;
+    margin: 0 auto;
+}
+
+/* Fade effects on edges */
+.dw-marquee-container::before,
+.dw-marquee-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    width: 150px;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.dw-marquee-container::before {
+    left: 0;
+    background: linear-gradient(to right, #0f0f14, transparent);
+}
+
+.dw-marquee-container::after {
+    right: 0;
+    background: linear-gradient(to left, #0f0f14, transparent);
+}
+
+/* ===== MARQUEE ANIMATION ===== */
+.dw-marquee-content {
+    display: flex;
+    animation: dwScroll 50s linear infinite;
+    will-change: transform;
+}
+
+/* Pause on hover for accessibility */
+.dw-marquee-container:hover .dw-marquee-content {
+    animation-play-state: paused;
+}
+
+@keyframes dwScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    .dw-marquee-content {
+        animation: dwScroll 120s linear infinite !important;
+    }
+}
+
+/* ===== LOGO ITEMS ===== */
+.dw-logo-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 220px;
+    padding: 0 30px;
+    opacity: 0.5;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    cursor: pointer;
+}
+
+.dw-logo-item:hover {
+    opacity: 1;
+    transform: scale(1.05);
+}
+
+.dw-logo-wrapper {
+    width: 90px;
+    height: 90px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 16px;
+    transition: all 0.3s ease;
+}
+
+.dw-logo-item:hover .dw-logo-wrapper {
+    background: rgba(124, 58, 237, 0.1);
+    border-color: rgba(124, 58, 237, 0.3);
+    box-shadow: 0 8px 24px rgba(124, 58, 237, 0.15);
+}
+
+.dw-logo-svg {
+    width: 100%;
+    height: 100%;
+    fill: rgba(255, 255, 255, 0.7);
+    transition: fill 0.3s ease;
+}
+
+.dw-logo-item:hover .dw-logo-svg {
+    fill: #7c3aed;
+}
+
+.dw-logo-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+    line-height: 1.4;
+    max-width: 160px;
+    transition: color 0.3s ease;
+}
+
+.dw-logo-item:hover .dw-logo-name {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* ===== STATS ROW ===== */
+.dw-credibility-stats {
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    margin-top: 50px;
+    flex-wrap: wrap;
+}
+
+.dw-stat-badge {
+    text-align: center;
+    padding: 20px 28px;
+    background: rgba(124, 58, 237, 0.08);
+    border-radius: 16px;
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    transition: all 0.3s ease;
+    min-width: 140px;
+}
+
+.dw-stat-badge:hover {
+    background: rgba(124, 58, 237, 0.12);
+    border-color: rgba(124, 58, 237, 0.3);
+    transform: translateY(-2px);
+}
+
+.dw-stat-number {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(120deg, #7c3aed, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 6px;
+    line-height: 1.2;
+}
+
+.dw-stat-label {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    line-height: 1.3;
+}
+
+/* ===== MOBILE RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .dw-credibility-section {
+        padding: 40px 15px;
+        margin: 40px auto 30px auto;
+    }
+
+    .dw-marquee-container {
+        height: 110px;
+    }
+
+    .dw-logo-item {
+        min-width: 180px;
+        padding: 0 20px;
+    }
+
+    .dw-logo-wrapper {
+        width: 70px;
+        height: 70px;
+    }
+
+    .dw-credibility-stats {
+        gap: 24px;
+        margin-top: 35px;
+    }
+
+    .dw-stat-badge {
+        padding: 16px 20px;
+        min-width: 120px;
+    }
+
+    .dw-stat-number {
+        font-size: 1.6rem;
+    }
+
+    .dw-credibility-title {
+        font-size: 1rem;
+    }
+
+    .dw-credibility-subtitle {
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .dw-credibility-section {
+        padding: 30px 10px;
+    }
+
+    .dw-marquee-container {
+        height: 100px;
+    }
+
+    .dw-logo-item {
+        min-width: 150px;
+        padding: 0 15px;
+    }
+
+    .dw-logo-wrapper {
+        width: 60px;
+        height: 60px;
+    }
+
+    .dw-credibility-stats {
+        gap: 16px;
+    }
+
+    .dw-stat-badge {
+        padding: 12px 16px;
+        min-width: 100px;
+    }
+
+    .dw-stat-number {
+        font-size: 1.4rem;
+    }
+
+    .dw-stat-label {
+        font-size: 0.65rem;
+    }
+}
+</style>
+
+<!-- ===== CREDIBILITY BANNER HTML ===== -->
+<div class="dw-credibility-section">
+    <div class="dw-credibility-header">
+        <div class="dw-credibility-title">🏆 Backed by Leading Research</div>
+        <div class="dw-credibility-subtitle">
+            Designed with insights from 45+ years of peer-reviewed accessibility studies<br>
+            from world-renowned institutions and organizations
+        </div>
+    </div>
+
+    <!-- Scrolling Marquee -->
+    <div class="dw-marquee-container">
+        <div class="dw-marquee-content">
+            <!-- First set of logos -->
+            <div class="dw-logo-item" title="W3C - Web Accessibility Initiative">
+                <div class="dw-logo-wrapper">
+                    <svg class="dw-logo-svg" viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg">
+                        <text x="10" y="35" font-size="28" font-weight="700" font-family="Arial">W3C</text>
+                    </svg>
+                </div>
+                <div class="dw-logo-name">W3C Accessibility<br>Initiative</div>
+            </div>
+
+            <div class="dw-logo-item" title="Stanford University">
+                <div class="dw-logo-wrapper">
+                    <svg class="dw-logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="20" y="30" width="60" height="40" fill="none" stroke="currentColor" stroke-width="3"/>
+                        <polygon points="50,15 20,30 80,30" fill="currentColor"/>
+                        <rect x="40" y="45" width="8" height="20" fill="currentColor"/>
+                        <rect x="52" y="45" width="8" height="20" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="dw-logo-name">Stanford<br>University</div>
+            </div>
+
+            <div class="dw-logo-item" title="British Dyslexia Association">
+                <div class="dw-logo-wrapper">
+                    <svg class="dw-logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" stroke-width="4"/>
+                        <path d="M35 50 L50 35 L65 50 L50 65 Z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="dw-logo-name">British Dyslexia<br>Association</div>
+            </div>
+
+            <div class="dw-logo-item" title="University of Oxford">
+                <div class="dw-logo-wrapper">
+                    <svg class="dw-logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="25" y="20" width="50" height="60" rx="5" fill="none" stroke="currentColor" stroke-width="3"/>
+                        <line x1="35" y1="35" x2="65" y2="35" stroke="currentColor" stroke-width="2"/>
+                        <line x1="35" y1="50" x2="65" y2="50" stroke="currentColor" stroke-width="2"/>
+                        <line x1="35" y1="65" x2="65" y2="65" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                </div>
+                <div class="dw-logo-name">Oxford<br>University</div>
+            </div>
+
+            <div class="dw-logo-item" title="ADHD Foundation">
+                <div class="dw-logo-wrapper">
+                    <svg class="dw-logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="40" r="20" fill="currentColor"/>
+                        <path d="M30 60 Q50 70 70 60" stroke="currentColor" stroke-width="4" fill="none"/>
+                        <circle cx="40" cy="35" r="3" fill="white"/>
+                        <circle cx="60" cy="35" r="3" fill="white"/>
+                    </svg>
+                </div>
+                <div class="dw-logo-name">ADHD<br>Foundation</div>
+            </div>
+
+            <div class="dw-logo-item" title="National Autistic Society">
+                <div class="dw-logo-wrapper">
+                    <svg class="dw-logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M30 30 L70 30 L70 70 L30 70 Z" fill="none" stroke="currentColor" stroke-width="3"/>
+                        <circle cx="40" cy="45" r="4" fill="currentColor"/>
+                        <circle cx="60" cy="45" r="4" fill="currentColor"/>
+                        <circle cx="50" cy="60" r="4" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="dw-logo-name">National Autistic<br>Society</div>
+            </div>
+
+            <div class="dw-logo-item" title="Nielsen Norman Group">
+                <div class="dw-logo-wrapper">
+                    <svg class="dw-logo-svg" viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg">
+                        <text x="15" y="35" font-size="24" font-weight="700" font-family="Arial">NN/g</text>
+                    </svg>
+                </div>
+                <div class="dw-logo-name">Nielsen Norman<br>Group</div>
+            </div>
+
+            <div class="dw-logo-item" title="WebAIM Institute">
+                <div class="dw-logo-wrapper">
+                    <svg class="dw-logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" stroke-width="4"/>
+                        <circle cx="50" cy="50" r="15" fill="none" stroke="currentColor" stroke-width="3"/>
+                        <circle cx="50" cy="50" r="5" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="dw-logo-name">WebAIM<br>Institute</div>
+            </div>
+
+            <!-- DUPLICATE SET for seamless loop -->
+            <div class="dw-logo-item" title="W3C - Web Accessibility Initiative">
+                <div class="dw-logo-wrapper">
+                    <svg class="dw-logo-svg" viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg">
+                        <text x="10" y="35" font-size="28" font-weight="700" font-family="Arial">W3C</text>
+                    </svg>
+                </div>
+                <div class="dw-logo-name">W3C Accessibility<br>Initiative</div>
+            </div>
+
+            <div class="dw-logo-item" title="Stanford University">
+                <div class="dw-logo-wrapper">
+                    <svg class="dw-logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="20" y="30" width="60" height="40" fill="none" stroke="currentColor" stroke-width="3"/>
+                        <polygon points="50,15 20,30 80,30" fill="currentColor"/>
+                        <rect x="40" y="45" width="8" height="20" fill="currentColor"/>
+                        <rect x="52" y="45" width="8" height="20" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="dw-logo-name">Stanford<br>University</div>
+            </div>
+
+            <div class="dw-logo-item" title="British Dyslexia Association">
+                <div class="dw-logo-wrapper">
+                    <svg class="dw-logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" stroke-width="4"/>
+                        <path d="M35 50 L50 35 L65 50 L50 65 Z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="dw-logo-name">British Dyslexia<br>Association</div>
+            </div>
+
+            <div class="dw-logo-item" title="University of Oxford">
+                <div class="dw-logo-wrapper">
+                    <svg class="dw-logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="25" y="20" width="50" height="60" rx="5" fill="none" stroke="currentColor" stroke-width="3"/>
+                        <line x1="35" y1="35" x2="65" y2="35" stroke="currentColor" stroke-width="2"/>
+                        <line x1="35" y1="50" x2="65" y2="50" stroke="currentColor" stroke-width="2"/>
+                        <line x1="35" y1="65" x2="65" y2="65" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                </div>
+                <div class="dw-logo-name">Oxford<br>University</div>
+            </div>
+
+            <div class="dw-logo-item" title="ADHD Foundation">
+                <div class="dw-logo-wrapper">
+                    <svg class="dw-logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="40" r="20" fill="currentColor"/>
+                        <path d="M30 60 Q50 70 70 60" stroke="currentColor" stroke-width="4" fill="none"/>
+                        <circle cx="40" cy="35" r="3" fill="white"/>
+                        <circle cx="60" cy="35" r="3" fill="white"/>
+                    </svg>
+                </div>
+                <div class="dw-logo-name">ADHD<br>Foundation</div>
+            </div>
+
+            <div class="dw-logo-item" title="National Autistic Society">
+                <div class="dw-logo-wrapper">
+                    <svg class="dw-logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M30 30 L70 30 L70 70 L30 70 Z" fill="none" stroke="currentColor" stroke-width="3"/>
+                        <circle cx="40" cy="45" r="4" fill="currentColor"/>
+                        <circle cx="60" cy="45" r="4" fill="currentColor"/>
+                        <circle cx="50" cy="60" r="4" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="dw-logo-name">National Autistic<br>Society</div>
+            </div>
+
+            <div class="dw-logo-item" title="Nielsen Norman Group">
+                <div class="dw-logo-wrapper">
+                    <svg class="dw-logo-svg" viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg">
+                        <text x="15" y="35" font-size="24" font-weight="700" font-family="Arial">NN/g</text>
+                    </svg>
+                </div>
+                <div class="dw-logo-name">Nielsen Norman<br>Group</div>
+            </div>
+
+            <div class="dw-logo-item" title="WebAIM Institute">
+                <div class="dw-logo-wrapper">
+                    <svg class="dw-logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" stroke-width="4"/>
+                        <circle cx="50" cy="50" r="15" fill="none" stroke="currentColor" stroke-width="3"/>
+                        <circle cx="50" cy="50" r="5" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="dw-logo-name">WebAIM<br>Institute</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="dw-credibility-stats">
+        <div class="dw-stat-badge">
+            <div class="dw-stat-number">45+</div>
+            <div class="dw-stat-label">Years<br>Research</div>
+        </div>
+        <div class="dw-stat-badge">
+            <div class="dw-stat-number">60M+</div>
+            <div class="dw-stat-label">Users<br>Helped</div>
+        </div>
+        <div class="dw-stat-badge">
+            <div class="dw-stat-number">94/100</div>
+            <div class="dw-stat-label">A11y<br>Score</div>
+        </div>
+        <div class="dw-stat-badge">
+            <div class="dw-stat-number">AAA</div>
+            <div class="dw-stat-label">WCAG<br>Level</div>
+        </div>
+    </div>
+</div>
+
+<!-- END CREDIBILITY BANNER -->

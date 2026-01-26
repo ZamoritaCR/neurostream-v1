@@ -1,0 +1,523 @@
+/* --------------------------------------------------
+   ADHD/NEURODIVERGENT-OPTIMIZED COLOR SYSTEM
+   Based on 45 years of accessibility research
+   -------------------------------------------------- */
+
+:root {
+    /* ===== SOFTER BACKGROUNDS (Reduced Eye Strain) ===== */
+    --bg-primary: #0f0f14;           /* Softer than pure black */
+    --bg-secondary: #16161d;         /* Warmer dark gray */
+    --bg-card: rgba(255, 255, 255, 0.03);  /* Subtle lift */
+
+    /* ===== CALMING ACCENT COLORS (Reduced Overstimulation) ===== */
+    --accent-primary: #7c3aed;       /* Softer purple (was #8b5cf6) */
+    --accent-secondary: #06b6d4;     /* Keep cyan - calming */
+    --accent-tertiary: #10b981;      /* Keep green - positive */
+
+    /* ===== SIMPLIFIED GRADIENTS (Reduced Visual Noise) ===== */
+    --accent-gradient: linear-gradient(120deg, #7c3aed 0%, #06b6d4 100%);
+    --accent-gradient-subtle: linear-gradient(120deg, rgba(124, 58, 237, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%);
+
+    /* ===== HIGH CONTRAST TEXT (WCAG AAA Compliant) ===== */
+    --text-primary: #f5f5f7;         /* Softer white (was #ffffff) */
+    --text-secondary: rgba(245, 245, 247, 0.7);  /* Better contrast */
+    --text-tertiary: rgba(245, 245, 247, 0.5);   /* Subtle text */
+
+    /* ===== SOFTER GLASS EFFECTS (Less Distraction) ===== */
+    --glass: rgba(255, 255, 255, 0.04);
+    --glass-border: rgba(255, 255, 255, 0.12);   /* More visible */
+    --glass-hover: rgba(255, 255, 255, 0.07);
+
+    /* ===== STATUS COLORS (Clear Visual Feedback) ===== */
+    --error: #f87171;          /* Softer red (was #ef4444) */
+    --success: #34d399;        /* Softer green (was #10b981) */
+    --warning: #fbbf24;        /* Amber for warnings */
+    --info: #60a5fa;           /* Soft blue for info */
+
+    /* ===== SPACING & RHYTHM (Reduced Cognitive Load) ===== */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+
+    /* ===== TYPOGRAPHY (Dyslexia-Friendly) ===== */
+    --font-size-base: 16px;
+    --font-size-sm: 0.9rem;      /* Min 14.4px (was 0.85rem) */
+    --font-size-xs: 0.875rem;    /* Min 14px (was 0.7rem) */
+    --line-height-base: 1.6;     /* More breathing room */
+    --line-height-tight: 1.4;
+    --letter-spacing-base: 0.01em;  /* Slight spacing */
+    --letter-spacing-wide: 0.03em;  /* For small text */
+
+    /* ===== ANIMATION TIMING (Predictable, Not Jarring) ===== */
+    --transition-fast: 150ms ease;
+    --transition-base: 250ms ease;
+    --transition-slow: 350ms ease;
+
+    /* ===== BORDER RADIUS (Friendly, Not Sharp) ===== */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-2xl: 24px;
+
+    /* ===== FOCUS INDICATORS (Clear Keyboard Navigation) ===== */
+    --focus-ring: 0 0 0 3px rgba(124, 58, 237, 0.4);
+    --focus-ring-error: 0 0 0 3px rgba(248, 113, 113, 0.4);
+}
+
+/* ===== REDUCED MOTION PREFERENCE (Respect User Needs) ===== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ===== IMPROVED READABILITY ===== */
+* {
+    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    letter-spacing: var(--letter-spacing-base);
+}
+
+body {
+    line-height: var(--line-height-base);
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
+}
+
+/* ===== HEADINGS (Clear Hierarchy) ===== */
+h1, h2, h3, .stat-value, .hero-title {
+    font-family: 'Space Grotesk', sans-serif;
+    line-height: var(--line-height-tight);
+    font-weight: 600;  /* Reduced from 700 for softer look */
+}
+
+h1 { font-size: 2.25rem; margin-bottom: var(--spacing-lg); }
+h2 { font-size: 1.75rem; margin-bottom: var(--spacing-md); }
+h3 { font-size: 1.35rem; margin-bottom: var(--spacing-md); }
+
+/* ===== BACKGROUND WITH SUBTLE GLOW (Not Overwhelming) ===== */
+.stApp {
+    background: var(--bg-primary);
+    background-image:
+        radial-gradient(ellipse 70% 40% at 50% -10%, rgba(124, 58, 237, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse 50% 30% at 100% 100%, rgba(6, 182, 212, 0.05) 0%, transparent 50%);
+}
+
+/* ===== CLEANER INTERFACE ===== */
+#MainMenu, footer, header { visibility: hidden; }
+.stDeployButton { display: none; }
+div[data-testid="stToolbar"] { display: none; }
+
+/* ===== SIDEBAR (Calmer, More Spacious) ===== */
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%) !important;
+    border-right: 1px solid var(--glass-border) !important;
+    padding: var(--spacing-lg) !important;
+}
+
+section[data-testid="stSidebar"] .stSelectbox > div > div {
+    background: var(--glass) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: var(--radius-md) !important;
+    padding: var(--spacing-sm) !important;
+    font-size: var(--font-size-sm) !important;
+}
+
+section[data-testid="stSidebar"] .stTextArea textarea {
+    background: var(--glass) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: var(--radius-md) !important;
+    color: var(--text-primary) !important;
+    font-size: var(--font-size-sm) !important;
+    line-height: var(--line-height-base) !important;
+    padding: var(--spacing-md) !important;
+}
+
+/* ===== STATS BAR (Clear, Not Cluttered) ===== */
+.stats-bar {
+    display: flex;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    background: var(--glass);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.stat-item {
+    text-align: center;
+    min-width: 90px;
+    padding: var(--spacing-sm);
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+    margin-top: 4px;
+}
+
+/* ===== SOFTER ANIMATIONS (Less Distracting) ===== */
+@keyframes fireGlow {
+    0%, 100% {
+        filter: drop-shadow(0 0 3px #ff6b35);
+        transform: scale(1);
+    }
+    50% {
+        filter: drop-shadow(0 0 6px #ff9f1c);
+        transform: scale(1.05);
+    }
+}
+.streak-fire {
+    animation: fireGlow 2s ease-in-out infinite;
+    font-size: 1.5rem;
+}
+
+/* ===== MOVIE CARDS (More Spacious, Less Harsh) ===== */
+.movie-card {
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: all var(--transition-base);
+    margin-bottom: var(--spacing-md);
+}
+
+.movie-card:hover {
+    transform: scale(1.03) translateY(-4px);  /* Reduced from 1.04 */
+    border-color: var(--accent-primary);
+    box-shadow: 0 12px 32px rgba(124, 58, 237, 0.2);  /* Softer shadow */
+}
+
+.movie-info {
+    padding: var(--spacing-md);
+}
+
+.movie-title {
+    font-weight: 600;
+    font-size: 0.95rem;  /* Increased from 0.9rem */
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;  /* Allow 2 lines */
+    -webkit-box-orient: vertical;
+}
+
+.movie-year {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+}
+
+.movie-rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(251, 191, 36, 0.12);  /* Softer yellow */
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: var(--font-size-xs);
+    color: #fbbf24;
+    margin-top: 8px;
+}
+
+/* ===== BUTTONS (Clear Primary Action) ===== */
+.stButton > button {
+    background: var(--accent-primary) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: var(--radius-md) !important;
+    padding: 12px 24px !important;
+    font-weight: 600 !important;
+    font-size: var(--font-size-sm) !important;
+    transition: all var(--transition-base) !important;
+    box-shadow: 0 2px 12px rgba(124, 58, 237, 0.25) !important;
+    letter-spacing: 0.02em !important;
+}
+
+.stButton > button:hover {
+    transform: translateY(-2px) !important;  /* Reduced from -3px */
+    box-shadow: 0 4px 20px rgba(124, 58, 237, 0.35) !important;
+    background: #6d28d9 !important;  /* Slightly darker on hover */
+}
+
+.stButton > button:focus {
+    box-shadow: var(--focus-ring) !important;
+    outline: none !important;
+}
+
+/* ===== GLASS CARDS (More Visible Boundaries) ===== */
+.glass-card {
+    background: var(--glass);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    transition: border-color var(--transition-base);
+}
+
+.glass-card:hover {
+    border-color: rgba(124, 58, 237, 0.3);
+}
+
+/* ===== INPUT FIELDS (Better Visibility) ===== */
+.stTextInput input,
+.stTextArea textarea {
+    background: var(--glass) !important;
+    border: 1.5px solid var(--glass-border) !important;  /* Thicker border */
+    border-radius: var(--radius-md) !important;
+    color: var(--text-primary) !important;
+    font-size: var(--font-size-sm) !important;
+    line-height: var(--line-height-base) !important;
+    padding: 12px !important;
+    transition: border-color var(--transition-base) !important;
+}
+
+.stTextInput input:focus,
+.stTextArea textarea:focus {
+    border-color: var(--accent-primary) !important;
+    box-shadow: var(--focus-ring) !important;
+    outline: none !important;
+}
+
+.stTextInput input::placeholder,
+.stTextArea textarea::placeholder {
+    color: var(--text-tertiary) !important;
+}
+
+/* ===== SECTION HEADERS (Clear Visual Hierarchy) ===== */
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: var(--spacing-xl) 0 var(--spacing-md) 0;
+}
+
+.section-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.section-icon {
+    font-size: 1.6rem;
+}
+
+/* ===== SCROLLBAR (Less Harsh) ===== */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(124, 58, 237, 0.5);  /* Softer purple */
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-primary);
+}
+
+/* ===== ACHIEVEMENT BADGES (More Spacious) ===== */
+.achievement {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    margin: 4px;
+    font-size: var(--font-size-xs);
+}
+
+.achievement-icon {
+    font-size: 1.1rem;
+}
+
+/* ===== PROVIDER BUTTONS (Clearer Targets) ===== */
+.provider-btn {
+    min-width: 36px;
+    min-height: 36px;
+    border-radius: 10px;
+    background: var(--glass);
+    border: 1.5px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-base);
+    text-decoration: none;
+    position: relative;
+}
+
+.provider-btn:hover {
+    transform: scale(1.1);  /* Reduced from 1.15 */
+    border-color: var(--accent-primary);
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.3);
+}
+
+.provider-btn:focus {
+    box-shadow: var(--focus-ring);
+    outline: none;
+}
+
+/* ===== REMOVE EXCESSIVE PULSE ANIMATIONS ===== */
+.pulse {
+    /* Removed animation - too distracting */
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.3);
+}
+
+/* ===== LANDING PAGE (Clearer CTAs) ===== */
+.landing-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 3.5rem;  /* Slightly reduced from 4rem */
+    font-weight: 600;   /* Reduced from 700 */
+    color: var(--accent-primary);
+    margin-bottom: var(--spacing-md);
+    line-height: 1.2;
+}
+
+.landing-subtitle {
+    font-size: 1.35rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-xl);
+    line-height: 1.5;
+}
+
+/* ===== ERROR/SUCCESS MESSAGES (Clear States) ===== */
+.auth-error {
+    background: rgba(248, 113, 113, 0.1);
+    border: 1.5px solid var(--error);
+    color: var(--error);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-md);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-base);
+}
+
+.auth-success {
+    background: rgba(52, 211, 153, 0.1);
+    border: 1.5px solid var(--success);
+    color: var(--success);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-md);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-base);
+}
+
+/* ===== BETTER CONTRAST FOR SMALL TEXT ===== */
+.stat-label,
+.movie-year,
+small,
+.caption {
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    letter-spacing: var(--letter-spacing-wide);
+}
+
+/* ===== MR.DP CHAT (Calmer, More Readable) ===== */
+.mr-dp-popup {
+    background: rgba(15, 15, 20, 0.98);  /* Softer background */
+    border: 1.5px solid rgba(124, 58, 237, 0.4);
+    border-radius: var(--radius-2xl);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(20px);
+}
+
+.mr-dp-msg {
+    padding: 12px 16px;
+    border-radius: 16px;
+    font-size: 0.95rem;  /* Increased from 0.9rem */
+    line-height: var(--line-height-base);
+    max-width: 85%;
+}
+
+.mr-dp-msg.user {
+    background: var(--accent-primary);
+    color: white;
+    margin-left: auto;
+    border-bottom-right-radius: 6px;
+}
+
+.mr-dp-msg.assistant {
+    background: rgba(124, 58, 237, 0.12);
+    border: 1px solid rgba(124, 58, 237, 0.25);
+    color: var(--text-primary);
+    margin-right: auto;
+    border-bottom-left-radius: 6px;
+}
+
+/* ===== FOCUS VISIBLE FOR KEYBOARD USERS ===== */
+*:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+/* ===== LINK STATES (Clear Interactivity) ===== */
+a {
+    color: var(--accent-secondary);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+a:hover {
+    color: #22d3ee;  /* Brighter cyan */
+    text-decoration: underline;
+}
+
+a:focus {
+    outline: 2px solid var(--accent-secondary);
+    outline-offset: 2px;
+}
+
+/* ===== SPACING UTILITIES (Consistent Rhythm) ===== */
+.mb-sm { margin-bottom: var(--spacing-sm); }
+.mb-md { margin-bottom: var(--spacing-md); }
+.mb-lg { margin-bottom: var(--spacing-lg); }
+.mb-xl { margin-bottom: var(--spacing-xl); }
+
+.mt-sm { margin-top: var(--spacing-sm); }
+.mt-md { margin-top: var(--spacing-md); }
+.mt-lg { margin-top: var(--spacing-lg); }
+.mt-xl { margin-top: var(--spacing-xl); }
+
+.p-sm { padding: var(--spacing-sm); }
+.p-md { padding: var(--spacing-md); }
+.p-lg { padding: var(--spacing-lg); }
+.p-xl { padding: var(--spacing-xl); }
+
+/* ===== DARK MODE OPTIMIZATION (No Pure Black) ===== */
+/* All backgrounds now use softer grays instead of #000000 */
+/* Text uses #f5f5f7 instead of #ffffff for reduced eye strain */
+/* Borders are more visible with increased opacity */
+/* Animations are gentler and respect prefers-reduced-motion */
