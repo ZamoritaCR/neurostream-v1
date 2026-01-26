@@ -26,6 +26,9 @@ from datetime import datetime, timedelta
 import hashlib
 import re
 
+# Mr.DP Chat Widget
+from mr_dp_chat import render_mr_dp_widget
+
 # --------------------------------------------------
 # 1. CONFIG
 # --------------------------------------------------
@@ -1685,7 +1688,8 @@ if "init" not in st.session_state:
         "search_results": [],
         "search_page": 1,
         
-        # Mr.DP Backend (recommendation logic only)
+        # Mr.DP Chat & Recommendations
+        "mr_dp_chat_history": [],
         "mr_dp_response": None,
         "mr_dp_results": [],
         "mr_dp_page": 1,
@@ -4006,13 +4010,44 @@ if not st.session_state.get("user"):
     else:
         render_landing()
 else:
+    # Render Mr.DP chat widget (handles user input)
+    user_message = render_mr_dp_widget()
+
+    # Handle Mr.DP message if user sent one
+    if user_message:
+        # Add user message to history
+        st.session_state.mr_dp_chat_history.append({"role": "user", "content": user_message})
+
+        # Get AI response
+        response = ask_mr_dp(user_message)
+
+        if response:
+            # Add assistant response
+            st.session_state.mr_dp_chat_history.append({
+                "role": "assistant",
+                "content": response.get("message", "Let me find something for you!")
+            })
+
+            # Update mood and search
+            if response.get("current_feeling"):
+                st.session_state.current_feeling = response["current_feeling"]
+            if response.get("desired_feeling"):
+                st.session_state.desired_feeling = response["desired_feeling"]
+
+            st.session_state.mr_dp_response = response
+            st.session_state.mr_dp_results = mr_dp_search(response)
+
+            add_dopamine_points(10, "Chatted with Mr.DP!")
+
+        st.rerun()
+
     render_sidebar()
 
     # Render support resources modal (always available)
     render_support_resources_modal()
-    
+
     # Render premium modal (if triggered)
     render_premium_modal()
-    
+
     # Main content
     render_main()
