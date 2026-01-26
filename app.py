@@ -2557,8 +2557,8 @@ def get_mr_dp_svg(expression="happy"):
     
     blush = '<circle cx="18" cy="36" r="5" fill="#ff6b9d" opacity="0.3"/><circle cx="46" cy="36" r="5" fill="#ff6b9d" opacity="0.3"/>' if expr["blush"] else ""
     
-    # Return raw SVG markup (no img tag, no base64) for direct HTML insertion
-    svg = f'''<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="48" height="48">
+    # Generate SVG markup
+    svg = f'''<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
 <defs>
 <linearGradient id="ng-{expression}" x1="0%" y1="0%" x2="100%" y2="100%">
 <stop offset="0%" style="stop-color:#a78bfa"/><stop offset="50%" style="stop-color:#8b5cf6"/><stop offset="100%" style="stop-color:#7c3aed"/>
@@ -2593,8 +2593,11 @@ def get_mr_dp_svg(expression="happy"):
 <text x="8" y="18" font-size="6" fill="#ffd700" opacity="0.6">✦</text>
 </svg>'''
 
-    # Return raw SVG for direct HTML insertion (no img wrapper)
-    return svg
+    # Convert to base64 for safe embedding (prevents Streamlit from escaping special chars)
+    import base64
+    svg_bytes = svg.encode('utf-8')
+    b64 = base64.b64encode(svg_bytes).decode('utf-8')
+    return f'data:image/svg+xml;base64,{b64}'
 
 def get_mr_dp_expression(current_feeling, desired_feeling):
     """Determine Mr.DP's expression based on the user's feelings."""
@@ -2686,12 +2689,10 @@ def render_mr_dp_chat_widget():
         box-shadow: 0 12px 40px rgba(139, 92, 246, 0.6);
         animation: none;
     }}
-    .mr-dp-avatar svg {{
-        width: 48px !important;
-        height: 48px !important;
-        max-width: 48px !important;
-        max-height: 48px !important;
-        display: block;
+    .mr-dp-avatar-img {{
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
     }}
     @keyframes mrDpBounce {{
         0%, 100% {{ transform: translateY(0); }}
@@ -2756,10 +2757,10 @@ def render_mr_dp_chat_widget():
         width: 40px;
         height: 40px;
     }}
-    .mr-dp-header-img svg {{
-        width: 40px !important;
-        height: 40px !important;
-        display: block;
+    .mr-dp-header-avatar {{
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
     }}
     .mr-dp-header-name {{
         font-weight: 700;
@@ -2840,7 +2841,7 @@ def render_mr_dp_chat_widget():
         <!-- Chat Popup with Embedded Input -->
         <div class="mr-dp-popup {show_chat}" id="mrDpPopup">
             <div class="mr-dp-header">
-                <div class="mr-dp-header-img">{avatar_img}</div>
+                <img src="{avatar_img}" class="mr-dp-header-avatar" alt="Mr.DP"/>
                 <div>
                     <div class="mr-dp-header-name">Mr.DP</div>
                     <div class="mr-dp-header-status">● Online - Your Dopamine Buddy</div>
@@ -2853,7 +2854,7 @@ def render_mr_dp_chat_widget():
 
         <!-- Floating Avatar with notification badge -->
         <div class="mr-dp-avatar" onclick="toggleMrDp()" title="Chat with Mr.DP">
-            {avatar_img}
+            <img src="{avatar_img}" class="mr-dp-avatar-img" alt="Mr.DP"/>
             {'<span class="mr-dp-badge">' + str(len(history)) + '</span>' if has_messages and not is_open else ''}
         </div>
     </div>
