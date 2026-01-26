@@ -26,6 +26,9 @@ from datetime import datetime, timedelta
 import hashlib
 import re
 
+# Mr.DP Floating Chat Widget
+from mr_dp_floating import render_floating_mr_dp
+
 # --------------------------------------------------
 # 1. CONFIG
 # --------------------------------------------------
@@ -1693,6 +1696,10 @@ if "init" not in st.session_state:
         "last_mr_dp_input": "",
         "chat_count": 0,
         "chat_date": "",
+
+        # Mr.DP Floating Chat Widget
+        "mr_dp_chat_history": [],
+        "mr_dp_open": False,
         
         # Quick Hit
         "quick_hit": None,
@@ -4013,6 +4020,43 @@ else:
 
     # Render premium modal (if triggered)
     render_premium_modal()
+
+    # Render floating Mr.DP chat widget
+    user_message = render_floating_mr_dp()
+
+    # Handle Mr.DP message if user sent one
+    if user_message:
+        # Add user message to chat history
+        st.session_state.mr_dp_chat_history.append({
+            "role": "user",
+            "content": user_message
+        })
+
+        # Get AI response from Mr.DP
+        response = ask_mr_dp(user_message)
+
+        # Add Mr.DP's response to chat history
+        st.session_state.mr_dp_chat_history.append({
+            "role": "assistant",
+            "content": response["message"]
+        })
+
+        # Update session state with mood analysis
+        st.session_state.current_feeling = response["current_feeling"]
+        st.session_state.desired_feeling = response["desired_feeling"]
+        st.session_state.mr_dp_response = response
+
+        # Search for content based on mood
+        st.session_state.mr_dp_results = mr_dp_search(response)
+
+        # Award dopamine points
+        add_dopamine_points(10, "Chatted with Mr.DP!")
+
+        # Scroll to top to show results
+        st.session_state.scroll_to_top = True
+
+        # Rerun to show Mr.DP response and results
+        st.rerun()
 
     # Main content
     render_main()
