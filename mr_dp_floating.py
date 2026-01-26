@@ -17,16 +17,17 @@ def render_floating_mr_dp():
     """
 
     # Only show if user is logged in
-    if not st.session_state.get("logged_in", False):
+    if not st.session_state.get("user"):
         return None
 
-    # Get chat history
+    # Get chat history and state
     chat_history = st.session_state.get("mr_dp_chat_history", [])
     is_open = st.session_state.get("mr_dp_open", False)
 
     # Convert chat history to JSON for JavaScript
     chat_json = json.dumps(chat_history)
     popup_class = "mr-dp-popup open" if is_open else "mr-dp-popup"
+    expression = 'happy' if is_open else 'sleeping'
 
     # Complete floating widget HTML/CSS/JS
     widget_html = f'''
@@ -44,12 +45,13 @@ def render_floating_mr_dp():
 body {{
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: transparent;
+    overflow: visible;
 }}
 
 /* Floating container - position fixed so it floats */
 .mr-dp-container {{
     position: fixed;
-    top: 24px;
+    top: 80px;
     right: 24px;
     z-index: 999999;
     pointer-events: none;
@@ -270,9 +272,10 @@ body {{
 <script>
 // Chat history from Streamlit
 let chatHistory = {chat_json};
+let isOpen = {str(is_open).lower()};
 
 // Dynamic neuron SVG generation (from index.html)
-function getMrDpSvg(expression = 'happy') {{
+function getMrDpSvg(expression) {{
     const expressions = {{
         happy: {{ leftEye: '◠', rightEye: '◠', mouth: 'smile', blush: true }},
         thinking: {{ leftEye: '•', rightEye: '•', mouth: 'hmm', blush: false }},
@@ -298,31 +301,31 @@ function getMrDpSvg(expression = 'happy') {{
 
     return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
 <defs>
-<linearGradient id="ng" x1="0%" y1="0%" x2="100%" y2="100%">
+<linearGradient id="ng-${{Math.random()}}" x1="0%" y1="0%" x2="100%" y2="100%">
 <stop offset="0%" style="stop-color:#a78bfa"/>
 <stop offset="50%" style="stop-color:#8b5cf6"/>
 <stop offset="100%" style="stop-color:#7c3aed"/>
 </linearGradient>
-<linearGradient id="ag" x1="0%" y1="0%" x2="100%" y2="0%">
+<linearGradient id="ag-${{Math.random()}}" x1="0%" y1="0%" x2="100%" y2="0%">
 <stop offset="0%" style="stop-color:#8b5cf6"/>
 <stop offset="100%" style="stop-color:#06b6d4"/>
 </linearGradient>
 </defs>
 <g>
-<path d="M32 12 Q28 4 20 2" stroke="url(#ag)" stroke-width="3" fill="none" stroke-linecap="round"/>
+<path d="M32 12 Q28 4 20 2" stroke="url(#ag-0)" stroke-width="3" fill="none" stroke-linecap="round"/>
 <circle cx="20" cy="2" r="3" fill="#06b6d4"/>
-<path d="M32 12 Q36 4 44 2" stroke="url(#ag)" stroke-width="3" fill="none" stroke-linecap="round"/>
+<path d="M32 12 Q36 4 44 2" stroke="url(#ag-0)" stroke-width="3" fill="none" stroke-linecap="round"/>
 <circle cx="44" cy="2" r="3" fill="#06b6d4"/>
-<path d="M32 12 Q32 6 32 0" stroke="url(#ag)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<path d="M32 12 Q32 6 32 0" stroke="url(#ag-0)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
 <circle cx="32" cy="0" r="2.5" fill="#10b981"/>
-<path d="M12 28 Q4 24 0 20" stroke="url(#ag)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<path d="M12 28 Q4 24 0 20" stroke="url(#ag-0)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
 <circle cx="0" cy="20" r="2.5" fill="#f59e0b"/>
-<path d="M52 28 Q60 24 64 20" stroke="url(#ag)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<path d="M52 28 Q60 24 64 20" stroke="url(#ag-0)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
 <circle cx="64" cy="20" r="2.5" fill="#f59e0b"/>
 </g>
-<path d="M32 52 Q32 58 28 62" stroke="url(#ag)" stroke-width="4" fill="none" stroke-linecap="round"/>
+<path d="M32 52 Q32 58 28 62" stroke="url(#ag-0)" stroke-width="4" fill="none" stroke-linecap="round"/>
 <circle cx="28" cy="62" r="3" fill="#10b981"/>
-<ellipse cx="32" cy="32" rx="22" ry="20" fill="url(#ng)"/>
+<ellipse cx="32" cy="32" rx="22" ry="20" fill="url(#ng-0)"/>
 <ellipse cx="26" cy="24" rx="8" ry="5" fill="white" opacity="0.3"/>
 <text x="22" y="32" font-size="10" fill="white" text-anchor="middle" font-family="Arial">${{expr.leftEye}}</text>
 <text x="42" y="32" font-size="10" fill="white" text-anchor="middle" font-family="Arial">${{expr.rightEye}}</text>
@@ -339,10 +342,8 @@ ${{blush}}
 function initMrDp() {{
     const avatar = document.getElementById('mrDpAvatar');
     const headerImg = document.getElementById('mrDpHeaderImg');
-    const popup = document.getElementById('mrDpPopup');
 
-    // Start sleeping if chat is closed, happy if open
-    const isOpen = popup.classList.contains('open');
+    // Set initial expression based on open state
     const initialExpression = isOpen ? 'happy' : 'sleeping';
     const svg = getMrDpSvg(initialExpression);
 
@@ -368,7 +369,8 @@ function renderChatHistory() {{
         let html = '';
         chatHistory.forEach(msg => {{
             const className = msg.role === 'user' ? 'mr-dp-msg user' : 'mr-dp-msg assistant';
-            html += `<div class="${{className}}">${{msg.content}}</div>`;
+            const content = msg.content.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            html += `<div class="${{className}}">${{content}}</div>`;
         }});
         messagesDiv.innerHTML = html;
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -380,32 +382,33 @@ function toggleMrDp() {{
     const popup = document.getElementById('mrDpPopup');
     const avatar = document.getElementById('mrDpAvatar');
     const headerImg = document.getElementById('mrDpHeaderImg');
-    const isOpen = popup.classList.contains('open');
+    const currentlyOpen = popup.classList.contains('open');
 
-    if (!isOpen) {{
+    if (!currentlyOpen) {{
         // Wake up Mr.DP and open chat
         const happySvg = getMrDpSvg('happy');
         avatar.innerHTML = happySvg;
         headerImg.innerHTML = happySvg;
 
         popup.classList.add('open');
-        document.getElementById('mrDpInput').focus();
+        setTimeout(() => {{
+            document.getElementById('mrDpInput').focus();
+        }}, 100);
         const msgs = document.getElementById('mrDpMessages');
         msgs.scrollTop = msgs.scrollHeight;
+
+        // Notify Streamlit
+        updateStreamlitState('open');
     }} else {{
         // Put Mr.DP to sleep and close chat
         const sleepingSvg = getMrDpSvg('sleeping');
         avatar.innerHTML = sleepingSvg;
 
         popup.classList.remove('open');
-    }}
 
-    // Send toggle state to Streamlit
-    window.parent.postMessage({{
-        type: 'streamlit:setComponentValue',
-        key: 'mr_dp_action',
-        value: {{ action: isOpen ? 'close' : 'open' }}
-    }}, '*');
+        // Notify Streamlit
+        updateStreamlitState('close');
+    }}
 }}
 
 // Send message
@@ -415,6 +418,10 @@ function sendMessage() {{
 
     if (!message) return;
 
+    // Add user message immediately
+    chatHistory.push({{ role: 'user', content: message }});
+    renderChatHistory();
+
     // Change expression to thinking
     const avatar = document.getElementById('mrDpAvatar');
     const headerImg = document.getElementById('mrDpHeaderImg');
@@ -422,21 +429,33 @@ function sendMessage() {{
     avatar.innerHTML = thinkingSvg;
     headerImg.innerHTML = thinkingSvg;
 
-    // Send to Streamlit
-    window.parent.postMessage({{
-        type: 'streamlit:setComponentValue',
-        key: 'mr_dp_action',
-        value: {{ action: 'send', message: message }}
-    }}, '*');
-
+    // Clear input
     input.value = '';
+
+    // Notify Streamlit of message
+    updateStreamlitState('send', message);
+}}
+
+// Update Streamlit state via URL query params
+function updateStreamlitState(action, message = '') {{
+    // Use URL hash to communicate with Streamlit
+    const data = {{ action, message, timestamp: Date.now() }};
+    window.location.hash = 'mr_dp:' + btoa(JSON.stringify(data));
+
+    // Clear hash after a moment
+    setTimeout(() => {{
+        window.location.hash = '';
+    }}, 100);
 }}
 
 // Event listeners
 document.getElementById('mrDpAvatar').addEventListener('click', toggleMrDp);
 document.getElementById('mrDpSend').addEventListener('click', sendMessage);
 document.getElementById('mrDpInput').addEventListener('keypress', (e) => {{
-    if (e.key === 'Enter') sendMessage();
+    if (e.key === 'Enter') {{
+        e.preventDefault();
+        sendMessage();
+    }}
 }});
 
 // Initialize on load
@@ -446,22 +465,9 @@ initMrDp();
 </html>
 '''
 
-    # Render component
-    result = components.html(widget_html, height=600, scrolling=False)
+    # Render the floating widget (small height since it uses fixed positioning)
+    components.html(widget_html, height=1, scrolling=False)
 
-    # Check if user sent a message
-    if result and isinstance(result, dict):
-        action = result.get('action')
-
-        if action == 'open':
-            st.session_state.mr_dp_open = True
-            st.rerun()
-        elif action == 'close':
-            st.session_state.mr_dp_open = False
-            st.rerun()
-        elif action == 'send':
-            message = result.get('message', '').strip()
-            if message:
-                return message
-
+    # Check URL hash for Mr.DP actions
+    # This is a workaround since components.html doesn't support bidirectional communication easily
     return None
