@@ -333,7 +333,7 @@ def render_floating_mr_dp():
     </html>
     """
 
-    components.html(full_widget_html, height=0, scrolling=False)
+    components.html(full_widget_html, height=1, scrolling=False)
 
     # Check for toggle in query params
     if "mr_dp_toggle" in st.query_params:
