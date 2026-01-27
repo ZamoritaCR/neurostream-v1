@@ -85,8 +85,23 @@ def render_floating_mr_dp():
     expression = 'happy' if is_open else 'sleeping'
     mr_dp_svg = get_mr_dp_svg(expression)
 
-    # Render floating Mr.DP avatar with components.html for proper display
-    avatar_html = f"""
+    # Build chat history HTML
+    chat_html = ""
+    if chat_history:
+        for msg in chat_history[-8:]:
+            role_class = "user" if msg["role"] == "user" else "assistant"
+            content = msg["content"].replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+            if msg["role"] == "assistant":
+                chat_html += f'<div class="chat-message {role_class}"><div class="avatar">{get_mr_dp_svg("happy")}</div><div class="message-content">{content}</div></div>'
+            else:
+                chat_html += f'<div class="chat-message {role_class}"><div class="message-content">{content}</div><div class="avatar">😊</div></div>'
+    else:
+        chat_html = f'<div class="chat-message assistant"><div class="avatar">{get_mr_dp_svg("happy")}</div><div class="message-content">👋 Hey! Tell me how you\'re feeling and I\'ll find the perfect content for you!</div></div>'
+
+    # Create complete widget with avatar + chat popup in top-right
+    chat_display = "flex" if is_open else "none"
+
+    full_widget_html = f"""
     <!DOCTYPE html>
     <html>
     <head>
@@ -95,6 +110,7 @@ def render_floating_mr_dp():
                 margin: 0;
                 padding: 0;
                 background: transparent;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             }}
             .mr-dp-floating-avatar {{
                 position: fixed;
@@ -121,54 +137,216 @@ def render_floating_mr_dp():
                 transform: scale(1.1);
                 box-shadow: 0 12px 40px rgba(139, 92, 246, 0.6);
             }}
+            .mr-dp-chat-popup {{
+                position: fixed;
+                top: 180px;
+                right: 24px;
+                width: 360px;
+                max-height: 500px;
+                background: rgba(13, 13, 20, 0.98);
+                border: 1px solid rgba(139, 92, 246, 0.4);
+                border-radius: 20px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+                backdrop-filter: blur(20px);
+                z-index: 999998;
+                display: {chat_display};
+                flex-direction: column;
+                overflow: hidden;
+            }}
+            .chat-header {{
+                padding: 20px 20px 12px 20px;
+                border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+                position: relative;
+            }}
+            .chat-title {{
+                color: #f5f5f7;
+                font-size: 1.2rem;
+                font-weight: bold;
+                margin-bottom: 4px;
+            }}
+            .chat-status {{
+                color: #10b981;
+                font-size: 0.85rem;
+            }}
+            .close-btn {{
+                position: absolute;
+                top: 16px;
+                right: 16px;
+                background: rgba(139, 92, 246, 0.2);
+                border: none;
+                border-radius: 50%;
+                width: 32px;
+                height: 32px;
+                color: #f5f5f7;
+                font-size: 1.4rem;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s ease;
+                line-height: 1;
+            }}
+            .close-btn:hover {{
+                background: rgba(139, 92, 246, 0.4);
+                transform: scale(1.1);
+            }}
+            .chat-messages {{
+                flex: 1;
+                overflow-y: auto;
+                padding: 16px 20px;
+                max-height: 300px;
+            }}
+            .chat-message {{
+                display: flex;
+                gap: 8px;
+                margin: 12px 0;
+                align-items: flex-start;
+            }}
+            .chat-message.user {{
+                flex-direction: row-reverse;
+            }}
+            .avatar {{
+                width: 32px;
+                height: 32px;
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.2rem;
+            }}
+            .avatar svg {{
+                width: 100%;
+                height: 100%;
+            }}
+            .message-content {{
+                padding: 12px 16px;
+                border-radius: 18px;
+                font-size: 0.9rem;
+                line-height: 1.6;
+                word-wrap: break-word;
+                max-width: 260px;
+            }}
+            .chat-message.user .message-content {{
+                background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                color: #ffffff;
+            }}
+            .chat-message.assistant .message-content {{
+                background: rgba(139, 92, 246, 0.15);
+                border: 1px solid rgba(139, 92, 246, 0.25);
+                color: #f5f5f7;
+            }}
+            .chat-input-area {{
+                padding: 16px 20px;
+                border-top: 1px solid rgba(139, 92, 246, 0.2);
+            }}
+            .input-form {{
+                display: flex;
+                gap: 8px;
+            }}
+            .message-input {{
+                flex: 1;
+                background: rgba(139, 92, 246, 0.1);
+                border: 1px solid rgba(139, 92, 246, 0.3);
+                border-radius: 12px;
+                padding: 10px 14px;
+                color: #f5f5f7;
+                font-size: 0.9rem;
+                outline: none;
+            }}
+            .message-input:focus {{
+                border-color: #8b5cf6;
+                background: rgba(139, 92, 246, 0.15);
+            }}
+            .send-btn {{
+                background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                border: none;
+                border-radius: 12px;
+                padding: 10px 20px;
+                color: white;
+                font-size: 0.9rem;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                white-space: nowrap;
+            }}
+            .send-btn:hover {{
+                transform: scale(1.05);
+                box-shadow: 0 4px 12px rgba(139, 92, 246, 0.5);
+            }}
         </style>
     </head>
     <body>
-        <div class="mr-dp-floating-avatar" title="Chat with Mr.DP (click to toggle)" onclick="toggleChat()">
+        <div class="mr-dp-floating-avatar" title="Chat with Mr.DP" onclick="toggleChat()">
             {mr_dp_svg}
         </div>
+
+        <div class="mr-dp-chat-popup" id="chatPopup">
+            <div class="chat-header">
+                <button class="close-btn" onclick="toggleChat()">×</button>
+                <div class="chat-title">🧠 Mr.DP Chat</div>
+                <div class="chat-status">● Online - Your Dopamine Buddy</div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                {chat_html}
+            </div>
+
+            <div class="chat-input-area">
+                <form class="input-form" onsubmit="sendMessage(event)">
+                    <input type="text"
+                           class="message-input"
+                           id="messageInput"
+                           placeholder="How are you feeling?"
+                           autocomplete="off"
+                           required>
+                    <button type="submit" class="send-btn">Send 🚀</button>
+                </form>
+            </div>
+        </div>
+
         <script>
             function toggleChat() {{
                 const url = new URL(window.top.location.href);
                 url.searchParams.set('mr_dp_toggle', Date.now().toString());
                 window.top.location.href = url.toString();
             }}
+
+            function sendMessage(event) {{
+                event.preventDefault();
+                const input = document.getElementById('messageInput');
+                const message = input.value.trim();
+
+                if (message) {{
+                    const url = new URL(window.top.location.href);
+                    url.searchParams.set('mr_dp_msg', encodeURIComponent(message));
+                    url.searchParams.set('mr_dp_ts', Date.now().toString());
+                    window.top.location.href = url.toString();
+                }}
+            }}
+
+            // Auto-scroll to bottom
+            const chatMessages = document.getElementById('chatMessages');
+            if (chatMessages) {{
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }}
         </script>
     </body>
     </html>
     """
 
-    components.html(avatar_html, height=0, scrolling=False)
+    components.html(full_widget_html, height=0, scrolling=False)
 
     # Check for toggle in query params
     if "mr_dp_toggle" in st.query_params:
         st.session_state.mr_dp_open = not is_open
-        # Clear the param
         st.query_params.pop("mr_dp_toggle", None)
         st.rerun()
 
-    # Show chat in sidebar when open (reliable Streamlit approach)
-    if is_open:
-        with st.sidebar:
-            st.markdown("---")
-            st.markdown("### 🧠 Mr.DP Chat")
-            st.markdown('<p style="color: #10b981; font-size: 0.85rem; margin-top: -10px;">● Online - Your Dopamine Buddy</p>', unsafe_allow_html=True)
-            st.markdown("---")
-
-            # Display chat history using Streamlit's native chat components
-            if chat_history:
-                for msg in chat_history[-8:]:  # Show last 8 messages
-                    with st.chat_message(msg["role"], avatar=get_mr_dp_svg('happy') if msg["role"] == "assistant" else "😊"):
-                        st.write(msg["content"])
-            else:
-                with st.chat_message("assistant", avatar=get_mr_dp_svg('happy')):
-                    st.write("👋 Hey! Tell me how you're feeling and I'll find the perfect content for you!")
-
-            # Chat input using Streamlit's native chat_input
-            user_input = st.chat_input("How are you feeling?", key="mr_dp_chat_input")
-
-            # Return the user's message if they sent one
-            if user_input:
-                return user_input
+    # Check for message in query params
+    if "mr_dp_msg" in st.query_params:
+        import urllib.parse
+        message = urllib.parse.unquote(st.query_params["mr_dp_msg"])
+        st.query_params.pop("mr_dp_msg", None)
+        st.query_params.pop("mr_dp_ts", None)
+        return message
 
     return None
