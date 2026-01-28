@@ -15,6 +15,7 @@
     --bg-secondary: #16161d;
     --accent-primary: #7c3aed;
     --accent-secondary: #06b6d4;
+    --accent-tertiary: #10b981;
     --text-primary: #f5f5f7;
     --text-secondary: rgba(245, 245, 247, 0.7);
     --glass-border: rgba(255, 255, 255, 0.12);
@@ -26,172 +27,339 @@
     box-sizing: border-box;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     font-family: 'Inter', system-ui, sans-serif;
     background: var(--bg-primary);
     color: var(--text-primary);
     line-height: 1.8;
-    padding: 40px 20px;
+    min-height: 100vh;
 }
 
-.container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 40px;
-    background: rgba(22, 22, 29, 0.6);
-    border: 1px solid var(--glass-border);
-    border-radius: 20px;
+/* Background Effects */
+.bg-gradient {
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at 20% 20%, rgba(124, 58, 237, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(124, 58, 237, 0.06) 0%, transparent 60%);
+    z-index: -2;
 }
 
-h1 {
-    font-size: 2.5rem;
-    margin-bottom: 12px;
+.bg-grid {
+    position: fixed;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    z-index: -1;
+}
+
+/* Header */
+header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 20px 40px;
+    background: rgba(15, 15, 20, 0.8);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 1.4rem;
+    font-weight: 800;
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.logo span {
     background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
-.last-updated {
-    color: var(--text-secondary);
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    border: none;
+    border-radius: 12px;
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
     font-size: 0.9rem;
-    margin-bottom: 40px;
+    transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
+}
+
+/* Main Content */
+main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 60px 40px;
+}
+
+h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary), var(--accent-tertiary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin-bottom: 48px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.content-card {
+    background: rgba(22, 22, 29, 0.6);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 48px;
+    backdrop-filter: blur(10px);
 }
 
 h2 {
-    font-size: 1.5rem;
-    margin-top: 32px;
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-top: 40px;
     margin-bottom: 16px;
     color: var(--accent-secondary);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+h2:first-of-type {
+    margin-top: 0;
+}
+
+h2::before {
+    content: '';
+    width: 4px;
+    height: 24px;
+    background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
+    border-radius: 2px;
 }
 
 p {
     margin-bottom: 16px;
     color: var(--text-secondary);
+    font-size: 1rem;
 }
 
 ul {
     margin-left: 24px;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
 }
 
 li {
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     color: var(--text-secondary);
+    position: relative;
+}
+
+li::marker {
+    color: var(--accent-secondary);
+}
+
+strong {
+    color: var(--text-primary);
+    font-weight: 600;
 }
 
 a {
     color: var(--accent-secondary);
     text-decoration: none;
-    transition: color 0.3s ease;
+    transition: all 0.3s ease;
+    border-bottom: 1px solid transparent;
 }
 
 a:hover {
     color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
 }
 
-.back-link {
-    display: inline-block;
-    margin-bottom: 24px;
-    padding: 10px 20px;
-    background: rgba(124, 58, 237, 0.1);
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    transition: all 0.3s ease;
+/* Footer */
+footer {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    border-top: 1px solid var(--glass-border);
+    margin-top: 60px;
 }
 
-.back-link:hover {
-    background: rgba(124, 58, 237, 0.2);
-    transform: translateX(-4px);
+.footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-bottom: 16px;
+}
+
+.footer-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+    color: var(--accent-secondary);
+}
+
+@media (max-width: 768px) {
+    header {
+        padding: 16px 20px;
+    }
+
+    main {
+        padding: 40px 20px;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+
+    .content-card {
+        padding: 24px;
+        border-radius: 16px;
+    }
+
+    .logo {
+        font-size: 1.1rem;
+    }
+
+    .back-btn {
+        padding: 8px 16px;
+        font-size: 0.85rem;
+    }
 }
 </style>
 </head>
 <body>
 
-<div class="container">
-    <a href="index.html" class="back-link">← Back to Home</a>
+<div class="bg-gradient"></div>
+<div class="bg-grid"></div>
 
+<header>
+    <a href="https://www.dopamine.watch" class="logo">🧠 Dopamine<span>.watch</span></a>
+    <a href="https://www.dopamine.watch" class="back-btn">← Back to Home</a>
+</header>
+
+<main>
     <h1>Terms of Service</h1>
-    <p class="last-updated">Last Updated: January 27, 2025</p>
+    <p class="subtitle">Last Updated: January 27, 2025</p>
 
-    <p>Welcome to Dopamine.watch! These Terms of Service ("Terms") govern your access to and use of our website, services, and applications (collectively, the "Service").</p>
+    <div class="content-card">
+        <p>Welcome to Dopamine.watch! These Terms of Service ("Terms") govern your access to and use of our website, services, and applications (collectively, the "Service").</p>
 
-    <h2>1. Acceptance of Terms</h2>
-    <p>By accessing or using Dopamine.watch, you agree to be bound by these Terms. If you do not agree to these Terms, please do not use our Service.</p>
+        <h2>1. Acceptance of Terms</h2>
+        <p>By accessing or using Dopamine.watch, you agree to be bound by these Terms. If you do not agree to these Terms, please do not use our Service.</p>
 
-    <h2>2. Description of Service</h2>
-    <p>Dopamine.watch is an ADHD-friendly streaming guide that helps users discover movies, music, podcasts, audiobooks, and other content based on their mood and preferences. We provide:</p>
-    <ul>
-        <li>Personalized content recommendations</li>
-        <li>Mood-based content matching</li>
-        <li>AI-powered chat assistance (Mr.DP)</li>
-        <li>Streaming platform availability information</li>
-        <li>User engagement features (dopamine points, achievements)</li>
-    </ul>
+        <h2>2. Description of Service</h2>
+        <p>Dopamine.watch is an ADHD-friendly streaming guide that helps users discover movies, music, podcasts, audiobooks, and other content based on their mood and preferences. We provide:</p>
+        <ul>
+            <li>Personalized content recommendations</li>
+            <li>Mood-based content matching</li>
+            <li>AI-powered chat assistance (Mr.DP)</li>
+            <li>Streaming platform availability information</li>
+            <li>User engagement features (dopamine points, achievements)</li>
+        </ul>
 
-    <h2>3. User Accounts</h2>
-    <p><strong>Account Creation:</strong> You may create an account using email/password or through Google Sign-In. You are responsible for maintaining the confidentiality of your account credentials.</p>
-    <p><strong>Guest Access:</strong> You may use our Service as a guest with limited functionality.</p>
-    <p><strong>Account Termination:</strong> We reserve the right to suspend or terminate accounts that violate these Terms.</p>
+        <h2>3. User Accounts</h2>
+        <p><strong>Account Creation:</strong> You may create an account using email/password or through Google Sign-In. You are responsible for maintaining the confidentiality of your account credentials.</p>
+        <p><strong>Guest Access:</strong> You may use our Service as a guest with limited functionality.</p>
+        <p><strong>Account Termination:</strong> We reserve the right to suspend or terminate accounts that violate these Terms.</p>
 
-    <h2>4. Use of Service</h2>
-    <p>You agree to use Dopamine.watch only for lawful purposes and in accordance with these Terms. You agree NOT to:</p>
-    <ul>
-        <li>Use the Service in any way that violates applicable laws or regulations</li>
-        <li>Attempt to gain unauthorized access to any portion of the Service</li>
-        <li>Use automated systems (bots, scrapers) to access the Service</li>
-        <li>Interfere with or disrupt the Service or servers</li>
-        <li>Impersonate any person or entity</li>
-        <li>Upload malicious code or content</li>
-    </ul>
+        <h2>4. Use of Service</h2>
+        <p>You agree to use Dopamine.watch only for lawful purposes and in accordance with these Terms. You agree NOT to:</p>
+        <ul>
+            <li>Use the Service in any way that violates applicable laws or regulations</li>
+            <li>Attempt to gain unauthorized access to any portion of the Service</li>
+            <li>Use automated systems (bots, scrapers) to access the Service</li>
+            <li>Interfere with or disrupt the Service or servers</li>
+            <li>Impersonate any person or entity</li>
+            <li>Upload malicious code or content</li>
+        </ul>
 
-    <h2>5. Content and Third-Party Services</h2>
-    <p><strong>Content Information:</strong> We provide information about content available on third-party streaming platforms (Netflix, Spotify, etc.). We do not host, stream, or own this content.</p>
-    <p><strong>Accuracy:</strong> While we strive for accuracy, we cannot guarantee that all content information is current or complete.</p>
-    <p><strong>Third-Party Links:</strong> Our Service contains links to third-party websites and services. We are not responsible for the content or practices of these third parties.</p>
+        <h2>5. Content and Third-Party Services</h2>
+        <p><strong>Content Information:</strong> We provide information about content available on third-party streaming platforms (Netflix, Spotify, etc.). We do not host, stream, or own this content.</p>
+        <p><strong>Accuracy:</strong> While we strive for accuracy, we cannot guarantee that all content information is current or complete.</p>
+        <p><strong>Third-Party Links:</strong> Our Service contains links to third-party websites and services. We are not responsible for the content or practices of these third parties.</p>
 
-    <h2>6. AI Chat (Mr.DP)</h2>
-    <p>Our AI chat feature provides personalized content recommendations and mood support. Please note:</p>
-    <ul>
-        <li>Mr.DP is not a medical professional and does not provide medical advice</li>
-        <li>Recommendations are for entertainment purposes only</li>
-        <li>Do not rely on Mr.DP for mental health emergencies</li>
-        <li>If you're experiencing a crisis, please contact emergency services or a mental health professional</li>
-    </ul>
+        <h2>6. AI Chat (Mr.DP)</h2>
+        <p>Our AI chat feature provides personalized content recommendations and mood support. Please note:</p>
+        <ul>
+            <li>Mr.DP is not a medical professional and does not provide medical advice</li>
+            <li>Recommendations are for entertainment purposes only</li>
+            <li>Do not rely on Mr.DP for mental health emergencies</li>
+            <li>If you're experiencing a crisis, please contact emergency services or a mental health professional</li>
+        </ul>
 
-    <h2>7. Premium Features</h2>
-    <p>We may offer premium features or subscriptions in the future. Payment terms and refund policies will be provided at the time of purchase.</p>
+        <h2>7. Premium Features</h2>
+        <p>We may offer premium features or subscriptions in the future. Payment terms and refund policies will be provided at the time of purchase.</p>
 
-    <h2>8. Intellectual Property</h2>
-    <p><strong>Our Content:</strong> All content, features, and functionality of Dopamine.watch (including design, text, graphics, logos) are owned by us and protected by intellectual property laws.</p>
-    <p><strong>User License:</strong> We grant you a limited, non-exclusive, non-transferable license to access and use the Service for personal, non-commercial purposes.</p>
+        <h2>8. Intellectual Property</h2>
+        <p><strong>Our Content:</strong> All content, features, and functionality of Dopamine.watch (including design, text, graphics, logos) are owned by us and protected by intellectual property laws.</p>
+        <p><strong>User License:</strong> We grant you a limited, non-exclusive, non-transferable license to access and use the Service for personal, non-commercial purposes.</p>
 
-    <h2>9. Privacy</h2>
-    <p>Your use of our Service is also governed by our <a href="privacy.html">Privacy Policy</a>, which explains how we collect, use, and protect your personal information.</p>
+        <h2>9. Privacy</h2>
+        <p>Your use of our Service is also governed by our <a href="https://www.dopamine.watch/privacy.html">Privacy Policy</a>, which explains how we collect, use, and protect your personal information.</p>
 
-    <h2>10. Disclaimers</h2>
-    <p>THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO:</p>
-    <ul>
-        <li>Warranties of merchantability, fitness for a particular purpose, or non-infringement</li>
-        <li>Accuracy, reliability, or completeness of content</li>
-        <li>Uninterrupted or error-free service</li>
-    </ul>
+        <h2>10. Disclaimers</h2>
+        <p>THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO:</p>
+        <ul>
+            <li>Warranties of merchantability, fitness for a particular purpose, or non-infringement</li>
+            <li>Accuracy, reliability, or completeness of content</li>
+            <li>Uninterrupted or error-free service</li>
+        </ul>
 
-    <h2>11. Limitation of Liability</h2>
-    <p>TO THE MAXIMUM EXTENT PERMITTED BY LAW, DOPAMINE.WATCH SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, DATA, OR USE, ARISING OUT OF YOUR USE OF THE SERVICE.</p>
+        <h2>11. Limitation of Liability</h2>
+        <p>TO THE MAXIMUM EXTENT PERMITTED BY LAW, DOPAMINE.WATCH SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, DATA, OR USE, ARISING OUT OF YOUR USE OF THE SERVICE.</p>
 
-    <h2>12. Indemnification</h2>
-    <p>You agree to indemnify and hold harmless Dopamine.watch, its affiliates, and their respective officers, directors, employees, and agents from any claims, damages, losses, liabilities, and expenses (including attorneys' fees) arising out of your use of the Service or violation of these Terms.</p>
+        <h2>12. Indemnification</h2>
+        <p>You agree to indemnify and hold harmless Dopamine.watch, its affiliates, and their respective officers, directors, employees, and agents from any claims, damages, losses, liabilities, and expenses (including attorneys' fees) arising out of your use of the Service or violation of these Terms.</p>
 
-    <h2>13. Changes to Terms</h2>
-    <p>We reserve the right to modify these Terms at any time. We will notify users of material changes by updating the "Last Updated" date. Your continued use of the Service after changes constitutes acceptance of the modified Terms.</p>
+        <h2>13. Changes to Terms</h2>
+        <p>We reserve the right to modify these Terms at any time. We will notify users of material changes by updating the "Last Updated" date. Your continued use of the Service after changes constitutes acceptance of the modified Terms.</p>
 
-    <h2>14. Governing Law</h2>
-    <p>These Terms shall be governed by and construed in accordance with the laws of Costa Rica, without regard to its conflict of law provisions.</p>
+        <h2>14. Governing Law</h2>
+        <p>These Terms shall be governed by and construed in accordance with the laws of Costa Rica, without regard to its conflict of law provisions.</p>
 
-    <h2>15. Contact Us</h2>
-    <p>If you have questions about these Terms, please contact us at:</p>
-    <p>Email: <a href="mailto:support@dopamine.watch">support@dopamine.watch</a></p>
-</div>
+        <h2>15. Contact Us</h2>
+        <p>If you have questions about these Terms, please contact us at:</p>
+        <p>Email: <a href="mailto:support@dopamine.watch">support@dopamine.watch</a></p>
+    </div>
+</main>
+
+<footer>
+    <div class="footer-links">
+        <a href="https://www.dopamine.watch/privacy.html">Privacy Policy</a>
+        <a href="https://www.dopamine.watch/terms.html">Terms of Service</a>
+        <a href="mailto:support@dopamine.watch">Contact</a>
+    </div>
+    <p>© 2025 Dopamine.watch. Made with 🧠 for neurodivergent minds.</p>
+</footer>
 
 </body>
 </html>

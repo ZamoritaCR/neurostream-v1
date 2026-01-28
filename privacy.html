@@ -15,6 +15,7 @@
     --bg-secondary: #16161d;
     --accent-primary: #7c3aed;
     --accent-secondary: #06b6d4;
+    --accent-tertiary: #10b981;
     --text-primary: #f5f5f7;
     --text-secondary: rgba(245, 245, 247, 0.7);
     --glass-border: rgba(255, 255, 255, 0.12);
@@ -26,261 +27,445 @@
     box-sizing: border-box;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     font-family: 'Inter', system-ui, sans-serif;
     background: var(--bg-primary);
     color: var(--text-primary);
     line-height: 1.8;
-    padding: 40px 20px;
+    min-height: 100vh;
 }
 
-.container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 40px;
-    background: rgba(22, 22, 29, 0.6);
-    border: 1px solid var(--glass-border);
-    border-radius: 20px;
+/* Background Effects */
+.bg-gradient {
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at 20% 20%, rgba(124, 58, 237, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(124, 58, 237, 0.06) 0%, transparent 60%);
+    z-index: -2;
 }
 
-h1 {
-    font-size: 2.5rem;
-    margin-bottom: 12px;
+.bg-grid {
+    position: fixed;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    z-index: -1;
+}
+
+/* Header */
+header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 20px 40px;
+    background: rgba(15, 15, 20, 0.8);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 1.4rem;
+    font-weight: 800;
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.logo span {
     background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
-.last-updated {
-    color: var(--text-secondary);
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    border: none;
+    border-radius: 12px;
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
     font-size: 0.9rem;
-    margin-bottom: 40px;
+    transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
+}
+
+/* Main Content */
+main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 60px 40px;
+}
+
+h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary), var(--accent-tertiary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin-bottom: 48px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.content-card {
+    background: rgba(22, 22, 29, 0.6);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 48px;
+    backdrop-filter: blur(10px);
 }
 
 h2 {
-    font-size: 1.5rem;
-    margin-top: 32px;
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-top: 40px;
     margin-bottom: 16px;
     color: var(--accent-secondary);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+h2:first-of-type {
+    margin-top: 0;
+}
+
+h2::before {
+    content: '';
+    width: 4px;
+    height: 24px;
+    background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
+    border-radius: 2px;
+}
+
+h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-top: 24px;
+    margin-bottom: 12px;
+    color: var(--text-primary);
 }
 
 p {
     margin-bottom: 16px;
     color: var(--text-secondary);
+    font-size: 1rem;
 }
 
 ul {
     margin-left: 24px;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
 }
 
 li {
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     color: var(--text-secondary);
+    position: relative;
+}
+
+li::marker {
+    color: var(--accent-secondary);
+}
+
+strong {
+    color: var(--text-primary);
+    font-weight: 600;
 }
 
 a {
     color: var(--accent-secondary);
     text-decoration: none;
-    transition: color 0.3s ease;
+    transition: all 0.3s ease;
+    border-bottom: 1px solid transparent;
 }
 
 a:hover {
     color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
 }
 
-.back-link {
-    display: inline-block;
-    margin-bottom: 24px;
-    padding: 10px 20px;
+.notice-box {
+    margin-top: 40px;
+    padding: 24px;
     background: rgba(124, 58, 237, 0.1);
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    transition: all 0.3s ease;
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    border-radius: 16px;
 }
 
-.back-link:hover {
-    background: rgba(124, 58, 237, 0.2);
-    transform: translateX(-4px);
-}
-
-strong {
+.notice-box p {
+    margin: 0;
     color: var(--text-primary);
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    border-top: 1px solid var(--glass-border);
+    margin-top: 60px;
+}
+
+.footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-bottom: 16px;
+}
+
+.footer-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+    color: var(--accent-secondary);
+}
+
+@media (max-width: 768px) {
+    header {
+        padding: 16px 20px;
+    }
+
+    main {
+        padding: 40px 20px;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+
+    .content-card {
+        padding: 24px;
+        border-radius: 16px;
+    }
+
+    .logo {
+        font-size: 1.1rem;
+    }
+
+    .back-btn {
+        padding: 8px 16px;
+        font-size: 0.85rem;
+    }
 }
 </style>
 </head>
 <body>
 
-<div class="container">
-    <a href="index.html" class="back-link">← Back to Home</a>
+<div class="bg-gradient"></div>
+<div class="bg-grid"></div>
 
+<header>
+    <a href="https://www.dopamine.watch" class="logo">🧠 Dopamine<span>.watch</span></a>
+    <a href="https://www.dopamine.watch" class="back-btn">← Back to Home</a>
+</header>
+
+<main>
     <h1>Privacy Policy</h1>
-    <p class="last-updated">Last Updated: January 27, 2025</p>
+    <p class="subtitle">Last Updated: January 27, 2025</p>
 
-    <p>At Dopamine.watch, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Service.</p>
+    <div class="content-card">
+        <p>At Dopamine.watch, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Service.</p>
 
-    <h2>1. Information We Collect</h2>
+        <h2>1. Information We Collect</h2>
 
-    <h3 style="font-size: 1.2rem; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">A. Information You Provide</h3>
-    <p><strong>Account Information:</strong> When you create an account, we collect:</p>
-    <ul>
-        <li>Email address</li>
-        <li>Name/username</li>
-        <li>Password (encrypted)</li>
-        <li>Authentication tokens (when using Google Sign-In)</li>
-    </ul>
+        <h3>A. Information You Provide</h3>
+        <p><strong>Account Information:</strong> When you create an account, we collect:</p>
+        <ul>
+            <li>Email address</li>
+            <li>Name/username</li>
+            <li>Password (encrypted)</li>
+            <li>Authentication tokens (when using Google Sign-In)</li>
+        </ul>
 
-    <p><strong>Mood and Preferences:</strong> We collect information about:</p>
-    <ul>
-        <li>Your current and desired mood states</li>
-        <li>Content preferences and viewing history</li>
-        <li>Search queries</li>
-        <li>Interactions with Mr.DP (our AI chat assistant)</li>
-    </ul>
+        <p><strong>Mood and Preferences:</strong> We collect information about:</p>
+        <ul>
+            <li>Your current and desired mood states</li>
+            <li>Content preferences and viewing history</li>
+            <li>Search queries</li>
+            <li>Interactions with Mr.DP (our AI chat assistant)</li>
+        </ul>
 
-    <p><strong>User Engagement:</strong> We track:</p>
-    <ul>
-        <li>Dopamine points earned</li>
-        <li>Achievements unlocked</li>
-        <li>Referral codes and usage</li>
-    </ul>
+        <p><strong>User Engagement:</strong> We track:</p>
+        <ul>
+            <li>Dopamine points earned</li>
+            <li>Achievements unlocked</li>
+            <li>Referral codes and usage</li>
+        </ul>
 
-    <h3 style="font-size: 1.2rem; margin-top: 20px; margin-bottom: 12px; color: var(--text-primary);">B. Automatically Collected Information</h3>
-    <p><strong>Usage Data:</strong> We automatically collect:</p>
-    <ul>
-        <li>Device information (browser type, operating system)</li>
-        <li>IP address</li>
-        <li>Page views and navigation patterns</li>
-        <li>Time spent on pages</li>
-        <li>Referral sources</li>
-    </ul>
+        <h3>B. Automatically Collected Information</h3>
+        <p><strong>Usage Data:</strong> We automatically collect:</p>
+        <ul>
+            <li>Device information (browser type, operating system)</li>
+            <li>IP address</li>
+            <li>Page views and navigation patterns</li>
+            <li>Time spent on pages</li>
+            <li>Referral sources</li>
+        </ul>
 
-    <p><strong>Cookies and Tracking Technologies:</strong> We use:</p>
-    <ul>
-        <li>Essential cookies for authentication and session management</li>
-        <li>LocalStorage for user preferences and state</li>
-        <li>Analytics cookies to understand usage patterns</li>
-    </ul>
+        <p><strong>Cookies and Tracking Technologies:</strong> We use:</p>
+        <ul>
+            <li>Essential cookies for authentication and session management</li>
+            <li>LocalStorage for user preferences and state</li>
+            <li>Analytics cookies to understand usage patterns</li>
+        </ul>
 
-    <h2>2. How We Use Your Information</h2>
-    <p>We use the collected information to:</p>
-    <ul>
-        <li><strong>Provide the Service:</strong> Deliver personalized content recommendations, mood matching, and AI chat features</li>
-        <li><strong>Improve User Experience:</strong> Analyze usage patterns to enhance our algorithms and features</li>
-        <li><strong>Account Management:</strong> Authenticate users, maintain accounts, and provide customer support</li>
-        <li><strong>Communications:</strong> Send service updates, feature announcements, and respond to inquiries</li>
-        <li><strong>Security:</strong> Detect and prevent fraud, abuse, and security incidents</li>
-        <li><strong>Analytics:</strong> Understand how users interact with our Service to improve functionality</li>
-        <li><strong>Legal Compliance:</strong> Comply with applicable laws and regulations</li>
-    </ul>
+        <h2>2. How We Use Your Information</h2>
+        <p>We use the collected information to:</p>
+        <ul>
+            <li><strong>Provide the Service:</strong> Deliver personalized content recommendations, mood matching, and AI chat features</li>
+            <li><strong>Improve User Experience:</strong> Analyze usage patterns to enhance our algorithms and features</li>
+            <li><strong>Account Management:</strong> Authenticate users, maintain accounts, and provide customer support</li>
+            <li><strong>Communications:</strong> Send service updates, feature announcements, and respond to inquiries</li>
+            <li><strong>Security:</strong> Detect and prevent fraud, abuse, and security incidents</li>
+            <li><strong>Analytics:</strong> Understand how users interact with our Service to improve functionality</li>
+            <li><strong>Legal Compliance:</strong> Comply with applicable laws and regulations</li>
+        </ul>
 
-    <h2>3. How We Share Your Information</h2>
-    <p>We do NOT sell your personal information. We may share your information in the following circumstances:</p>
+        <h2>3. How We Share Your Information</h2>
+        <p>We do NOT sell your personal information. We may share your information in the following circumstances:</p>
 
-    <p><strong>Service Providers:</strong> We use third-party services including:</p>
-    <ul>
-        <li><strong>Supabase:</strong> Database and authentication (privacy policy: <a href="https://supabase.com/privacy" target="_blank">supabase.com/privacy</a>)</li>
-        <li><strong>OpenAI:</strong> AI chat functionality for Mr.DP (privacy policy: <a href="https://openai.com/privacy" target="_blank">openai.com/privacy</a>)</li>
-        <li><strong>TMDB (The Movie Database):</strong> Movie and TV show data (privacy policy: <a href="https://www.themoviedb.org/privacy-policy" target="_blank">themoviedb.org/privacy-policy</a>)</li>
-        <li><strong>Streamlit:</strong> Application hosting (privacy policy: <a href="https://streamlit.io/privacy-policy" target="_blank">streamlit.io/privacy-policy</a>)</li>
-    </ul>
+        <p><strong>Service Providers:</strong> We use third-party services including:</p>
+        <ul>
+            <li><strong>Supabase:</strong> Database and authentication</li>
+            <li><strong>OpenAI:</strong> AI chat functionality for Mr.DP</li>
+            <li><strong>TMDB (The Movie Database):</strong> Movie and TV show data</li>
+            <li><strong>Streamlit:</strong> Application hosting</li>
+        </ul>
 
-    <p><strong>Legal Requirements:</strong> We may disclose your information if required by law or in response to valid legal requests.</p>
+        <p><strong>Legal Requirements:</strong> We may disclose your information if required by law or in response to valid legal requests.</p>
 
-    <p><strong>Business Transfers:</strong> If Dopamine.watch is involved in a merger, acquisition, or sale of assets, your information may be transferred.</p>
+        <p><strong>Business Transfers:</strong> If Dopamine.watch is involved in a merger, acquisition, or sale of assets, your information may be transferred.</p>
 
-    <p><strong>With Your Consent:</strong> We may share information for other purposes with your explicit consent.</p>
+        <p><strong>With Your Consent:</strong> We may share information for other purposes with your explicit consent.</p>
 
-    <h2>4. Data Retention</h2>
-    <p>We retain your personal information for as long as necessary to:</p>
-    <ul>
-        <li>Provide the Service to you</li>
-        <li>Comply with legal obligations</li>
-        <li>Resolve disputes and enforce agreements</li>
-    </ul>
-    <p>You may request deletion of your account and associated data at any time by contacting us.</p>
+        <h2>4. Data Retention</h2>
+        <p>We retain your personal information for as long as necessary to:</p>
+        <ul>
+            <li>Provide the Service to you</li>
+            <li>Comply with legal obligations</li>
+            <li>Resolve disputes and enforce agreements</li>
+        </ul>
+        <p>You may request deletion of your account and associated data at any time by contacting us.</p>
 
-    <h2>5. Data Security</h2>
-    <p>We implement industry-standard security measures to protect your information:</p>
-    <ul>
-        <li>Encrypted data transmission (HTTPS/SSL)</li>
-        <li>Password hashing and encryption</li>
-        <li>Secure authentication tokens</li>
-        <li>Regular security audits</li>
-        <li>Limited access to personal data</li>
-    </ul>
-    <p>However, no method of transmission over the internet is 100% secure. While we strive to protect your data, we cannot guarantee absolute security.</p>
+        <h2>5. Data Security</h2>
+        <p>We implement industry-standard security measures to protect your information:</p>
+        <ul>
+            <li>Encrypted data transmission (HTTPS/SSL)</li>
+            <li>Password hashing and encryption</li>
+            <li>Secure authentication tokens</li>
+            <li>Regular security audits</li>
+            <li>Limited access to personal data</li>
+        </ul>
+        <p>However, no method of transmission over the internet is 100% secure. While we strive to protect your data, we cannot guarantee absolute security.</p>
 
-    <h2>6. Your Privacy Rights</h2>
-    <p>Depending on your location, you may have the following rights:</p>
-    <ul>
-        <li><strong>Access:</strong> Request a copy of your personal data</li>
-        <li><strong>Correction:</strong> Request correction of inaccurate data</li>
-        <li><strong>Deletion:</strong> Request deletion of your data</li>
-        <li><strong>Portability:</strong> Request transfer of your data to another service</li>
-        <li><strong>Objection:</strong> Object to certain data processing activities</li>
-        <li><strong>Withdraw Consent:</strong> Withdraw consent for data processing (where applicable)</li>
-    </ul>
-    <p>To exercise these rights, contact us at <a href="mailto:privacy@dopamine.watch">privacy@dopamine.watch</a></p>
+        <h2>6. Your Privacy Rights</h2>
+        <p>Depending on your location, you may have the following rights:</p>
+        <ul>
+            <li><strong>Access:</strong> Request a copy of your personal data</li>
+            <li><strong>Correction:</strong> Request correction of inaccurate data</li>
+            <li><strong>Deletion:</strong> Request deletion of your data</li>
+            <li><strong>Portability:</strong> Request transfer of your data to another service</li>
+            <li><strong>Objection:</strong> Object to certain data processing activities</li>
+            <li><strong>Withdraw Consent:</strong> Withdraw consent for data processing (where applicable)</li>
+        </ul>
+        <p>To exercise these rights, contact us at <a href="mailto:privacy@dopamine.watch">privacy@dopamine.watch</a></p>
 
-    <h2>7. Children's Privacy</h2>
-    <p>Our Service is not directed to children under 13 years of age. We do not knowingly collect personal information from children under 13. If you become aware that a child has provided us with personal information, please contact us.</p>
+        <h2>7. Children's Privacy</h2>
+        <p>Our Service is not directed to children under 13 years of age. We do not knowingly collect personal information from children under 13. If you become aware that a child has provided us with personal information, please contact us.</p>
 
-    <h2>8. Third-Party Links</h2>
-    <p>Our Service contains links to third-party websites and streaming platforms. We are not responsible for the privacy practices of these external sites. We encourage you to review their privacy policies.</p>
+        <h2>8. Third-Party Links</h2>
+        <p>Our Service contains links to third-party websites and streaming platforms. We are not responsible for the privacy practices of these external sites. We encourage you to review their privacy policies.</p>
 
-    <h2>9. International Data Transfers</h2>
-    <p>Your information may be transferred to and processed in countries other than your country of residence. These countries may have different data protection laws. We ensure appropriate safeguards are in place for such transfers.</p>
+        <h2>9. International Data Transfers</h2>
+        <p>Your information may be transferred to and processed in countries other than your country of residence. These countries may have different data protection laws. We ensure appropriate safeguards are in place for such transfers.</p>
 
-    <h2>10. California Privacy Rights (CCPA)</h2>
-    <p>If you are a California resident, you have additional rights under the California Consumer Privacy Act (CCPA):</p>
-    <ul>
-        <li>Right to know what personal information is collected</li>
-        <li>Right to know if personal information is sold or disclosed</li>
-        <li>Right to opt-out of the sale of personal information (we do not sell personal information)</li>
-        <li>Right to deletion</li>
-        <li>Right to non-discrimination for exercising CCPA rights</li>
-    </ul>
+        <h2>10. California Privacy Rights (CCPA)</h2>
+        <p>If you are a California resident, you have additional rights under the California Consumer Privacy Act (CCPA):</p>
+        <ul>
+            <li>Right to know what personal information is collected</li>
+            <li>Right to know if personal information is sold or disclosed</li>
+            <li>Right to opt-out of the sale of personal information (we do not sell personal information)</li>
+            <li>Right to deletion</li>
+            <li>Right to non-discrimination for exercising CCPA rights</li>
+        </ul>
 
-    <h2>11. European Privacy Rights (GDPR)</h2>
-    <p>If you are in the European Economic Area (EEA), you have rights under the General Data Protection Regulation (GDPR):</p>
-    <ul>
-        <li>Right to access, rectification, erasure, and portability</li>
-        <li>Right to restrict processing and object to processing</li>
-        <li>Right to withdraw consent</li>
-        <li>Right to lodge a complaint with a supervisory authority</li>
-    </ul>
+        <h2>11. European Privacy Rights (GDPR)</h2>
+        <p>If you are in the European Economic Area (EEA), you have rights under the General Data Protection Regulation (GDPR):</p>
+        <ul>
+            <li>Right to access, rectification, erasure, and portability</li>
+            <li>Right to restrict processing and object to processing</li>
+            <li>Right to withdraw consent</li>
+            <li>Right to lodge a complaint with a supervisory authority</li>
+        </ul>
 
-    <h2>12. AI Chat Data (Mr.DP)</h2>
-    <p>When you interact with Mr.DP, our AI chat assistant:</p>
-    <ul>
-        <li>Your messages are processed by OpenAI's GPT-4 API</li>
-        <li>Chat history is stored in your session for continuity</li>
-        <li>Conversations are used to improve mood matching algorithms</li>
-        <li>We do not share individual chat transcripts with third parties</li>
-        <li>You can delete your chat history at any time</li>
-    </ul>
+        <h2>12. AI Chat Data (Mr.DP)</h2>
+        <p>When you interact with Mr.DP, our AI chat assistant:</p>
+        <ul>
+            <li>Your messages are processed by OpenAI's GPT-4 API</li>
+            <li>Chat history is stored in your session for continuity</li>
+            <li>Conversations are used to improve mood matching algorithms</li>
+            <li>We do not share individual chat transcripts with third parties</li>
+            <li>You can delete your chat history at any time</li>
+        </ul>
 
-    <h2>13. Updates to This Privacy Policy</h2>
-    <p>We may update this Privacy Policy from time to time. We will notify you of material changes by:</p>
-    <ul>
-        <li>Updating the "Last Updated" date</li>
-        <li>Sending an email notification (if applicable)</li>
-        <li>Displaying a prominent notice on our Service</li>
-    </ul>
-    <p>Your continued use of the Service after changes constitutes acceptance of the updated Privacy Policy.</p>
+        <h2>13. Updates to This Privacy Policy</h2>
+        <p>We may update this Privacy Policy from time to time. We will notify you of material changes by:</p>
+        <ul>
+            <li>Updating the "Last Updated" date</li>
+            <li>Sending an email notification (if applicable)</li>
+            <li>Displaying a prominent notice on our Service</li>
+        </ul>
+        <p>Your continued use of the Service after changes constitutes acceptance of the updated Privacy Policy.</p>
 
-    <h2>14. Contact Us</h2>
-    <p>If you have questions, concerns, or requests regarding this Privacy Policy or your personal data, please contact us:</p>
-    <p>
-        <strong>Email:</strong> <a href="mailto:privacy@dopamine.watch">privacy@dopamine.watch</a><br>
-        <strong>Support:</strong> <a href="mailto:support@dopamine.watch">support@dopamine.watch</a>
-    </p>
+        <h2>14. Contact Us</h2>
+        <p>If you have questions, concerns, or requests regarding this Privacy Policy or your personal data, please contact us:</p>
+        <p>
+            <strong>Email:</strong> <a href="mailto:privacy@dopamine.watch">privacy@dopamine.watch</a><br>
+            <strong>Support:</strong> <a href="mailto:support@dopamine.watch">support@dopamine.watch</a>
+        </p>
 
-    <p style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--glass-border);">
-        By using Dopamine.watch, you acknowledge that you have read and understood this Privacy Policy and agree to its terms.
-    </p>
-</div>
+        <div class="notice-box">
+            <p>By using Dopamine.watch, you acknowledge that you have read and understood this Privacy Policy and agree to its terms.</p>
+        </div>
+    </div>
+</main>
+
+<footer>
+    <div class="footer-links">
+        <a href="https://www.dopamine.watch/privacy.html">Privacy Policy</a>
+        <a href="https://www.dopamine.watch/terms.html">Terms of Service</a>
+        <a href="mailto:support@dopamine.watch">Contact</a>
+    </div>
+    <p>© 2025 Dopamine.watch. Made with 🧠 for neurodivergent minds.</p>
+</footer>
 
 </body>
 </html>
