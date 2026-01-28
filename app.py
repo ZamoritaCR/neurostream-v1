@@ -894,63 +894,85 @@ User: "make me laugh"
 
 Remember: Be genuine, warm, and helpful. You're not just finding content - you're helping someone feel better."""
 
-def ask_mr_dp(user_prompt):
+def ask_mr_dp(user_prompt, chat_history=None):
     """
     Full conversational AI response from Mr.DP using GPT-4.
     Returns structured response with message, feelings, and search parameters.
+    Includes chat_history for conversation memory.
     """
     if not user_prompt or not user_prompt.strip():
         return None
-    
+
     # Try GPT first for natural conversation
     if openai_client:
         try:
+            # Build messages with conversation history for memory
+            messages = [{"role": "system", "content": MR_DP_SYSTEM_PROMPT}]
+            if chat_history:
+                # Include last 10 messages for context (limit tokens)
+                for msg in chat_history[-10:]:
+                    if msg["role"] == "user":
+                        messages.append({"role": "user", "content": msg["content"]})
+                    else:
+                        # Re-wrap assistant messages as simple text so GPT understands context
+                        messages.append({"role": "assistant", "content": msg["content"]})
+            messages.append({"role": "user", "content": user_prompt})
+
             response = openai_client.chat.completions.create(
                 model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": MR_DP_SYSTEM_PROMPT},
-                    {"role": "user", "content": user_prompt}
-                ],
+                messages=messages,
                 temperature=0.7,
                 max_tokens=300
             )
-            
+
             content = response.choices[0].message.content.strip()
-            
+
             # Parse JSON from response
             # Handle potential markdown code blocks
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()
             elif "```" in content:
                 content = content.split("```")[1].split("```")[0].strip()
-            
-            result = json.loads(content)
-            
+
+            try:
+                result = json.loads(content)
+            except json.JSONDecodeError:
+                # GPT returned plain text instead of JSON - wrap it
+                result = {
+                    "message": content,
+                    "current_feeling": None,
+                    "desired_feeling": None,
+                    "media_type": "movies",
+                    "mode": "discover",
+                    "search_query": "",
+                    "genres": ""
+                }
+
             # Validate and set defaults
             result.setdefault("message", "Let me find something perfect for you!")
             result.setdefault("current_feeling", None)
             result.setdefault("desired_feeling", None)
-            result.setdefault("media_type", "movies")  # Default to movies
+            result.setdefault("media_type", "movies")
             result.setdefault("mode", "discover")
             result.setdefault("search_query", "")
             result.setdefault("genres", "")
-            
+
             # Validate feelings are in our list
             if result["current_feeling"] not in CURRENT_FEELINGS:
                 result["current_feeling"] = None
             if result["desired_feeling"] not in DESIRED_FEELINGS:
                 result["desired_feeling"] = None
-            
+
             # Validate media_type
             if result["media_type"] not in ["movies", "music", "podcasts", "audiobooks", "shorts", "artist"]:
                 result["media_type"] = "movies"
-            
+
             return result
-            
+
         except Exception as e:
             print(f"GPT error: {e}")
             # Fall through to heuristic
-    
+
     # Fallback: Heuristic-based response
     return heuristic_mr_dp(user_prompt)
 
@@ -4048,25 +4070,35 @@ else:
             "content": user_message
         })
 
-        # Get AI response from Mr.DP
-        response = ask_mr_dp(user_message)
+        # Get AI response from Mr.DP (with conversation memory)
+        response = ask_mr_dp(user_message, chat_history=st.session_state.mr_dp_chat_history)
 
-        # Add Mr.DP's response to chat history
-        st.session_state.mr_dp_chat_history.append({
-            "role": "assistant",
-            "content": response["message"]
-        })
+        if response:
+            # Add Mr.DP's response to chat history
+            st.session_state.mr_dp_chat_history.append({
+                "role": "assistant",
+                "content": response["message"]
+            })
 
-        # Update session state with mood analysis
-        st.session_state.current_feeling = response["current_feeling"]
-        st.session_state.desired_feeling = response["desired_feeling"]
-        st.session_state.mr_dp_response = response
+            # Update session state with mood analysis
+            st.session_state.current_feeling = response.get("current_feeling")
+            st.session_state.desired_feeling = response.get("desired_feeling")
+            st.session_state.mr_dp_response = response
 
-        # Search for content based on mood
-        st.session_state.mr_dp_results = mr_dp_search(response)
+            # Search for content based on mood
+            st.session_state.mr_dp_results = mr_dp_search(response)
 
-        # Award dopamine points
-        add_dopamine_points(10, "Chatted with Mr.DP!")
+            # Award dopamine points
+            add_dopamine_points(10, "Chatted with Mr.DP!")
+        else:
+            # Fallback if response is None
+            st.session_state.mr_dp_chat_history.append({
+                "role": "assistant",
+                "content": "Hmm, my neurons misfired! Try asking again?"
+            })
+
+        # Keep chat open after sending
+        st.session_state.mr_dp_open = True
 
         # Scroll to top to show results
         st.session_state.scroll_to_top = True
