@@ -2,7 +2,7 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true"
+startCommand = "mkdir -p .streamlit && printf '[tmdb]\napi_key = \"%s\"\n\n[openai]\napi_key = \"%s\"\n' \"$TMDB_API_KEY\" \"$OPENAI_API_KEY\" > .streamlit/secrets.toml && streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true"
 healthcheckPath = "/"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
