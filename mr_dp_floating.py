@@ -79,12 +79,6 @@ def render_floating_mr_dp():
     if not st.session_state.get("user"):
         return None
 
-    # Hidden rerun trigger button (invisible to user)
-    st.markdown(
-        '<style>[data-testid="stButton"] button[kind="secondary"][key*="mr_dp_rerun"] { display: none !important; }</style>',
-        unsafe_allow_html=True
-    )
-
     # Get chat state
     chat_history = st.session_state.get("mr_dp_chat_history", [])
     is_open = st.session_state.get("mr_dp_open", False)
@@ -242,31 +236,32 @@ def render_floating_mr_dp():
                 var msg = inp.value.trim();
                 if (!msg) return;
                 inp.value = '';
-                // Store message and trigger Streamlit rerun via hidden button
-                window._mrdpPendingMsg = msg;
-                // Add user message to chat immediately for instant feedback
+                // Show user message immediately
                 var msgs = document.getElementById('mrdp-messages');
                 if (msgs) {{
                     var div = document.createElement('div');
                     div.className = 'mrdp-msg mrdp-user';
                     div.innerHTML = '<div class="mrdp-bubble mrdp-bubble-user">' + msg.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
                     msgs.appendChild(div);
+                    // Thinking indicator
+                    var thinking = document.createElement('div');
+                    thinking.className = 'mrdp-msg mrdp-assistant';
+                    thinking.id = 'mrdp-thinking';
+                    thinking.innerHTML = '<div class="mrdp-avatar">&#129504;</div><div class="mrdp-bubble mrdp-bubble-ai">Thinking...</div>';
+                    msgs.appendChild(thinking);
                     msgs.scrollTop = msgs.scrollHeight;
                 }}
-                // Add thinking indicator
-                var thinking = document.createElement('div');
-                thinking.className = 'mrdp-msg mrdp-assistant';
-                thinking.id = 'mrdp-thinking';
-                thinking.innerHTML = '<div class="mrdp-avatar">&#129504;</div><div class="mrdp-bubble mrdp-bubble-ai">Thinking...</div>';
-                msgs.appendChild(thinking);
-                msgs.scrollTop = msgs.scrollHeight;
-                // Find and click the hidden Streamlit button
-                var buttons = document.querySelectorAll('button[kind="secondary"]');
-                for (var i = 0; i < buttons.length; i++) {{
-                    if (buttons[i].textContent.trim() === 'mrdp_trigger') {{
-                        buttons[i].click();
-                        return;
-                    }}
+                // Bridge to hidden Streamlit chat_input
+                var stInput = document.querySelector('[data-testid="stChatInput"] textarea');
+                if (stInput) {{
+                    var nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+                    nativeSetter.call(stInput, msg);
+                    stInput.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                    // Trigger submit
+                    setTimeout(function() {{
+                        var submitBtn = document.querySelector('[data-testid="stChatInputSubmitButton"]');
+                        if (submitBtn) submitBtn.click();
+                    }}, 50);
                 }}
             }}
         `;
@@ -299,37 +294,22 @@ def render_floating_mr_dp():
 
     components.html(inject_script, height=0, scrolling=False)
 
-    # Hidden trigger button - Streamlit native, triggers rerun
-    trigger = st.button("mrdp_trigger", key="mr_dp_rerun", type="secondary")
+    # Hide the native Streamlit chat_input visually (but keep it functional)
+    st.markdown("""
+        <style>
+        [data-testid="stChatInput"] {
+            position: fixed !important;
+            bottom: -200px !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
-    if trigger:
-        # Read pending message from JavaScript via a small JS bridge
-        # Use a component to read window._mrdpPendingMsg
-        pass
+    # Native Streamlit chat input (hidden, bridged from popup via JS)
+    user_input = st.chat_input("Talk to Mr.DP", key="mr_dp_chat_input")
 
-    # Check for pending message via callback component
-    msg_reader = f"""
-    <script>
-    (function() {{
-        var msg = window.parent._mrdpPendingMsg || null;
-        if (msg) {{
-            window.parent._mrdpPendingMsg = null;
-            // Set it as a Streamlit query param so Python can read it
-            var url = new URL(window.parent.location.href);
-            url.searchParams.set('mr_dp_msg', encodeURIComponent(msg));
-            window.parent.history.replaceState({{}}, '', url.toString());
-        }}
-    }})();
-    </script>
-    """
-    components.html(msg_reader, height=0, scrolling=False)
-
-    # Read message from query params (set by JS without page reload)
-    if "mr_dp_msg" in st.query_params:
-        import urllib.parse
-        message = urllib.parse.unquote(st.query_params["mr_dp_msg"])
-        st.query_params.pop("mr_dp_msg", None)
+    if user_input:
         st.session_state.mr_dp_open = True
-        return message
 
-    return None
+    return user_input
