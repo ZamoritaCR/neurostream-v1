@@ -12,8 +12,17 @@
 # ✅ Protected routes
 # --------------------------------------------------
 
-import streamlit as st
 import os
+
+# Create secrets.toml from env vars if it doesn't exist (Railway deployment)
+if os.environ.get("RAILWAY_ENVIRONMENT_NAME") and not os.path.exists(".streamlit/secrets.toml"):
+    os.makedirs(".streamlit", exist_ok=True)
+    with open(".streamlit/secrets.toml", "w") as f:
+        tmdb = os.environ.get("TMDB_API_KEY", "")
+        openai = os.environ.get("OPENAI_API_KEY", "")
+        f.write(f'[tmdb]\napi_key = "{tmdb}"\n\n[openai]\napi_key = "{openai}"\n')
+
+import streamlit as st
 import requests
 import json
 import base64
