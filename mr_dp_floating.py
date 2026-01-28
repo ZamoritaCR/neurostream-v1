@@ -286,29 +286,40 @@ def render_floating_mr_dp():
         `;
         parentDoc.head.appendChild(style);
 
-        // Create widget container
+        // Inject functions into parent page scope via script tag
+        var existingScript = parentDoc.getElementById('mr-dp-widget-script');
+        if (existingScript) existingScript.remove();
+        var scriptEl = parentDoc.createElement('script');
+        scriptEl.id = 'mr-dp-widget-script';
+        scriptEl.textContent = `
+            function mrDpToggle() {{
+                var url = new URL(window.location.href);
+                url.searchParams.set('mr_dp_toggle', Date.now().toString());
+                window.location.href = url.toString();
+            }}
+            function mrDpSend(event) {{
+                event.preventDefault();
+                var input = document.getElementById('mr-dp-input');
+                var message = input.value.trim();
+                if (message) {{
+                    var url = new URL(window.location.href);
+                    url.searchParams.set('mr_dp_msg', encodeURIComponent(message));
+                    url.searchParams.set('mr_dp_ts', Date.now().toString());
+                    window.location.href = url.toString();
+                }}
+            }}
+        `;
+        parentDoc.head.appendChild(scriptEl);
+
+        // Create widget container with inline onclick attributes
         var container = parentDoc.createElement('div');
         container.id = 'mr-dp-widget-container';
-
-        // Avatar
-        var avatar = parentDoc.createElement('div');
-        avatar.className = 'mr-dp-floating-avatar';
-        avatar.title = 'Chat with Mr.DP';
-        avatar.innerHTML = {svg_escaped};
-        avatar.onclick = function() {{
-            var parentWin = parentDoc.defaultView || window.top;
-            var url = new URL(parentWin.location.href);
-            url.searchParams.set('mr_dp_toggle', Date.now().toString());
-            parentWin.location.href = url.toString();
-        }};
-        container.appendChild(avatar);
-
-        // Chat popup
-        var popup = parentDoc.createElement('div');
-        popup.className = 'mr-dp-chat-popup';
-        popup.id = 'mr-dp-chat-popup';
-        popup.innerHTML = '<div class="chat-header">'
-            + '<button class="close-btn" id="mr-dp-close-btn">\\u00d7</button>'
+        container.innerHTML = '<div class="mr-dp-floating-avatar" title="Chat with Mr.DP" onclick="mrDpToggle()">'
+            + {svg_escaped}
+            + '</div>'
+            + '<div class="mr-dp-chat-popup" id="mr-dp-chat-popup">'
+            + '<div class="chat-header">'
+            + '<button class="close-btn" onclick="mrDpToggle()">\\u00d7</button>'
             + '<div class="chat-title">\\ud83e\\udde0 Mr.DP Chat</div>'
             + '<div class="chat-status">\\u25cf Online - Your Dopamine Buddy</div>'
             + '</div>'
@@ -316,35 +327,14 @@ def render_floating_mr_dp():
             + {chat_html_escaped}
             + '</div>'
             + '<div class="chat-input-area">'
-            + '<form class="input-form" id="mr-dp-form">'
+            + '<form class="input-form" onsubmit="mrDpSend(event)">'
             + '<input type="text" class="message-input" id="mr-dp-input" placeholder="How are you feeling?" autocomplete="off" required>'
             + '<button type="submit" class="send-btn">Send \\ud83d\\ude80</button>'
             + '</form>'
+            + '</div>'
             + '</div>';
-        container.appendChild(popup);
 
         parentDoc.body.appendChild(container);
-
-        // Attach event listeners
-        var parentWin = parentDoc.defaultView || window.top;
-
-        parentDoc.getElementById('mr-dp-close-btn').onclick = function() {{
-            var url = new URL(parentWin.location.href);
-            url.searchParams.set('mr_dp_toggle', Date.now().toString());
-            parentWin.location.href = url.toString();
-        }};
-
-        parentDoc.getElementById('mr-dp-form').onsubmit = function(e) {{
-            e.preventDefault();
-            var input = parentDoc.getElementById('mr-dp-input');
-            var message = input.value.trim();
-            if (message) {{
-                var url = new URL(parentWin.location.href);
-                url.searchParams.set('mr_dp_msg', encodeURIComponent(message));
-                url.searchParams.set('mr_dp_ts', Date.now().toString());
-                parentWin.location.href = url.toString();
-            }}
-        }};
 
         // Auto-scroll chat to bottom
         var chatMessages = parentDoc.getElementById('mr-dp-chat-messages');
