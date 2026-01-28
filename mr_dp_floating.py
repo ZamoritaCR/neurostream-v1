@@ -1,10 +1,11 @@
 """
 Mr.DP Floating Chat Widget
-Using Streamlit's native chat components with SVG neuron character
+Injects widget into parent Streamlit page via JavaScript
 """
 
 import streamlit as st
 import streamlit.components.v1 as components
+import json
 
 
 def get_mr_dp_svg(expression='happy'):
@@ -61,14 +62,15 @@ def get_mr_dp_svg(expression='happy'):
 <path d="M38 24 Q42 22 46 24" stroke="white" stroke-width="1.5" fill="none" opacity="0.8"/>
 {mouths[expr['mouth']]}
 {blush}
-<text x="54" y="14" font-size="8" fill="#ffd700" opacity="0.8">✦</text>
-<text x="8" y="18" font-size="6" fill="#ffd700" opacity="0.6">✦</text>
+<text x="54" y="14" font-size="8" fill="#ffd700" opacity="0.8">&#10022;</text>
+<text x="8" y="18" font-size="6" fill="#ffd700" opacity="0.6">&#10022;</text>
 </svg>'''
 
 
 def render_floating_mr_dp():
     """
     Render floating Mr.DP chatbot that stays on screen while scrolling.
+    Injects widget into parent Streamlit page DOM via JavaScript.
     Only shows when user is logged in.
     Returns user message if sent, None otherwise.
     """
@@ -90,28 +92,36 @@ def render_floating_mr_dp():
     if chat_history:
         for msg in chat_history[-8:]:
             role_class = "user" if msg["role"] == "user" else "assistant"
-            content = msg["content"].replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+            content = msg["content"].replace("<", "&lt;").replace(">", "&gt;").replace("'", "&#39;").replace('"', "&quot;")
             if msg["role"] == "assistant":
                 chat_html += f'<div class="chat-message {role_class}"><div class="avatar">{get_mr_dp_svg("happy")}</div><div class="message-content">{content}</div></div>'
             else:
-                chat_html += f'<div class="chat-message {role_class}"><div class="message-content">{content}</div><div class="avatar">😊</div></div>'
+                chat_html += f'<div class="chat-message {role_class}"><div class="message-content">{content}</div><div class="avatar">&#128522;</div></div>'
     else:
-        chat_html = f'<div class="chat-message assistant"><div class="avatar">{get_mr_dp_svg("happy")}</div><div class="message-content">👋 Hey! Tell me how you\'re feeling and I\'ll find the perfect content for you!</div></div>'
+        chat_html = f'<div class="chat-message assistant"><div class="avatar">{get_mr_dp_svg("happy")}</div><div class="message-content">&#128075; Hey! Tell me how you\'re feeling and I\'ll find the perfect content for you!</div></div>'
 
-    # Create complete widget with avatar + chat popup in top-right
     chat_display = "flex" if is_open else "none"
 
-    full_widget_html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <style>
-            body {{
-                margin: 0;
-                padding: 0;
-                background: transparent;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            }}
+    # Escape for JavaScript string embedding
+    svg_escaped = json.dumps(mr_dp_svg)
+    chat_html_escaped = json.dumps(chat_html)
+
+    # JavaScript that injects the widget into the parent Streamlit page
+    inject_script = f"""
+    <script>
+    (function() {{
+        var parentDoc = window.parent.document;
+
+        // Remove existing widget if present (prevents duplicates on rerun)
+        var existing = parentDoc.getElementById('mr-dp-widget-container');
+        if (existing) existing.remove();
+        var existingStyle = parentDoc.getElementById('mr-dp-widget-style');
+        if (existingStyle) existingStyle.remove();
+
+        // Inject CSS into parent
+        var style = parentDoc.createElement('style');
+        style.id = 'mr-dp-widget-style';
+        style.textContent = `
             .mr-dp-floating-avatar {{
                 position: fixed;
                 top: 80px;
@@ -122,14 +132,14 @@ def render_floating_mr_dp():
                 box-shadow: 0 8px 32px rgba(139, 92, 246, 0.5);
                 cursor: pointer;
                 z-index: 999999;
-                animation: bounce 3s ease-in-out infinite;
+                animation: mr-dp-bounce 3s ease-in-out infinite;
                 transition: all 0.3s ease;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 padding: 8px;
             }}
-            @keyframes bounce {{
+            @keyframes mr-dp-bounce {{
                 0%, 100% {{ transform: translateY(0); }}
                 50% {{ transform: translateY(-8px); }}
             }}
@@ -152,23 +162,24 @@ def render_floating_mr_dp():
                 display: {chat_display};
                 flex-direction: column;
                 overflow: hidden;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             }}
-            .chat-header {{
+            .mr-dp-chat-popup .chat-header {{
                 padding: 20px 20px 12px 20px;
                 border-bottom: 1px solid rgba(139, 92, 246, 0.2);
                 position: relative;
             }}
-            .chat-title {{
+            .mr-dp-chat-popup .chat-title {{
                 color: #f5f5f7;
                 font-size: 1.2rem;
                 font-weight: bold;
                 margin-bottom: 4px;
             }}
-            .chat-status {{
+            .mr-dp-chat-popup .chat-status {{
                 color: #10b981;
                 font-size: 0.85rem;
             }}
-            .close-btn {{
+            .mr-dp-chat-popup .close-btn {{
                 position: absolute;
                 top: 16px;
                 right: 16px;
@@ -186,26 +197,26 @@ def render_floating_mr_dp():
                 transition: all 0.3s ease;
                 line-height: 1;
             }}
-            .close-btn:hover {{
+            .mr-dp-chat-popup .close-btn:hover {{
                 background: rgba(139, 92, 246, 0.4);
                 transform: scale(1.1);
             }}
-            .chat-messages {{
+            .mr-dp-chat-popup .chat-messages {{
                 flex: 1;
                 overflow-y: auto;
                 padding: 16px 20px;
                 max-height: 300px;
             }}
-            .chat-message {{
+            .mr-dp-chat-popup .chat-message {{
                 display: flex;
                 gap: 8px;
                 margin: 12px 0;
                 align-items: flex-start;
             }}
-            .chat-message.user {{
+            .mr-dp-chat-popup .chat-message.user {{
                 flex-direction: row-reverse;
             }}
-            .avatar {{
+            .mr-dp-chat-popup .avatar {{
                 width: 32px;
                 height: 32px;
                 flex-shrink: 0;
@@ -214,11 +225,11 @@ def render_floating_mr_dp():
                 justify-content: center;
                 font-size: 1.2rem;
             }}
-            .avatar svg {{
+            .mr-dp-chat-popup .avatar svg {{
                 width: 100%;
                 height: 100%;
             }}
-            .message-content {{
+            .mr-dp-chat-popup .message-content {{
                 padding: 12px 16px;
                 border-radius: 18px;
                 font-size: 0.9rem;
@@ -226,24 +237,24 @@ def render_floating_mr_dp():
                 word-wrap: break-word;
                 max-width: 260px;
             }}
-            .chat-message.user .message-content {{
+            .mr-dp-chat-popup .chat-message.user .message-content {{
                 background: linear-gradient(135deg, #8b5cf6, #06b6d4);
                 color: #ffffff;
             }}
-            .chat-message.assistant .message-content {{
+            .mr-dp-chat-popup .chat-message.assistant .message-content {{
                 background: rgba(139, 92, 246, 0.15);
                 border: 1px solid rgba(139, 92, 246, 0.25);
                 color: #f5f5f7;
             }}
-            .chat-input-area {{
+            .mr-dp-chat-popup .chat-input-area {{
                 padding: 16px 20px;
                 border-top: 1px solid rgba(139, 92, 246, 0.2);
             }}
-            .input-form {{
+            .mr-dp-chat-popup .input-form {{
                 display: flex;
                 gap: 8px;
             }}
-            .message-input {{
+            .mr-dp-chat-popup .message-input {{
                 flex: 1;
                 background: rgba(139, 92, 246, 0.1);
                 border: 1px solid rgba(139, 92, 246, 0.3);
@@ -253,11 +264,11 @@ def render_floating_mr_dp():
                 font-size: 0.9rem;
                 outline: none;
             }}
-            .message-input:focus {{
+            .mr-dp-chat-popup .message-input:focus {{
                 border-color: #8b5cf6;
                 background: rgba(139, 92, 246, 0.15);
             }}
-            .send-btn {{
+            .mr-dp-chat-popup .send-btn {{
                 background: linear-gradient(135deg, #8b5cf6, #06b6d4);
                 border: none;
                 border-radius: 12px;
@@ -268,72 +279,80 @@ def render_floating_mr_dp():
                 transition: all 0.3s ease;
                 white-space: nowrap;
             }}
-            .send-btn:hover {{
+            .mr-dp-chat-popup .send-btn:hover {{
                 transform: scale(1.05);
                 box-shadow: 0 4px 12px rgba(139, 92, 246, 0.5);
             }}
-        </style>
-    </head>
-    <body>
-        <div class="mr-dp-floating-avatar" title="Chat with Mr.DP" onclick="toggleChat()">
-            {mr_dp_svg}
-        </div>
+        `;
+        parentDoc.head.appendChild(style);
 
-        <div class="mr-dp-chat-popup" id="chatPopup">
-            <div class="chat-header">
-                <button class="close-btn" onclick="toggleChat()">×</button>
-                <div class="chat-title">🧠 Mr.DP Chat</div>
-                <div class="chat-status">● Online - Your Dopamine Buddy</div>
-            </div>
+        // Create widget container
+        var container = parentDoc.createElement('div');
+        container.id = 'mr-dp-widget-container';
 
-            <div class="chat-messages" id="chatMessages">
-                {chat_html}
-            </div>
+        // Avatar
+        var avatar = parentDoc.createElement('div');
+        avatar.className = 'mr-dp-floating-avatar';
+        avatar.title = 'Chat with Mr.DP';
+        avatar.innerHTML = {svg_escaped};
+        avatar.onclick = function() {{
+            var url = new URL(window.top.location.href);
+            url.searchParams.set('mr_dp_toggle', Date.now().toString());
+            window.top.location.href = url.toString();
+        }};
+        container.appendChild(avatar);
 
-            <div class="chat-input-area">
-                <form class="input-form" onsubmit="sendMessage(event)">
-                    <input type="text"
-                           class="message-input"
-                           id="messageInput"
-                           placeholder="How are you feeling?"
-                           autocomplete="off"
-                           required>
-                    <button type="submit" class="send-btn">Send 🚀</button>
-                </form>
-            </div>
-        </div>
+        // Chat popup
+        var popup = parentDoc.createElement('div');
+        popup.className = 'mr-dp-chat-popup';
+        popup.id = 'mr-dp-chat-popup';
+        popup.innerHTML = '<div class="chat-header">'
+            + '<button class="close-btn" id="mr-dp-close-btn">\\u00d7</button>'
+            + '<div class="chat-title">\\ud83e\\udde0 Mr.DP Chat</div>'
+            + '<div class="chat-status">\\u25cf Online - Your Dopamine Buddy</div>'
+            + '</div>'
+            + '<div class="chat-messages" id="mr-dp-chat-messages">'
+            + {chat_html_escaped}
+            + '</div>'
+            + '<div class="chat-input-area">'
+            + '<form class="input-form" id="mr-dp-form">'
+            + '<input type="text" class="message-input" id="mr-dp-input" placeholder="How are you feeling?" autocomplete="off" required>'
+            + '<button type="submit" class="send-btn">Send \\ud83d\\ude80</button>'
+            + '</form>'
+            + '</div>';
+        container.appendChild(popup);
 
-        <script>
-            function toggleChat() {{
-                const url = new URL(window.top.location.href);
-                url.searchParams.set('mr_dp_toggle', Date.now().toString());
+        parentDoc.body.appendChild(container);
+
+        // Attach event listeners
+        parentDoc.getElementById('mr-dp-close-btn').onclick = function() {{
+            var url = new URL(window.top.location.href);
+            url.searchParams.set('mr_dp_toggle', Date.now().toString());
+            window.top.location.href = url.toString();
+        }};
+
+        parentDoc.getElementById('mr-dp-form').onsubmit = function(e) {{
+            e.preventDefault();
+            var input = parentDoc.getElementById('mr-dp-input');
+            var message = input.value.trim();
+            if (message) {{
+                var url = new URL(window.top.location.href);
+                url.searchParams.set('mr_dp_msg', encodeURIComponent(message));
+                url.searchParams.set('mr_dp_ts', Date.now().toString());
                 window.top.location.href = url.toString();
             }}
+        }};
 
-            function sendMessage(event) {{
-                event.preventDefault();
-                const input = document.getElementById('messageInput');
-                const message = input.value.trim();
-
-                if (message) {{
-                    const url = new URL(window.top.location.href);
-                    url.searchParams.set('mr_dp_msg', encodeURIComponent(message));
-                    url.searchParams.set('mr_dp_ts', Date.now().toString());
-                    window.top.location.href = url.toString();
-                }}
-            }}
-
-            // Auto-scroll to bottom
-            const chatMessages = document.getElementById('chatMessages');
-            if (chatMessages) {{
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            }}
-        </script>
-    </body>
-    </html>
+        // Auto-scroll chat to bottom
+        var chatMessages = parentDoc.getElementById('mr-dp-chat-messages');
+        if (chatMessages) {{
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }}
+    }})();
+    </script>
     """
 
-    components.html(full_widget_html, height=1, scrolling=False)
+    components.html(inject_script, height=0, scrolling=False)
 
     # Check for toggle in query params
     if "mr_dp_toggle" in st.query_params:
