@@ -1,7 +1,7 @@
 """
 Mr.DP Floating Chat Widget
 Professional floating chat popup injected via JavaScript.
-Uses hidden Streamlit button as rerun trigger to avoid page reloads.
+Uses native Streamlit chat_input positioned at the popup via CSS.
 """
 
 import streamlit as st
@@ -71,7 +71,8 @@ def get_mr_dp_svg(expression='happy'):
 def render_floating_mr_dp():
     """
     Render floating Mr.DP chatbot as a professional chat popup.
-    Uses JavaScript for the UI and a hidden Streamlit button for communication.
+    Uses JavaScript for the UI toggle and native st.chat_input for message input.
+    The st.chat_input is repositioned via CSS to appear at the popup location.
     Returns user message if sent, None otherwise.
     """
 
@@ -82,9 +83,14 @@ def render_floating_mr_dp():
     # Get chat state
     chat_history = st.session_state.get("mr_dp_chat_history", [])
     is_open = st.session_state.get("mr_dp_open", False)
+    is_thinking = st.session_state.get("mr_dp_thinking", False)
+
+    # Reset mr_dp_open after reading (JS will manage open state from here)
+    if is_open:
+        st.session_state.mr_dp_open = False
 
     # Build chat HTML
-    expression = 'happy' if is_open else 'sleeping'
+    expression = 'thinking' if is_thinking else ('happy' if is_open else 'sleeping')
     mr_dp_svg = get_mr_dp_svg(expression)
 
     chat_html = ""
@@ -98,9 +104,14 @@ def render_floating_mr_dp():
     else:
         chat_html = '<div class="mrdp-msg mrdp-assistant"><div class="mrdp-avatar">&#129504;</div><div class="mrdp-bubble mrdp-bubble-ai">&#128075; Hey! Tell me how you\'re feeling and I\'ll find the perfect content for you!</div></div>'
 
-    chat_display = "flex" if is_open else "none"
+    # Add thinking indicator if processing
+    if is_thinking:
+        chat_html += '<div class="mrdp-msg mrdp-assistant"><div class="mrdp-avatar">&#129504;</div><div class="mrdp-bubble mrdp-bubble-ai"><span class="mrdp-thinking-dots"><span>.</span><span>.</span><span>.</span></span></div></div>'
+
     svg_escaped = json.dumps(mr_dp_svg)
+    header_svg_escaped = json.dumps(get_mr_dp_svg("happy").replace("\n", ""))
     chat_html_escaped = json.dumps(chat_html)
+    is_open_json = json.dumps(is_open)
 
     inject_script = f"""
     <script>
@@ -115,6 +126,11 @@ def render_floating_mr_dp():
         var oldJ = pd.getElementById('mrdp-js');
         if (oldJ) oldJ.remove();
 
+        // Determine open state: Python says open OR JS was open
+        var pythonOpen = {is_open_json};
+        var jsOpen = pd.body.getAttribute('data-mrdp-open') === 'true';
+        var shouldOpen = pythonOpen || jsOpen;
+
         // CSS
         var css = pd.createElement('style');
         css.id = 'mrdp-css';
@@ -125,7 +141,7 @@ def render_floating_mr_dp():
                 width: 70px; height: 70px; border-radius: 50%;
                 background: linear-gradient(135deg, #1a1a2e, #16213e);
                 box-shadow: 0 8px 32px rgba(139,92,246,0.5);
-                cursor: pointer; z-index: 999999;
+                cursor: pointer; z-index: 2147483647;
                 animation: mrdp-pulse 3s ease-in-out infinite;
                 display: flex; align-items: center; justify-content: center;
                 padding: 10px; transition: transform 0.3s;
@@ -141,12 +157,13 @@ def render_floating_mr_dp():
                 background: #10b981; border: 2px solid #1a1a2e;
             }}
             #mrdp-popup {{
-                position: fixed; bottom: 110px; right: 24px;
-                width: 380px; height: 520px;
+                position: fixed; bottom: 155px; right: 24px;
+                width: 380px; height: 400px;
                 background: #0d0d14; border: 1px solid rgba(139,92,246,0.3);
-                border-radius: 16px; z-index: 999998;
-                box-shadow: 0 20px 60px rgba(0,0,0,0.8);
-                display: {chat_display}; flex-direction: column;
+                border-bottom: none;
+                border-radius: 16px 16px 0 0; z-index: 2147483645;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(139,92,246,0.1);
+                display: none; flex-direction: column;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
                 overflow: hidden;
             }}
@@ -187,27 +204,88 @@ def render_floating_mr_dp():
                 background: linear-gradient(135deg, #8b5cf6, #06b6d4);
                 color: #fff; border-bottom-right-radius: 4px;
             }}
-            #mrdp-input-area {{
-                padding: 12px 16px; border-top: 1px solid rgba(139,92,246,0.2);
-                background: rgba(139,92,246,0.03);
+            .mrdp-thinking-dots span {{
+                display: inline-block;
+                animation: mrdp-blink 1.4s infinite;
+                font-size: 28px; line-height: 20px; letter-spacing: 3px; color: #8b5cf6;
             }}
-            #mrdp-form {{ display: flex; gap: 8px; }}
-            #mrdp-input {{
-                flex: 1; background: rgba(139,92,246,0.08);
-                border: 1px solid rgba(139,92,246,0.25); border-radius: 12px;
-                padding: 10px 14px; color: #f5f5f7; font-size: 14px; outline: none;
+            .mrdp-thinking-dots span:nth-child(2) {{ animation-delay: 0.2s; }}
+            .mrdp-thinking-dots span:nth-child(3) {{ animation-delay: 0.4s; }}
+            @keyframes mrdp-blink {{
+                0%, 20% {{ opacity: 0.2; }}
+                50% {{ opacity: 1; }}
+                100% {{ opacity: 0.2; }}
             }}
-            #mrdp-input:focus {{ border-color: #8b5cf6; background: rgba(139,92,246,0.12); }}
-            #mrdp-input::placeholder {{ color: #666; }}
-            #mrdp-send {{
-                background: linear-gradient(135deg, #8b5cf6, #06b6d4);
-                border: none; border-radius: 12px; padding: 10px 16px;
-                color: #fff; font-size: 14px; cursor: pointer; transition: all 0.2s;
+
+            /* ---- Native Streamlit chat_input positioning ---- */
+            /* Default: hidden off-screen */
+            [data-testid="stBottom"],
+            .stBottom {{
+                position: fixed !important;
+                bottom: -300px !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
+                z-index: -1 !important;
             }}
-            #mrdp-send:hover {{ transform: scale(1.05); box-shadow: 0 4px 12px rgba(139,92,246,0.4); }}
+            /* When popup is open: position at popup base */
+            body.mrdp-open [data-testid="stBottom"],
+            body.mrdp-open .stBottom {{
+                position: fixed !important;
+                bottom: 100px !important;
+                right: 24px !important;
+                left: auto !important;
+                width: 380px !important;
+                max-width: 380px !important;
+                opacity: 1 !important;
+                pointer-events: auto !important;
+                z-index: 2147483644 !important;
+                background: transparent !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }}
+            /* Style the chat input to match popup */
+            body.mrdp-open [data-testid="stChatInput"] {{
+                background: #0d0d14 !important;
+                border: 1px solid rgba(139,92,246,0.3) !important;
+                border-top: 1px solid rgba(139,92,246,0.15) !important;
+                border-radius: 0 0 16px 16px !important;
+                padding: 10px 14px !important;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+            }}
+            body.mrdp-open [data-testid="stChatInput"] textarea,
+            body.mrdp-open [data-testid="stChatInput"] input {{
+                background: rgba(139,92,246,0.08) !important;
+                border: 1px solid rgba(139,92,246,0.25) !important;
+                border-radius: 10px !important;
+                color: #f5f5f7 !important;
+                caret-color: #f5f5f7 !important;
+                font-size: 14px !important;
+            }}
+            body.mrdp-open [data-testid="stChatInput"] textarea::placeholder,
+            body.mrdp-open [data-testid="stChatInput"] input::placeholder {{
+                color: #666 !important;
+            }}
+            body.mrdp-open [data-testid="stChatInput"] button {{
+                color: #8b5cf6 !important;
+            }}
+            body.mrdp-open [data-testid="stChatInput"] button svg {{
+                fill: #8b5cf6 !important;
+            }}
+            /* Remove extra padding Streamlit adds for bottom bar */
+            body.mrdp-open [data-testid="stBottomBlockContainer"] {{
+                padding: 0 !important;
+                max-width: 380px !important;
+            }}
             @media (max-width: 480px) {{
-                #mrdp-popup {{ width: calc(100vw - 16px); right: 8px; bottom: 100px; height: 450px; }}
+                #mrdp-popup {{ width: calc(100vw - 16px); right: 8px; bottom: 145px; height: 350px; }}
                 #mrdp-avatar {{ width: 56px; height: 56px; bottom: 16px; right: 16px; padding: 8px; }}
+                body.mrdp-open [data-testid="stBottom"],
+                body.mrdp-open .stBottom {{
+                    width: calc(100vw - 16px) !important;
+                    max-width: calc(100vw - 16px) !important;
+                    right: 8px !important;
+                    bottom: 90px !important;
+                }}
             }}
         `;
         pd.head.appendChild(css);
@@ -222,66 +300,47 @@ def render_floating_mr_dp():
                     var isHidden = popup.style.display === 'none';
                     popup.style.display = isHidden ? 'flex' : 'none';
                     if (isHidden) {{
+                        document.body.classList.add('mrdp-open');
+                        document.body.setAttribute('data-mrdp-open', 'true');
                         var msgs = document.getElementById('mrdp-messages');
                         if (msgs) msgs.scrollTop = msgs.scrollHeight;
-                        var inp = document.getElementById('mrdp-input');
-                        if (inp) setTimeout(function() {{ inp.focus(); }}, 100);
+                        // Focus native Streamlit chat input
+                        setTimeout(function() {{
+                            var inp = document.querySelector('[data-testid="stChatInput"] textarea');
+                            if (!inp) inp = document.querySelector('[data-testid="stChatInput"] input');
+                            if (inp) inp.focus();
+                        }}, 300);
+                    }} else {{
+                        document.body.classList.remove('mrdp-open');
+                        document.body.setAttribute('data-mrdp-open', 'false');
                     }}
-                }}
-            }}
-            function mrdpSend(e) {{
-                if (e) e.preventDefault();
-                var inp = document.getElementById('mrdp-input');
-                if (!inp) return;
-                var msg = inp.value.trim();
-                if (!msg) return;
-                inp.value = '';
-                // Show user message immediately
-                var msgs = document.getElementById('mrdp-messages');
-                if (msgs) {{
-                    var div = document.createElement('div');
-                    div.className = 'mrdp-msg mrdp-user';
-                    div.innerHTML = '<div class="mrdp-bubble mrdp-bubble-user">' + msg.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
-                    msgs.appendChild(div);
-                    // Thinking indicator
-                    var thinking = document.createElement('div');
-                    thinking.className = 'mrdp-msg mrdp-assistant';
-                    thinking.id = 'mrdp-thinking';
-                    thinking.innerHTML = '<div class="mrdp-avatar">&#129504;</div><div class="mrdp-bubble mrdp-bubble-ai">Thinking...</div>';
-                    msgs.appendChild(thinking);
-                    msgs.scrollTop = msgs.scrollHeight;
-                }}
-                // Bridge to hidden Streamlit chat_input
-                var stInput = document.querySelector('[data-testid="stChatInput"] textarea');
-                if (stInput) {{
-                    var nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
-                    nativeSetter.call(stInput, msg);
-                    stInput.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                    // Trigger submit
-                    setTimeout(function() {{
-                        var submitBtn = document.querySelector('[data-testid="stChatInputSubmitButton"]');
-                        if (submitBtn) submitBtn.click();
-                    }}, 50);
                 }}
             }}
         `;
         pd.head.appendChild(js);
 
-        // Widget HTML
+        // Set body class based on open state
+        if (shouldOpen) {{
+            pd.body.classList.add('mrdp-open');
+            pd.body.setAttribute('data-mrdp-open', 'true');
+        }} else {{
+            pd.body.classList.remove('mrdp-open');
+        }}
+
+        // Widget HTML (messages only - native st.chat_input serves as input)
         var root = pd.createElement('div');
         root.id = 'mrdp-root';
         root.innerHTML = '<div id="mrdp-avatar" onclick="mrdpToggle()">'
             + {svg_escaped}
             + '<div id="mrdp-badge"></div>'
             + '</div>'
-            + '<div id="mrdp-popup">'
+            + '<div id="mrdp-popup" style="display: ' + (shouldOpen ? 'flex' : 'none') + '">'
             + '<div id="mrdp-header">'
-            + '<div id="mrdp-header-avatar">{get_mr_dp_svg("happy").replace(chr(10), "")}</div>'
+            + '<div id="mrdp-header-avatar">' + {header_svg_escaped} + '</div>'
             + '<div id="mrdp-header-info"><div id="mrdp-header-name">Mr.DP</div><div id="mrdp-header-status">&#9679; Online</div></div>'
             + '<button id="mrdp-close" onclick="mrdpToggle()">&#10005;</button>'
             + '</div>'
             + '<div id="mrdp-messages">' + {chat_html_escaped} + '</div>'
-            + '<div id="mrdp-input-area"><form id="mrdp-form" onsubmit="mrdpSend(event)"><input id="mrdp-input" placeholder="How are you feeling?" autocomplete="off"><button type="submit" id="mrdp-send">Send</button></form></div>'
             + '</div>';
         pd.body.appendChild(root);
 
@@ -294,20 +353,8 @@ def render_floating_mr_dp():
 
     components.html(inject_script, height=0, scrolling=False)
 
-    # Hide the native Streamlit chat_input visually (but keep it functional)
-    st.markdown("""
-        <style>
-        [data-testid="stChatInput"] {
-            position: fixed !important;
-            bottom: -200px !important;
-            opacity: 0 !important;
-            pointer-events: none !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-    # Native Streamlit chat input (hidden, bridged from popup via JS)
-    user_input = st.chat_input("Talk to Mr.DP", key="mr_dp_chat_input")
+    # Native Streamlit chat input (positioned by CSS at popup location when open)
+    user_input = st.chat_input("How are you feeling?", key="mr_dp_chat_input")
 
     if user_input:
         st.session_state.mr_dp_open = True
