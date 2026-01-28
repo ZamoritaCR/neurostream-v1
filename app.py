@@ -159,15 +159,20 @@ AUDIOBOOK_SERVICES = {
 # --------------------------------------------------
 @st.cache_data
 def get_tmdb_key():
+    key = os.environ.get("TMDB_API_KEY")
+    if key:
+        return key
     try:
         return st.secrets["tmdb"]["api_key"]
     except:
-        return os.environ.get("TMDB_API_KEY")
+        return None
 
-try:
-    _openai_key = st.secrets["openai"]["api_key"]
-except:
-    _openai_key = os.environ.get("OPENAI_API_KEY")
+_openai_key = os.environ.get("OPENAI_API_KEY")
+if not _openai_key:
+    try:
+        _openai_key = st.secrets["openai"]["api_key"]
+    except:
+        _openai_key = None
 
 openai_client = OpenAI(api_key=_openai_key) if _openai_key else None
 
