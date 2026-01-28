@@ -162,12 +162,14 @@ def get_tmdb_key():
     try:
         return st.secrets["tmdb"]["api_key"]
     except:
-        return None
+        return os.environ.get("TMDB_API_KEY")
 
 try:
-    openai_client = OpenAI(api_key=st.secrets["openai"]["api_key"])
+    _openai_key = st.secrets["openai"]["api_key"]
 except:
-    openai_client = None
+    _openai_key = os.environ.get("OPENAI_API_KEY")
+
+openai_client = OpenAI(api_key=_openai_key) if _openai_key else None
 
 # --------------------------------------------------
 # 7. EMOTION MAPPINGS - COMPLETE
