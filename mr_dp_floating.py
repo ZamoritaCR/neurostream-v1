@@ -1,6 +1,7 @@
 """
 Mr.DP Floating Chat Widget
-Avatar injected via JS, chat uses native Streamlit components
+Professional floating chat popup injected via JavaScript.
+Uses hidden Streamlit button as rerun trigger to avoid page reloads.
 """
 
 import streamlit as st
@@ -67,67 +68,10 @@ def get_mr_dp_svg(expression='happy'):
 </svg>'''
 
 
-def _inject_floating_avatar():
-    """Inject the floating Mr.DP avatar into the page via JavaScript"""
-    expression = 'happy'
-    mr_dp_svg = get_mr_dp_svg(expression)
-    svg_escaped = json.dumps(mr_dp_svg)
-
-    inject_script = f"""
-    <script>
-    (function() {{
-        var parentDoc = window.parent.document;
-
-        // Remove existing avatar if present
-        var existing = parentDoc.getElementById('mr-dp-avatar-float');
-        if (existing) existing.remove();
-        var existingStyle = parentDoc.getElementById('mr-dp-avatar-style');
-        if (existingStyle) existingStyle.remove();
-
-        // Inject CSS
-        var style = parentDoc.createElement('style');
-        style.id = 'mr-dp-avatar-style';
-        style.textContent = `
-            .mr-dp-floating-avatar {{
-                position: fixed;
-                top: 80px;
-                right: 24px;
-                width: 80px;
-                height: 80px;
-                border-radius: 50%;
-                box-shadow: 0 8px 32px rgba(139, 92, 246, 0.5);
-                cursor: default;
-                z-index: 999999;
-                animation: mr-dp-bounce 3s ease-in-out infinite;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 8px;
-                pointer-events: none;
-            }}
-            @keyframes mr-dp-bounce {{
-                0%, 100% {{ transform: translateY(0); }}
-                50% {{ transform: translateY(-8px); }}
-            }}
-        `;
-        parentDoc.head.appendChild(style);
-
-        // Create avatar
-        var avatar = parentDoc.createElement('div');
-        avatar.id = 'mr-dp-avatar-float';
-        avatar.className = 'mr-dp-floating-avatar';
-        avatar.innerHTML = {svg_escaped};
-        parentDoc.body.appendChild(avatar);
-    }})();
-    </script>
-    """
-    components.html(inject_script, height=0, scrolling=False)
-
-
 def render_floating_mr_dp():
     """
-    Render floating Mr.DP chatbot using native Streamlit components.
-    Avatar floats via JS injection, chat uses Streamlit sidebar.
+    Render floating Mr.DP chatbot as a professional chat popup.
+    Uses JavaScript for the UI and a hidden Streamlit button for communication.
     Returns user message if sent, None otherwise.
     """
 
@@ -135,25 +79,257 @@ def render_floating_mr_dp():
     if not st.session_state.get("user"):
         return None
 
-    # Inject floating avatar
-    _inject_floating_avatar()
+    # Hidden rerun trigger button (invisible to user)
+    st.markdown(
+        '<style>[data-testid="stButton"] button[kind="secondary"][key*="mr_dp_rerun"] { display: none !important; }</style>',
+        unsafe_allow_html=True
+    )
 
-    # Chat in sidebar
-    with st.sidebar:
-        st.markdown("---")
-        st.markdown("### 🧠 Mr.DP Chat")
-        st.caption("● Online - Your Dopamine Buddy")
+    # Get chat state
+    chat_history = st.session_state.get("mr_dp_chat_history", [])
+    is_open = st.session_state.get("mr_dp_open", False)
 
-        # Display chat history
-        chat_history = st.session_state.get("mr_dp_chat_history", [])
-        if not chat_history:
-            st.info("👋 Hey! Tell me how you're feeling and I'll find the perfect content for you!")
+    # Build chat HTML
+    expression = 'happy' if is_open else 'sleeping'
+    mr_dp_svg = get_mr_dp_svg(expression)
 
+    chat_html = ""
+    if chat_history:
         for msg in chat_history[-8:]:
-            with st.chat_message(msg["role"], avatar="🧠" if msg["role"] == "assistant" else "😊"):
-                st.write(msg["content"])
+            content = msg["content"].replace("<", "&lt;").replace(">", "&gt;").replace("'", "&#39;").replace('"', "&quot;").replace("\n", "<br>")
+            if msg["role"] == "assistant":
+                chat_html += f'<div class="mrdp-msg mrdp-assistant"><div class="mrdp-avatar">&#129504;</div><div class="mrdp-bubble mrdp-bubble-ai">{content}</div></div>'
+            else:
+                chat_html += f'<div class="mrdp-msg mrdp-user"><div class="mrdp-bubble mrdp-bubble-user">{content}</div></div>'
+    else:
+        chat_html = '<div class="mrdp-msg mrdp-assistant"><div class="mrdp-avatar">&#129504;</div><div class="mrdp-bubble mrdp-bubble-ai">&#128075; Hey! Tell me how you\'re feeling and I\'ll find the perfect content for you!</div></div>'
 
-    # Chat input at bottom of page (Streamlit native - no page reload)
-    user_input = st.chat_input("Talk to Mr.DP - How are you feeling?", key="mr_dp_chat_input")
+    chat_display = "flex" if is_open else "none"
+    svg_escaped = json.dumps(mr_dp_svg)
+    chat_html_escaped = json.dumps(chat_html)
 
-    return user_input
+    inject_script = f"""
+    <script>
+    (function() {{
+        var pd = window.parent.document;
+
+        // Clean up previous injection
+        var old = pd.getElementById('mrdp-root');
+        if (old) old.remove();
+        var oldS = pd.getElementById('mrdp-css');
+        if (oldS) oldS.remove();
+        var oldJ = pd.getElementById('mrdp-js');
+        if (oldJ) oldJ.remove();
+
+        // CSS
+        var css = pd.createElement('style');
+        css.id = 'mrdp-css';
+        css.textContent = `
+            #mrdp-root * {{ box-sizing: border-box; }}
+            #mrdp-avatar {{
+                position: fixed; bottom: 24px; right: 24px;
+                width: 70px; height: 70px; border-radius: 50%;
+                background: linear-gradient(135deg, #1a1a2e, #16213e);
+                box-shadow: 0 8px 32px rgba(139,92,246,0.5);
+                cursor: pointer; z-index: 999999;
+                animation: mrdp-pulse 3s ease-in-out infinite;
+                display: flex; align-items: center; justify-content: center;
+                padding: 10px; transition: transform 0.3s;
+            }}
+            #mrdp-avatar:hover {{ transform: scale(1.1); }}
+            @keyframes mrdp-pulse {{
+                0%, 100% {{ box-shadow: 0 8px 32px rgba(139,92,246,0.5); }}
+                50% {{ box-shadow: 0 8px 40px rgba(139,92,246,0.8); }}
+            }}
+            #mrdp-badge {{
+                position: absolute; top: -2px; right: -2px;
+                width: 18px; height: 18px; border-radius: 50%;
+                background: #10b981; border: 2px solid #1a1a2e;
+            }}
+            #mrdp-popup {{
+                position: fixed; bottom: 110px; right: 24px;
+                width: 380px; height: 520px;
+                background: #0d0d14; border: 1px solid rgba(139,92,246,0.3);
+                border-radius: 16px; z-index: 999998;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+                display: {chat_display}; flex-direction: column;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                overflow: hidden;
+            }}
+            #mrdp-header {{
+                padding: 16px 20px; display: flex; align-items: center; gap: 12px;
+                border-bottom: 1px solid rgba(139,92,246,0.2);
+                background: linear-gradient(135deg, rgba(139,92,246,0.1), rgba(6,182,212,0.05));
+            }}
+            #mrdp-header-avatar {{ width: 40px; height: 40px; flex-shrink: 0; }}
+            #mrdp-header-info {{ flex: 1; }}
+            #mrdp-header-name {{ color: #f5f5f7; font-weight: 600; font-size: 15px; }}
+            #mrdp-header-status {{ color: #10b981; font-size: 12px; margin-top: 2px; }}
+            #mrdp-close {{
+                background: none; border: none; color: #888; font-size: 20px;
+                cursor: pointer; padding: 4px 8px; border-radius: 8px;
+                transition: all 0.2s;
+            }}
+            #mrdp-close:hover {{ background: rgba(139,92,246,0.2); color: #f5f5f7; }}
+            #mrdp-messages {{
+                flex: 1; overflow-y: auto; padding: 16px;
+                display: flex; flex-direction: column; gap: 12px;
+            }}
+            #mrdp-messages::-webkit-scrollbar {{ width: 4px; }}
+            #mrdp-messages::-webkit-scrollbar-thumb {{ background: rgba(139,92,246,0.3); border-radius: 4px; }}
+            .mrdp-msg {{ display: flex; gap: 8px; align-items: flex-end; }}
+            .mrdp-user {{ justify-content: flex-end; }}
+            .mrdp-avatar {{ width: 28px; height: 28px; flex-shrink: 0; font-size: 20px; line-height: 28px; }}
+            .mrdp-bubble {{
+                padding: 10px 14px; border-radius: 16px;
+                font-size: 14px; line-height: 1.5; max-width: 260px;
+                word-wrap: break-word;
+            }}
+            .mrdp-bubble-ai {{
+                background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.2);
+                color: #e0e0e0; border-bottom-left-radius: 4px;
+            }}
+            .mrdp-bubble-user {{
+                background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                color: #fff; border-bottom-right-radius: 4px;
+            }}
+            #mrdp-input-area {{
+                padding: 12px 16px; border-top: 1px solid rgba(139,92,246,0.2);
+                background: rgba(139,92,246,0.03);
+            }}
+            #mrdp-form {{ display: flex; gap: 8px; }}
+            #mrdp-input {{
+                flex: 1; background: rgba(139,92,246,0.08);
+                border: 1px solid rgba(139,92,246,0.25); border-radius: 12px;
+                padding: 10px 14px; color: #f5f5f7; font-size: 14px; outline: none;
+            }}
+            #mrdp-input:focus {{ border-color: #8b5cf6; background: rgba(139,92,246,0.12); }}
+            #mrdp-input::placeholder {{ color: #666; }}
+            #mrdp-send {{
+                background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                border: none; border-radius: 12px; padding: 10px 16px;
+                color: #fff; font-size: 14px; cursor: pointer; transition: all 0.2s;
+            }}
+            #mrdp-send:hover {{ transform: scale(1.05); box-shadow: 0 4px 12px rgba(139,92,246,0.4); }}
+            @media (max-width: 480px) {{
+                #mrdp-popup {{ width: calc(100vw - 16px); right: 8px; bottom: 100px; height: 450px; }}
+                #mrdp-avatar {{ width: 56px; height: 56px; bottom: 16px; right: 16px; padding: 8px; }}
+            }}
+        `;
+        pd.head.appendChild(css);
+
+        // JS functions in parent scope
+        var js = pd.createElement('script');
+        js.id = 'mrdp-js';
+        js.textContent = `
+            function mrdpToggle() {{
+                var popup = document.getElementById('mrdp-popup');
+                if (popup) {{
+                    var isHidden = popup.style.display === 'none';
+                    popup.style.display = isHidden ? 'flex' : 'none';
+                    if (isHidden) {{
+                        var msgs = document.getElementById('mrdp-messages');
+                        if (msgs) msgs.scrollTop = msgs.scrollHeight;
+                        var inp = document.getElementById('mrdp-input');
+                        if (inp) setTimeout(function() {{ inp.focus(); }}, 100);
+                    }}
+                }}
+            }}
+            function mrdpSend(e) {{
+                if (e) e.preventDefault();
+                var inp = document.getElementById('mrdp-input');
+                if (!inp) return;
+                var msg = inp.value.trim();
+                if (!msg) return;
+                inp.value = '';
+                // Store message and trigger Streamlit rerun via hidden button
+                window._mrdpPendingMsg = msg;
+                // Add user message to chat immediately for instant feedback
+                var msgs = document.getElementById('mrdp-messages');
+                if (msgs) {{
+                    var div = document.createElement('div');
+                    div.className = 'mrdp-msg mrdp-user';
+                    div.innerHTML = '<div class="mrdp-bubble mrdp-bubble-user">' + msg.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
+                    msgs.appendChild(div);
+                    msgs.scrollTop = msgs.scrollHeight;
+                }}
+                // Add thinking indicator
+                var thinking = document.createElement('div');
+                thinking.className = 'mrdp-msg mrdp-assistant';
+                thinking.id = 'mrdp-thinking';
+                thinking.innerHTML = '<div class="mrdp-avatar">&#129504;</div><div class="mrdp-bubble mrdp-bubble-ai">Thinking...</div>';
+                msgs.appendChild(thinking);
+                msgs.scrollTop = msgs.scrollHeight;
+                // Find and click the hidden Streamlit button
+                var buttons = document.querySelectorAll('button[kind="secondary"]');
+                for (var i = 0; i < buttons.length; i++) {{
+                    if (buttons[i].textContent.trim() === 'mrdp_trigger') {{
+                        buttons[i].click();
+                        return;
+                    }}
+                }}
+            }}
+        `;
+        pd.head.appendChild(js);
+
+        // Widget HTML
+        var root = pd.createElement('div');
+        root.id = 'mrdp-root';
+        root.innerHTML = '<div id="mrdp-avatar" onclick="mrdpToggle()">'
+            + {svg_escaped}
+            + '<div id="mrdp-badge"></div>'
+            + '</div>'
+            + '<div id="mrdp-popup">'
+            + '<div id="mrdp-header">'
+            + '<div id="mrdp-header-avatar">{get_mr_dp_svg("happy").replace(chr(10), "")}</div>'
+            + '<div id="mrdp-header-info"><div id="mrdp-header-name">Mr.DP</div><div id="mrdp-header-status">&#9679; Online</div></div>'
+            + '<button id="mrdp-close" onclick="mrdpToggle()">&#10005;</button>'
+            + '</div>'
+            + '<div id="mrdp-messages">' + {chat_html_escaped} + '</div>'
+            + '<div id="mrdp-input-area"><form id="mrdp-form" onsubmit="mrdpSend(event)"><input id="mrdp-input" placeholder="How are you feeling?" autocomplete="off"><button type="submit" id="mrdp-send">Send</button></form></div>'
+            + '</div>';
+        pd.body.appendChild(root);
+
+        // Scroll to bottom
+        var msgs = pd.getElementById('mrdp-messages');
+        if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    }})();
+    </script>
+    """
+
+    components.html(inject_script, height=0, scrolling=False)
+
+    # Hidden trigger button - Streamlit native, triggers rerun
+    trigger = st.button("mrdp_trigger", key="mr_dp_rerun", type="secondary")
+
+    if trigger:
+        # Read pending message from JavaScript via a small JS bridge
+        # Use a component to read window._mrdpPendingMsg
+        pass
+
+    # Check for pending message via callback component
+    msg_reader = f"""
+    <script>
+    (function() {{
+        var msg = window.parent._mrdpPendingMsg || null;
+        if (msg) {{
+            window.parent._mrdpPendingMsg = null;
+            // Set it as a Streamlit query param so Python can read it
+            var url = new URL(window.parent.location.href);
+            url.searchParams.set('mr_dp_msg', encodeURIComponent(msg));
+            window.parent.history.replaceState({{}}, '', url.toString());
+        }}
+    }})();
+    </script>
+    """
+    components.html(msg_reader, height=0, scrolling=False)
+
+    # Read message from query params (set by JS without page reload)
+    if "mr_dp_msg" in st.query_params:
+        import urllib.parse
+        message = urllib.parse.unquote(st.query_params["mr_dp_msg"])
+        st.query_params.pop("mr_dp_msg", None)
+        st.session_state.mr_dp_open = True
+        return message
+
+    return None
