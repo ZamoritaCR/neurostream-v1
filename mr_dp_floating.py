@@ -218,12 +218,15 @@ def render_floating_mr_dp():
             }}
 
             /* ---- Native Streamlit chat_input positioning ---- */
-            /* Default: hidden off-screen */
+            /* Default: hidden at natural position (bottom:0 prevents scroll drag) */
             [data-testid="stBottom"],
             .stBottom {{
                 position: fixed !important;
-                bottom: -300px !important;
+                bottom: 0 !important;
+                right: 0 !important;
                 opacity: 0 !important;
+                height: 0 !important;
+                overflow: hidden !important;
                 pointer-events: none !important;
                 z-index: -1 !important;
             }}
@@ -236,6 +239,8 @@ def render_floating_mr_dp():
                 left: auto !important;
                 width: 380px !important;
                 max-width: 380px !important;
+                height: auto !important;
+                overflow: visible !important;
                 opacity: 1 !important;
                 pointer-events: auto !important;
                 z-index: 2147483644 !important;
@@ -344,9 +349,19 @@ def render_floating_mr_dp():
             + '</div>';
         pd.body.appendChild(root);
 
-        // Scroll to bottom
+        // Scroll chat to bottom
         var msgs = pd.getElementById('mrdp-messages');
         if (msgs) msgs.scrollTop = msgs.scrollHeight;
+
+        // Prevent hidden chat_input from stealing focus and dragging page down
+        if (!shouldOpen) {{
+            setTimeout(function() {{
+                var inp = pd.querySelector('[data-testid="stChatInput"] textarea');
+                if (inp) inp.blur();
+                inp = pd.querySelector('[data-testid="stChatInput"] input');
+                if (inp) inp.blur();
+            }}, 100);
+        }}
     }})();
     </script>
     """
