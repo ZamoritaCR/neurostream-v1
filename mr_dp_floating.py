@@ -296,9 +296,10 @@ def render_floating_mr_dp():
         avatar.title = 'Chat with Mr.DP';
         avatar.innerHTML = {svg_escaped};
         avatar.onclick = function() {{
-            var url = new URL(window.top.location.href);
+            var parentWin = parentDoc.defaultView || window.top;
+            var url = new URL(parentWin.location.href);
             url.searchParams.set('mr_dp_toggle', Date.now().toString());
-            window.top.location.href = url.toString();
+            parentWin.location.href = url.toString();
         }};
         container.appendChild(avatar);
 
@@ -325,10 +326,12 @@ def render_floating_mr_dp():
         parentDoc.body.appendChild(container);
 
         // Attach event listeners
+        var parentWin = parentDoc.defaultView || window.top;
+
         parentDoc.getElementById('mr-dp-close-btn').onclick = function() {{
-            var url = new URL(window.top.location.href);
+            var url = new URL(parentWin.location.href);
             url.searchParams.set('mr_dp_toggle', Date.now().toString());
-            window.top.location.href = url.toString();
+            parentWin.location.href = url.toString();
         }};
 
         parentDoc.getElementById('mr-dp-form').onsubmit = function(e) {{
@@ -336,10 +339,10 @@ def render_floating_mr_dp():
             var input = parentDoc.getElementById('mr-dp-input');
             var message = input.value.trim();
             if (message) {{
-                var url = new URL(window.top.location.href);
+                var url = new URL(parentWin.location.href);
                 url.searchParams.set('mr_dp_msg', encodeURIComponent(message));
                 url.searchParams.set('mr_dp_ts', Date.now().toString());
-                window.top.location.href = url.toString();
+                parentWin.location.href = url.toString();
             }}
         }};
 
@@ -352,7 +355,7 @@ def render_floating_mr_dp():
     </script>
     """
 
-    components.html(inject_script, height=0, scrolling=False)
+    components.html(inject_script, height=1, scrolling=False)
 
     # Check for toggle in query params
     if "mr_dp_toggle" in st.query_params:
