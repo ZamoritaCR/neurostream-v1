@@ -177,13 +177,17 @@ def get_tmdb_key():
         return None
 
 _openai_key = os.environ.get("OPENAI_API_KEY")
+_openai_source = "env" if _openai_key else None
 if not _openai_key:
     try:
         _openai_key = st.secrets["openai"]["api_key"]
-    except:
+        _openai_source = "secrets"
+    except Exception as e:
+        print(f"[DEBUG] Failed to load OpenAI key from secrets: {e}")
         _openai_key = None
 
 openai_client = OpenAI(api_key=_openai_key) if _openai_key else None
+print(f"[DEBUG] OpenAI client initialized: {openai_client is not None}, source: {_openai_source}")
 
 # --------------------------------------------------
 # 7. EMOTION MAPPINGS - COMPLETE
@@ -904,6 +908,7 @@ def ask_mr_dp(user_prompt, chat_history=None):
         return None
 
     # Try GPT first for natural conversation
+    print(f"[DEBUG] ask_mr_dp called, openai_client exists: {openai_client is not None}")
     if openai_client:
         try:
             # Build messages with conversation history for memory
@@ -970,10 +975,11 @@ def ask_mr_dp(user_prompt, chat_history=None):
             return result
 
         except Exception as e:
-            print(f"GPT error: {e}")
+            print(f"[DEBUG] GPT error: {e}")
             # Fall through to heuristic
 
     # Fallback: Heuristic-based response
+    print("[DEBUG] Using heuristic fallback (no GPT)")
     return heuristic_mr_dp(user_prompt)
 
 def heuristic_mr_dp(prompt):
