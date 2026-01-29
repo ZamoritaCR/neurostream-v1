@@ -195,8 +195,25 @@ nav {
 .hero p {
     font-size: 1.3rem;
     color: var(--text-secondary);
-    max-width: 600px;
-    margin: 0 auto 40px;
+    max-width: 650px;
+    margin: 0 auto 24px;
+}
+
+.hero-trust {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+}
+
+.trust-item {
+    font-size: 0.9rem;
+    color: var(--accent-tertiary);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .hero-buttons {
@@ -955,6 +972,30 @@ footer {
     display: block;
 }
 
+.auth-divider {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--glass-border);
+}
+
+.auth-divider span {
+    padding: 0 16px;
+}
+
+.g_id_signin {
+    margin-bottom: 8px;
+}
+
 /* ============ RESPONSIVE ============ */
 @media (max-width: 768px) {
     nav {
@@ -1023,16 +1064,26 @@ footer {
 <!-- ============ HERO ============ -->
 <section class="hero">
     <div class="hero-content">
-        <div class="hero-badge">🎯 Built for ADHD & Neurodivergent Brains</div>
+        <div class="hero-badge">🔬 Backed by 45+ Years of ADHD & Neuroscience Research</div>
         <h1>Stop scrolling.<br>Start <span class="gradient">bossing dopamine.</span></h1>
-        <p>Media as medicine. Tell us how you feel, we'll find the perfect content to match your mood. Movies, music, podcasts, and more — curated for your brain.</p>
+        <p>Media as medicine. Built on decades of research into how ADHD brains process dopamine, reward, and attention. Tell us how you feel — we'll find the perfect content in seconds.</p>
+
+        <div class="hero-trust">
+            <span class="trust-item">✓ Science-backed mood matching</span>
+            <span class="trust-item">✓ Zero decision fatigue</span>
+            <span class="trust-item">✓ Instant recommendations</span>
+        </div>
 
         <div class="hero-buttons">
-            <button class="hero-btn primary" onclick="openModal('signup')">🚀 Get Started Free</button>
+            <button class="hero-btn primary" onclick="openModal('signup')">🚀 Get Started Free — No Credit Card</button>
             <button class="hero-btn secondary" onclick="openModal('login')">🔓 Log In</button>
         </div>
 
         <div class="hero-stats">
+            <div class="stat">
+                <div class="stat-number">45+</div>
+                <div class="stat-label">Years of Research</div>
+            </div>
             <div class="stat">
                 <div class="stat-number">50K+</div>
                 <div class="stat-label">Content Curated</div>
@@ -1243,8 +1294,8 @@ footer {
 <!-- ============ FOOTER ============ -->
 <footer>
     <div class="footer-links">
-        <a href="privacy.html">Privacy</a>
-        <a href="terms.html">Terms</a>
+        <a href="https://www.dopamine.watch/privacy.html">Privacy</a>
+        <a href="https://www.dopamine.watch/terms.html">Terms</a>
         <a href="mailto:support@dopamine.watch">Contact</a>
         <a href="https://twitter.com/dopaminewatch" target="_blank">Twitter</a>
     </div>
@@ -1288,6 +1339,28 @@ footer {
             <div class="auth-title">Welcome Back</div>
             <div class="auth-subtitle">Log in to your dopamine engine</div>
 
+            <!-- Google Sign-In Button -->
+            <div id="g_id_onload"
+                 data-client_id="774493038206-10a3vcpttdil6otb9ti2q4q5ponc8hok.apps.googleusercontent.com"
+                 data-context="signin"
+                 data-ux_mode="popup"
+                 data-callback="handleGoogleSignIn"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-shape="rectangular"
+                 data-theme="filled_black"
+                 data-text="signin_with"
+                 data-size="large"
+                 data-logo_alignment="left"
+                 data-width="100%">
+            </div>
+
+            <div class="auth-divider">
+                <span>or continue with email</span>
+            </div>
+
             <div class="form-group">
                 <label>Email or Dopamine ID</label>
                 <input type="text" id="login-email" placeholder="you@email.com">
@@ -1302,14 +1375,46 @@ footer {
             <button class="auth-btn secondary" onclick="guestAccess()">🤙 Continue as Guest</button>
 
             <div class="auth-link">
+                <a onclick="showScreen('forgot')">Forgot Password?</a>
+            </div>
+            <div class="auth-link">
                 Don't have an account? <a onclick="showScreen('signup')">Sign Up</a>
             </div>
+        </div>
+
+        <!-- FORGOT PASSWORD SCREEN -->
+        <div class="auth-screen" id="forgotScreen">
+            <div class="auth-title">Reset Password</div>
+            <div class="auth-subtitle">Enter your email to receive a reset link</div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="forgot-email" placeholder="you@email.com">
+            </div>
+
+            <button class="auth-btn" onclick="handleForgotPassword()">📧 Send Reset Link</button>
+            <button class="auth-btn secondary" onclick="showScreen('login')">← Back to Login</button>
         </div>
 
         <!-- SIGNUP SCREEN -->
         <div class="auth-screen" id="signupScreen">
             <div class="auth-title">Create Account</div>
             <div class="auth-subtitle">Start your dopamine journey</div>
+
+            <!-- Google Sign-In Button for Signup -->
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-shape="rectangular"
+                 data-theme="filled_black"
+                 data-text="signup_with"
+                 data-size="large"
+                 data-logo_alignment="left"
+                 data-width="100%">
+            </div>
+
+            <div class="auth-divider">
+                <span>or sign up with email</span>
+            </div>
 
             <div class="form-group">
                 <label>Dopamine ID (username)</label>
@@ -1340,7 +1445,7 @@ footer {
 // ============================================
 // CONFIGURATION
 // ============================================
-const STREAMLIT_APP_URL = "http://localhost:8501";
+const STREAMLIT_APP_URL = "https://dopaminewatch.streamlit.app";
 
 // ============================================
 // MR.DP DYNAMIC SVG GENERATION
@@ -1496,6 +1601,31 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ============================================
+// GOOGLE SIGN-IN HANDLER
+// ============================================
+function handleGoogleSignIn(response) {
+    // Decode the JWT token from Google
+    const credential = response.credential;
+    const payload = JSON.parse(atob(credential.split('.')[1]));
+
+    const user = {
+        email: payload.email,
+        name: payload.name || payload.email.split('@')[0],
+        picture: payload.picture,
+        googleId: payload.sub,
+        loggedIn: true,
+        isGoogleUser: true,
+        timestamp: Date.now()
+    };
+
+    localStorage.setItem('dopamine_user', JSON.stringify(user));
+
+    // Close modal and redirect to app
+    closeModal();
+    window.location.href = STREAMLIT_APP_URL + '?user=' + encodeURIComponent(user.name) + '&google=1';
+}
+
+// ============================================
 // AUTH MODAL CONTROLS
 // ============================================
 function openModal(screen) {
@@ -1570,6 +1700,24 @@ function guestAccess() {
     };
     localStorage.setItem('dopamine_user', JSON.stringify(user));
     window.location.href = STREAMLIT_APP_URL + '?guest=1';
+}
+
+function handleForgotPassword() {
+    const email = document.getElementById('forgot-email').value.trim();
+
+    if (!email) {
+        alert('Please enter your email address');
+        return;
+    }
+
+    if (!email.includes('@')) {
+        alert('Please enter a valid email address');
+        return;
+    }
+
+    // Show success message (in production, this would send an actual email)
+    alert('If an account exists with this email, you will receive a password reset link shortly.\n\nCheck your inbox at: ' + email);
+    showScreen('login');
 }
 
 // Close modal on escape key

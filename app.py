@@ -55,60 +55,136 @@ TMDB_BACKDROP_URL = "https://image.tmdb.org/t/p/original"
 TMDB_LOGO_URL = "https://image.tmdb.org/t/p/original"
 
 # --------------------------------------------------
-# 2. FRONTEND-ONLY AUTH (No Backend Required)
+# 2. SUPABASE AUTH & PROFILE MANAGEMENT
 # --------------------------------------------------
-SUPABASE_ENABLED = False  # Frontend-only mode
+from supabase import create_client, Client
 
-def frontend_sign_up(email: str, password: str, name: str = ""):
-    """Frontend-only signup - stores in session"""
+# Initialize Supabase client
+SUPABASE_URL = st.secrets.get("supabase", {}).get("url", "")
+SUPABASE_KEY = st.secrets.get("supabase", {}).get("anon_key", "")
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
+
+FREE_MR_DP_LIMIT = 5  # Free users get 5 Mr.DP chats
+
+def supabase_sign_up(email: str, password: str, name: str = ""):
+    """Sign up with Supabase and create profile"""
     if not email or not password:
         return {"success": False, "error": "Email and password required"}
     if len(password) < 6:
         return {"success": False, "error": "Password must be at least 6 characters"}
-    
-    # Generate user ID
-    user_id = hashlib.md5(f"{email}{datetime.now()}".encode()).hexdigest()[:16]
-    
-    return {
-        "success": True,
-        "user": {
-            "id": user_id,
-            "email": email,
-            "name": name or email.split("@")[0]
-        }
-    }
 
-def frontend_sign_in(email: str, password: str):
-    """Frontend-only signin - just validates input"""
+    try:
+        # Create auth user
+        response = supabase.auth.sign_up({"email": email, "password": password})
+        if response.user:
+            # Create profile in profiles table
+            profile_data = {
+                "id": response.user.id,
+                "email": email,
+                "name": name or email.split("@")[0],
+                "mr_dp_uses": 0,
+                "is_premium": False
+            }
+            supabase.table("profiles").upsert(profile_data).execute()
+            return {
+                "success": True,
+                "user": {
+                    "id": response.user.id,
+                    "email": email,
+                    "name": name or email.split("@")[0]
+                }
+            }
+        return {"success": False, "error": "Signup failed"}
+    except Exception as e:
+        error_msg = str(e)
+        if "already registered" in error_msg.lower():
+            return {"success": False, "error": "Email already registered"}
+        return {"success": False, "error": error_msg}
+
+def supabase_sign_in(email: str, password: str):
+    """Sign in with Supabase"""
     if not email or not password:
         return {"success": False, "error": "Email and password required"}
-    
-    # Generate consistent user ID from email
-    user_id = hashlib.md5(email.encode()).hexdigest()[:16]
-    
-    return {
-        "success": True,
-        "user": {
-            "id": user_id,
-            "email": email,
-            "name": email.split("@")[0]
-        }
-    }
 
-def frontend_sign_out():
-    """Clear session"""
-    pass
+    try:
+        response = supabase.auth.sign_in_with_password({"email": email, "password": password})
+        if response.user:
+            # Fetch or create profile
+            profile = get_user_profile(response.user.id)
+            if not profile:
+                # Create profile if doesn't exist
+                profile_data = {
+                    "id": response.user.id,
+                    "email": email,
+                    "name": email.split("@")[0],
+                    "mr_dp_uses": 0,
+                    "is_premium": False
+                }
+                supabase.table("profiles").upsert(profile_data).execute()
+                profile = profile_data
+
+            return {
+                "success": True,
+                "user": {
+                    "id": response.user.id,
+                    "email": email,
+                    "name": profile.get("name", email.split("@")[0]),
+                    "mr_dp_uses": profile.get("mr_dp_uses", 0),
+                    "is_premium": profile.get("is_premium", False)
+                }
+            }
+        return {"success": False, "error": "Invalid credentials"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+def supabase_sign_out():
+    """Sign out from Supabase"""
+    try:
+        supabase.auth.sign_out()
+    except:
+        pass
+
+def get_user_profile(user_id: str):
+    """Get user profile from Supabase"""
+    try:
+        response = supabase.table("profiles").select("*").eq("id", user_id).single().execute()
+        return response.data if response.data else {}
+    except:
+        return {}
+
+def update_user_profile(user_id: str, data: dict):
+    """Update user profile in Supabase"""
+    try:
+        supabase.table("profiles").update(data).eq("id", user_id).execute()
+        return True
+    except:
+        return False
+
+def increment_mr_dp_usage(user_id: str):
+    """Increment Mr.DP usage counter"""
+    try:
+        # Get current count
+        profile = get_user_profile(user_id)
+        current = profile.get("mr_dp_uses", 0)
+        # Increment
+        supabase.table("profiles").update({"mr_dp_uses": current + 1}).eq("id", user_id).execute()
+        return current + 1
+    except:
+        return 0
+
+def can_use_mr_dp(user_id: str):
+    """Check if user can use Mr.DP (premium or under limit)"""
+    profile = get_user_profile(user_id)
+    if profile.get("is_premium", False):
+        return True, -1  # Premium users have unlimited
+    uses = profile.get("mr_dp_uses", 0)
+    return uses < FREE_MR_DP_LIMIT, FREE_MR_DP_LIMIT - uses
 
 # Compatibility aliases
-supabase_sign_up = frontend_sign_up
-supabase_sign_in = frontend_sign_in
-supabase_sign_out = frontend_sign_out
 supabase_get_user = lambda: None
 get_oauth_url = lambda provider: None
 handle_oauth_callback = lambda: None
 create_user_profile = lambda *args: None
-get_user_profile = lambda *args: {}
-update_user_profile = lambda *args: None
 check_referral_code = lambda *args: None
 
 
@@ -1529,7 +1605,7 @@ except:
     STRIPE_PAYMENT_LINK_YEARLY = ""
 
 # Mr.DP daily chat limit for free users
-FREE_CHAT_LIMIT = 10
+FREE_CHAT_LIMIT = FREE_MR_DP_LIMIT  # Use the constant from Supabase auth section
 
 def get_daily_chat_count():
     """Get number of Mr.DP chats today"""
@@ -4035,9 +4111,19 @@ def render_main():
                 st.session_state.show_premium_modal = False
                 st.rerun()
         with col2:
-            if st.button("🚀 Subscribe", use_container_width=True, key="premium_subscribe"):
-                st.toast("Premium coming soon with Stripe! Join waitlist.", icon="⭐")
-                st.session_state.show_premium_modal = False
+            # Stripe Payment Link - set in secrets or use placeholder
+            stripe_link = st.secrets.get("stripe", {}).get("payment_link", "")
+            user = st.session_state.get("user", {})
+            user_email = user.get("email", "")
+
+            if stripe_link:
+                # Add client_reference_id (user_id) and prefilled_email to link
+                checkout_url = f"{stripe_link}?client_reference_id={user.get('id', '')}&prefilled_email={user_email}"
+                st.link_button("🚀 Subscribe - $4.99/mo", checkout_url, use_container_width=True)
+            else:
+                if st.button("🚀 Subscribe", use_container_width=True, key="premium_subscribe"):
+                    st.toast("Premium coming soon! Set up Stripe payment link in secrets.", icon="⭐")
+                    st.session_state.show_premium_modal = False
 
 # --------------------------------------------------
 # 18. MAIN ROUTER
@@ -4065,6 +4151,30 @@ else:
 
     # Phase 1: Receive message, show thinking indicator immediately
     if user_message:
+        # Check if user can use Mr.DP (premium or under limit)
+        user = st.session_state.get("user", {})
+        user_id = user.get("id")
+
+        if user_id and supabase:
+            allowed, remaining = can_use_mr_dp(user_id)
+            if not allowed:
+                # User has hit the limit - show upgrade message
+                st.session_state.mr_dp_chat_history.append({
+                    "role": "user",
+                    "content": user_message
+                })
+                st.session_state.mr_dp_chat_history.append({
+                    "role": "assistant",
+                    "content": "You've used all 5 free Mr.DP chats! 💜 Upgrade to Premium for unlimited access and support dopamine.watch!"
+                })
+                st.session_state.mr_dp_open = True
+                st.session_state.show_premium_modal = True
+                st.rerun()
+
+            # Show warning at 4 uses (1 remaining)
+            if remaining == 1:
+                st.session_state.mr_dp_limit_warning = True
+
         st.session_state.mr_dp_chat_history.append({
             "role": "user",
             "content": user_message
@@ -4100,6 +4210,14 @@ else:
                 st.session_state.mr_dp_response = response
                 st.session_state.mr_dp_results = mr_dp_search(response)
                 add_dopamine_points(10, "Chatted with Mr.DP!")
+
+                # Increment Mr.DP usage counter for non-premium users
+                user = st.session_state.get("user", {})
+                user_id = user.get("id")
+                if user_id and supabase and not user.get("is_premium"):
+                    new_count = increment_mr_dp_usage(user_id)
+                    # Update session state with new count
+                    st.session_state.user["mr_dp_uses"] = new_count
             else:
                 st.session_state.mr_dp_chat_history.append({
                     "role": "assistant",
