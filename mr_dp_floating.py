@@ -1,7 +1,7 @@
 """
 Mr.DP Floating Chat Widget
-Professional floating chat popup injected via JavaScript.
-Uses native Streamlit chat_input positioned at the popup via CSS.
+Professional floating chat popup with native HTML input.
+Uses JavaScript for UI and bridges to Streamlit via hidden form.
 """
 
 import streamlit as st
@@ -71,8 +71,8 @@ def get_mr_dp_svg(expression='happy'):
 def render_floating_mr_dp():
     """
     Render floating Mr.DP chatbot as a professional chat popup.
-    Uses JavaScript for the UI toggle and native st.chat_input for message input.
-    The st.chat_input is repositioned via CSS to appear at the popup location.
+    Uses JavaScript for UI with native HTML input in the popup.
+    Bridges to Streamlit via hidden form for message submission.
     Returns user message if sent, None otherwise.
     """
 
@@ -157,11 +157,10 @@ def render_floating_mr_dp():
                 background: #10b981; border: 2px solid #1a1a2e;
             }}
             #mrdp-popup {{
-                position: fixed; bottom: 155px; right: 24px;
-                width: 380px; height: 400px;
+                position: fixed; bottom: 110px; right: 24px;
+                width: 380px; height: 450px;
                 background: #0d0d14; border: 1px solid rgba(139,92,246,0.3);
-                border-bottom: none;
-                border-radius: 16px 16px 0 0; z-index: 2147483645;
+                border-radius: 16px; z-index: 2147483645;
                 box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(139,92,246,0.1);
                 display: none; flex-direction: column;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -216,71 +215,46 @@ def render_floating_mr_dp():
                 50% {{ opacity: 1; }}
                 100% {{ opacity: 0.2; }}
             }}
-
-            /* ---- Mr.DP Form positioning ---- */
-            /* Hide any bottom bar and the form by default */
-            [data-testid="stBottom"],
-            .stBottom {{
-                display: none !important;
+            /* Input area at bottom of popup */
+            #mrdp-input-area {{
+                padding: 12px 14px;
+                border-top: 1px solid rgba(139,92,246,0.2);
+                display: flex; gap: 8px; align-items: center;
             }}
-            /* Form container - hidden by default */
+            #mrdp-input {{
+                flex: 1;
+                background: rgba(139,92,246,0.08);
+                border: 1px solid rgba(139,92,246,0.25);
+                border-radius: 10px;
+                color: #f5f5f7;
+                font-size: 14px;
+                padding: 10px 14px;
+                outline: none;
+                font-family: inherit;
+            }}
+            #mrdp-input::placeholder {{ color: #666; }}
+            #mrdp-input:focus {{ border-color: rgba(139,92,246,0.5); }}
+            #mrdp-send {{
+                background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                border: none;
+                border-radius: 10px;
+                color: white;
+                font-weight: 500;
+                padding: 10px 16px;
+                cursor: pointer;
+                transition: opacity 0.2s;
+            }}
+            #mrdp-send:hover {{ opacity: 0.9; }}
+            /* Hide Streamlit's form completely */
             [data-testid="stForm"] {{
-                position: fixed !important;
-                bottom: 100px !important;
-                right: 24px !important;
-                left: auto !important;
-                width: 380px !important;
+                position: absolute !important;
+                left: -9999px !important;
                 visibility: hidden !important;
-                opacity: 0 !important;
                 pointer-events: none !important;
-                z-index: -1 !important;
-            }}
-            /* When popup is open: show and position form */
-            body.mrdp-open [data-testid="stForm"] {{
-                visibility: visible !important;
-                opacity: 1 !important;
-                pointer-events: auto !important;
-                z-index: 2147483644 !important;
-                background: #0d0d14 !important;
-                border: 1px solid rgba(139,92,246,0.3) !important;
-                border-top: 1px solid rgba(139,92,246,0.15) !important;
-                border-radius: 0 0 16px 16px !important;
-                padding: 12px 14px !important;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
-            }}
-            /* Style the text input */
-            body.mrdp-open [data-testid="stForm"] input {{
-                background: rgba(139,92,246,0.08) !important;
-                border: 1px solid rgba(139,92,246,0.25) !important;
-                border-radius: 10px !important;
-                color: #f5f5f7 !important;
-                caret-color: #f5f5f7 !important;
-                font-size: 14px !important;
-                padding: 10px 14px !important;
-            }}
-            body.mrdp-open [data-testid="stForm"] input::placeholder {{
-                color: #666 !important;
-            }}
-            /* Style the submit button */
-            body.mrdp-open [data-testid="stForm"] button {{
-                background: linear-gradient(135deg, #8b5cf6, #06b6d4) !important;
-                border: none !important;
-                border-radius: 10px !important;
-                color: white !important;
-                font-weight: 500 !important;
-                margin-top: 8px !important;
-            }}
-            body.mrdp-open [data-testid="stForm"] button:hover {{
-                opacity: 0.9 !important;
             }}
             @media (max-width: 480px) {{
-                #mrdp-popup {{ width: calc(100vw - 16px); right: 8px; bottom: 145px; height: 350px; }}
+                #mrdp-popup {{ width: calc(100vw - 16px); right: 8px; bottom: 100px; height: 400px; }}
                 #mrdp-avatar {{ width: 56px; height: 56px; bottom: 16px; right: 16px; padding: 8px; }}
-                [data-testid="stForm"] {{
-                    width: calc(100vw - 16px) !important;
-                    right: 8px !important;
-                    bottom: 90px !important;
-                }}
             }}
         `;
         pd.head.appendChild(css);
@@ -299,16 +273,35 @@ def render_floating_mr_dp():
                         document.body.setAttribute('data-mrdp-open', 'true');
                         var msgs = document.getElementById('mrdp-messages');
                         if (msgs) msgs.scrollTop = msgs.scrollHeight;
-                        // Focus native Streamlit chat input
+                        // Focus native input
                         setTimeout(function() {{
-                            var inp = document.querySelector('[data-testid="stChatInput"] textarea');
-                            if (!inp) inp = document.querySelector('[data-testid="stChatInput"] input');
+                            var inp = document.getElementById('mrdp-input');
                             if (inp) inp.focus();
-                        }}, 300);
+                        }}, 100);
                     }} else {{
                         document.body.classList.remove('mrdp-open');
                         document.body.setAttribute('data-mrdp-open', 'false');
                     }}
+                }}
+            }}
+            function mrdpSend() {{
+                var inp = document.getElementById('mrdp-input');
+                if (!inp || !inp.value.trim()) return;
+                var msg = inp.value.trim();
+                inp.value = '';
+
+                // Find the Streamlit hidden form input and submit
+                var stInput = document.querySelector('[data-testid="stForm"] input[type="text"]');
+                var stBtn = document.querySelector('[data-testid="stForm"] button[type="submit"]');
+                if (stInput && stBtn) {{
+                    // Set value using native setter to trigger React
+                    var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                    nativeInputValueSetter.call(stInput, msg);
+                    stInput.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                    // Small delay then submit
+                    setTimeout(function() {{
+                        stBtn.click();
+                    }}, 50);
                 }}
             }}
         `;
@@ -322,7 +315,7 @@ def render_floating_mr_dp():
             pd.body.classList.remove('mrdp-open');
         }}
 
-        // Widget HTML (messages only - native st.chat_input serves as input)
+        // Widget HTML with native input
         var root = pd.createElement('div');
         root.id = 'mrdp-root';
         root.innerHTML = '<div id="mrdp-avatar" onclick="mrdpToggle()">'
@@ -336,6 +329,10 @@ def render_floating_mr_dp():
             + '<button id="mrdp-close" onclick="mrdpToggle()">&#10005;</button>'
             + '</div>'
             + '<div id="mrdp-messages">' + {chat_html_escaped} + '</div>'
+            + '<div id="mrdp-input-area">'
+            + '<input type="text" id="mrdp-input" placeholder="How are you feeling?" onkeydown="if(event.key===\\'Enter\\')mrdpSend()">'
+            + '<button id="mrdp-send" onclick="mrdpSend()">Send</button>'
+            + '</div>'
             + '</div>';
         pd.body.appendChild(root);
 
@@ -348,8 +345,7 @@ def render_floating_mr_dp():
 
     components.html(inject_script, height=0, scrolling=False)
 
-    # Use a form with text_input instead of st.chat_input to avoid auto-focus scroll
-    # The form is always rendered but hidden via CSS when popup is closed
+    # Hidden Streamlit form - used as bridge for message submission
     with st.container():
         with st.form("mr_dp_form", clear_on_submit=True, border=False):
             user_input = st.text_input(
