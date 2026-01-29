@@ -10,6 +10,9 @@
 <!-- Google Sign-In -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
+<!-- Supabase Client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1237,46 +1240,33 @@ footer {
             <p>Start free. Upgrade when you're ready.</p>
         </div>
 
-        <div class="pricing-grid">
+        <div class="pricing-grid" style="max-width: 700px; margin: 60px auto 0;">
             <div class="pricing-card">
                 <h3>Free</h3>
                 <div class="pricing-price">$0<span>/forever</span></div>
                 <ul class="pricing-features">
                     <li>Mood-based discovery</li>
                     <li>Quick Dope Hit</li>
-                    <li>All content types</li>
-                    <li>Basic Mr.DP (5 chats/day)</li>
-                    <li>Ads supported</li>
+                    <li>All content types (Movies, Music, Podcasts, Audiobooks, Shorts)</li>
+                    <li>5 Mr.DP chats</li>
+                    <li>Dopamine Points tracking</li>
                 </ul>
-                <button class="pricing-btn secondary" onclick="openModal('signup')">Get Started</button>
+                <button class="pricing-btn secondary" onclick="openModal('signup')">Get Started Free</button>
             </div>
 
             <div class="pricing-card featured">
-                <div class="pricing-badge">MOST POPULAR</div>
-                <h3>Plus</h3>
+                <div class="pricing-badge">RECOMMENDED</div>
+                <h3>Premium</h3>
                 <div class="pricing-price">$4.99<span>/month</span></div>
                 <ul class="pricing-features">
                     <li>Everything in Free</li>
                     <li>Unlimited Mr.DP chats</li>
                     <li>No ads</li>
-                    <li>2x Dopamine Points</li>
-                    <li>Mood analytics</li>
-                    <li>Priority support</li>
+                    <li>Priority AI recommendations</li>
+                    <li>Exclusive 👑 badge</li>
+                    <li>Early access to new features</li>
                 </ul>
-                <button class="pricing-btn primary" onclick="openModal('signup')">Start Free Trial</button>
-            </div>
-
-            <div class="pricing-card">
-                <h3>Pro</h3>
-                <div class="pricing-price">$9.99<span>/month</span></div>
-                <ul class="pricing-features">
-                    <li>Everything in Plus</li>
-                    <li>Early access features</li>
-                    <li>Custom mood triggers</li>
-                    <li>API access</li>
-                    <li>Family sharing (5)</li>
-                </ul>
-                <button class="pricing-btn secondary" onclick="openModal('signup')">Contact Us</button>
+                <button class="pricing-btn primary" onclick="openModal('signup')">Go Premium</button>
             </div>
         </div>
     </div>
@@ -1445,7 +1435,12 @@ footer {
 // ============================================
 // CONFIGURATION
 // ============================================
-const STREAMLIT_APP_URL = "https://dopaminewatch.streamlit.app";
+const STREAMLIT_APP_URL = "https://app.dopamine.watch";
+
+// Supabase Configuration
+const SUPABASE_URL = "https://wkfewpynskakgbetscsa.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndrZmV3cHluc2tha2diZXRzY3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MDcwMTAsImV4cCI6MjA4MzQ4MzAxMH0.DXnSsvabfwfNZIJaP0UR39YQe_3CHW-RjL2o1vDsunQ";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ============================================
 // MR.DP DYNAMIC SVG GENERATION
@@ -1645,7 +1640,7 @@ function showScreen(screen) {
     document.getElementById(screen + 'Screen').classList.add('active');
 }
 
-function handleLogin() {
+async function handleLogin() {
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
 
@@ -1654,17 +1649,45 @@ function handleLogin() {
         return;
     }
 
-    const user = {
-        email: email,
-        name: email.includes('@') ? email.split('@')[0] : email,
-        loggedIn: true,
-        timestamp: Date.now()
-    };
-    localStorage.setItem('dopamine_user', JSON.stringify(user));
-    window.location.href = STREAMLIT_APP_URL + '?user=' + encodeURIComponent(user.name);
+    // Show loading state
+    const btn = document.querySelector('#loginScreen .auth-btn');
+    const originalText = btn.textContent;
+    btn.textContent = 'Logging in...';
+    btn.disabled = true;
+
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
+
+        if (error) {
+            alert('Login failed: ' + error.message);
+            btn.textContent = originalText;
+            btn.disabled = false;
+            return;
+        }
+
+        // Store user info locally
+        const user = {
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.email.split('@')[0],
+            loggedIn: true,
+            timestamp: Date.now()
+        };
+        localStorage.setItem('dopamine_user', JSON.stringify(user));
+
+        // Redirect to app
+        window.location.href = STREAMLIT_APP_URL + '?user=' + encodeURIComponent(user.name);
+    } catch (err) {
+        alert('Login error: ' + err.message);
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
 }
 
-function handleSignup() {
+async function handleSignup() {
     const username = document.getElementById('signup-username').value.trim();
     const email = document.getElementById('signup-email').value.trim();
     const password = document.getElementById('signup-password').value;
@@ -1679,15 +1702,68 @@ function handleSignup() {
         return;
     }
 
-    const user = {
-        email: email,
-        name: username,
-        loggedIn: true,
-        timestamp: Date.now(),
-        isNew: true
-    };
-    localStorage.setItem('dopamine_user', JSON.stringify(user));
-    window.location.href = STREAMLIT_APP_URL + '?user=' + encodeURIComponent(username) + '&new=1';
+    // Show loading state
+    const btn = document.querySelector('#signupScreen .auth-btn');
+    const originalText = btn.textContent;
+    btn.textContent = 'Creating account...';
+    btn.disabled = true;
+
+    try {
+        // Create auth user
+        const { data, error } = await supabase.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+                data: {
+                    name: username
+                }
+            }
+        });
+
+        if (error) {
+            alert('Signup failed: ' + error.message);
+            btn.textContent = originalText;
+            btn.disabled = false;
+            return;
+        }
+
+        // Create profile in profiles table
+        if (data.user) {
+            await supabase.from('profiles').upsert({
+                id: data.user.id,
+                email: email,
+                name: username,
+                mr_dp_uses: 0,
+                is_premium: false
+            });
+        }
+
+        // Store user info locally
+        const user = {
+            id: data.user?.id,
+            email: email,
+            name: username,
+            loggedIn: true,
+            timestamp: Date.now(),
+            isNew: true
+        };
+        localStorage.setItem('dopamine_user', JSON.stringify(user));
+
+        // Check if email confirmation is required
+        if (data.user && !data.session) {
+            alert('Account created! Please check your email to verify your account.');
+            showScreen('login');
+            btn.textContent = originalText;
+            btn.disabled = false;
+        } else {
+            // Redirect to app
+            window.location.href = STREAMLIT_APP_URL + '?user=' + encodeURIComponent(username) + '&new=1';
+        }
+    } catch (err) {
+        alert('Signup error: ' + err.message);
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
 }
 
 function guestAccess() {
@@ -1702,7 +1778,7 @@ function guestAccess() {
     window.location.href = STREAMLIT_APP_URL + '?guest=1';
 }
 
-function handleForgotPassword() {
+async function handleForgotPassword() {
     const email = document.getElementById('forgot-email').value.trim();
 
     if (!email) {
@@ -1715,9 +1791,33 @@ function handleForgotPassword() {
         return;
     }
 
-    // Show success message (in production, this would send an actual email)
-    alert('If an account exists with this email, you will receive a password reset link shortly.\n\nCheck your inbox at: ' + email);
-    showScreen('login');
+    // Show loading state
+    const btn = document.querySelector('#forgotScreen .auth-btn');
+    const originalText = btn.textContent;
+    btn.textContent = 'Sending...';
+    btn.disabled = true;
+
+    try {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: STREAMLIT_APP_URL + '?reset=1'
+        });
+
+        if (error) {
+            alert('Error: ' + error.message);
+            btn.textContent = originalText;
+            btn.disabled = false;
+            return;
+        }
+
+        alert('Password reset email sent! Check your inbox at: ' + email);
+        showScreen('login');
+        btn.textContent = originalText;
+        btn.disabled = false;
+    } catch (err) {
+        alert('Error sending reset email: ' + err.message);
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
 }
 
 // Close modal on escape key
