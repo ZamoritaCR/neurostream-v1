@@ -1869,15 +1869,28 @@ if st.session_state.get("do_logout"):
     for key in list(st.session_state.keys()):
         del st.session_state[key]
 
-    # Show brief message
+    # Show brief message and auto-redirect using hidden auto-clicking link
     st.markdown("")
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown("<div style='text-align: center; font-size: 64px;'>👋</div>", unsafe_allow_html=True)
         st.markdown("<p style='text-align: center; color: #9D4EDD;'>Logging out...</p>", unsafe_allow_html=True)
+        st.markdown("")
+        st.link_button("🏠 Continue to Home", LANDING_PAGE_URL, use_container_width=True, type="primary")
 
-    # Redirect using streamlit-javascript (runs in main page context, not iframe)
-    st_javascript(f"localStorage.clear(); window.location.href = '{LANDING_PAGE_URL}';")
+    # Auto-click the link using components.html
+    components.html(f'''
+        <script>
+            localStorage.clear();
+            // Find and click the Streamlit link button
+            setTimeout(function() {{
+                var links = window.parent.document.querySelectorAll('a[href*="dopamine.watch"]');
+                if (links.length > 0) {{
+                    links[0].click();
+                }}
+            }}, 800);
+        </script>
+    ''', height=0)
     st.stop()
 
 # --------------------------------------------------
@@ -4179,9 +4192,21 @@ if not st.session_state.get("user"):
     with col2:
         st.markdown("<div style='text-align: center; font-size: 64px;'>🧠</div>", unsafe_allow_html=True)
         st.markdown("<p style='text-align: center; color: #9D4EDD;'>Redirecting to login...</p>", unsafe_allow_html=True)
+        st.markdown("")
+        st.link_button("🔐 Go to Login", LANDING_PAGE_URL, use_container_width=True, type="primary")
 
-    # Redirect using streamlit-javascript (runs in main page context, not iframe)
-    st_javascript(f"window.location.href = '{LANDING_PAGE_URL}';")
+    # Auto-click the link using components.html
+    components.html(f'''
+        <script>
+            // Find and click the Streamlit link button
+            setTimeout(function() {{
+                var links = window.parent.document.querySelectorAll('a[href*="dopamine.watch"]');
+                if (links.length > 0) {{
+                    links[0].click();
+                }}
+            }}, 800);
+        </script>
+    ''', height=0)
     st.stop()
 else:
     render_sidebar()
