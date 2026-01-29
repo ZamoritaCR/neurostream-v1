@@ -1595,15 +1595,9 @@ def get_achievements():
 # 10b. ADS & MONETIZATION
 # --------------------------------------------------
 # Stripe Configuration (add your keys to Streamlit secrets)
-STRIPE_ENABLED = False
-try:
-    STRIPE_PAYMENT_LINK_MONTHLY = st.secrets.get("STRIPE_LINK_MONTHLY", "")
-    STRIPE_PAYMENT_LINK_YEARLY = st.secrets.get("STRIPE_LINK_YEARLY", "")
-    if STRIPE_PAYMENT_LINK_MONTHLY:
-        STRIPE_ENABLED = True
-except:
-    STRIPE_PAYMENT_LINK_MONTHLY = ""
-    STRIPE_PAYMENT_LINK_YEARLY = ""
+STRIPE_PAYMENT_LINK_MONTHLY = st.secrets.get("stripe", {}).get("payment_link", "")
+STRIPE_PAYMENT_LINK_YEARLY = ""  # Optional yearly plan
+STRIPE_ENABLED = bool(STRIPE_PAYMENT_LINK_MONTHLY)
 
 # Mr.DP daily chat limit for free users
 FREE_CHAT_LIMIT = FREE_MR_DP_LIMIT  # Use the constant from Supabase auth section
