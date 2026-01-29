@@ -3370,14 +3370,8 @@ def render_sidebar():
             # Clear session
             st.session_state.user = None
             st.session_state.db_user_id = None
-            # Clear localStorage and redirect to landing page
-            st.markdown("""
-            <script>
-                localStorage.removeItem('dopamine_user');
-                window.location.href = 'https://www.dopamine.watch';
-            </script>
-            """, unsafe_allow_html=True)
-            st.stop()
+            st.session_state.logout_redirect = True
+            st.rerun()
         
         st.caption("v34.0 • Supabase Auth 🔐")
 
@@ -4134,11 +4128,23 @@ LANDING_PAGE_URL = "https://www.dopamine.watch"
 
 if not st.session_state.get("user"):
     # No auth screens in the app - redirect to landing page
-    st.markdown(f"""
-    <meta http-equiv="refresh" content="0;url={LANDING_PAGE_URL}">
-    <script>window.location.href = "{LANDING_PAGE_URL}";</script>
-    """, unsafe_allow_html=True)
-    st.info("Redirecting to login page...")
+    # Use components.html for reliable JavaScript execution
+    redirect_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <script>
+            localStorage.removeItem('dopamine_user');
+            window.top.location.href = "{LANDING_PAGE_URL}";
+        </script>
+        <meta http-equiv="refresh" content="0;url={LANDING_PAGE_URL}">
+    </head>
+    <body>
+        <p>Redirecting to <a href="{LANDING_PAGE_URL}">dopamine.watch</a>...</p>
+    </body>
+    </html>
+    """
+    components.html(redirect_html, height=100)
     st.stop()
 else:
     render_sidebar()
