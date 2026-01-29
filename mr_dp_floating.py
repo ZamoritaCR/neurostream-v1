@@ -217,83 +217,67 @@ def render_floating_mr_dp():
                 100% {{ opacity: 0.2; }}
             }}
 
-            /* ---- Native Streamlit chat_input positioning ---- */
-            /* Default: completely hidden (visibility:hidden prevents focus & scroll) */
+            /* ---- Mr.DP Form positioning ---- */
+            /* Hide any bottom bar and the form by default */
             [data-testid="stBottom"],
             .stBottom {{
-                position: fixed !important;
-                bottom: 0 !important;
-                right: 0 !important;
-                visibility: hidden !important;
-                opacity: 0 !important;
-                height: 0 !important;
-                overflow: hidden !important;
-                pointer-events: none !important;
-                z-index: -1 !important;
+                display: none !important;
             }}
-            [data-testid="stChatInput"] textarea,
-            [data-testid="stChatInput"] input {{
-                tabindex: -1;
-            }}
-            /* When popup is open: position at popup base */
-            body.mrdp-open [data-testid="stBottom"],
-            body.mrdp-open .stBottom {{
+            /* Form container - hidden by default */
+            [data-testid="stForm"] {{
                 position: fixed !important;
                 bottom: 100px !important;
                 right: 24px !important;
                 left: auto !important;
                 width: 380px !important;
-                max-width: 380px !important;
-                height: auto !important;
-                overflow: visible !important;
+                visibility: hidden !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
+                z-index: -1 !important;
+            }}
+            /* When popup is open: show and position form */
+            body.mrdp-open [data-testid="stForm"] {{
                 visibility: visible !important;
                 opacity: 1 !important;
                 pointer-events: auto !important;
                 z-index: 2147483644 !important;
-                background: transparent !important;
-                padding: 0 !important;
-                margin: 0 !important;
-            }}
-            /* Style the chat input to match popup */
-            body.mrdp-open [data-testid="stChatInput"] {{
                 background: #0d0d14 !important;
                 border: 1px solid rgba(139,92,246,0.3) !important;
                 border-top: 1px solid rgba(139,92,246,0.15) !important;
                 border-radius: 0 0 16px 16px !important;
-                padding: 10px 14px !important;
+                padding: 12px 14px !important;
                 box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
             }}
-            body.mrdp-open [data-testid="stChatInput"] textarea,
-            body.mrdp-open [data-testid="stChatInput"] input {{
+            /* Style the text input */
+            body.mrdp-open [data-testid="stForm"] input {{
                 background: rgba(139,92,246,0.08) !important;
                 border: 1px solid rgba(139,92,246,0.25) !important;
                 border-radius: 10px !important;
                 color: #f5f5f7 !important;
                 caret-color: #f5f5f7 !important;
                 font-size: 14px !important;
+                padding: 10px 14px !important;
             }}
-            body.mrdp-open [data-testid="stChatInput"] textarea::placeholder,
-            body.mrdp-open [data-testid="stChatInput"] input::placeholder {{
+            body.mrdp-open [data-testid="stForm"] input::placeholder {{
                 color: #666 !important;
             }}
-            body.mrdp-open [data-testid="stChatInput"] button {{
-                color: #8b5cf6 !important;
+            /* Style the submit button */
+            body.mrdp-open [data-testid="stForm"] button {{
+                background: linear-gradient(135deg, #8b5cf6, #06b6d4) !important;
+                border: none !important;
+                border-radius: 10px !important;
+                color: white !important;
+                font-weight: 500 !important;
+                margin-top: 8px !important;
             }}
-            body.mrdp-open [data-testid="stChatInput"] button svg {{
-                fill: #8b5cf6 !important;
-            }}
-            /* Remove extra padding Streamlit adds for bottom bar */
-            body.mrdp-open [data-testid="stBottomBlockContainer"] {{
-                padding: 0 !important;
-                max-width: 380px !important;
+            body.mrdp-open [data-testid="stForm"] button:hover {{
+                opacity: 0.9 !important;
             }}
             @media (max-width: 480px) {{
                 #mrdp-popup {{ width: calc(100vw - 16px); right: 8px; bottom: 145px; height: 350px; }}
                 #mrdp-avatar {{ width: 56px; height: 56px; bottom: 16px; right: 16px; padding: 8px; }}
-                body.mrdp-open [data-testid="stBottom"],
-                body.mrdp-open .stBottom {{
+                [data-testid="stForm"] {{
                     width: calc(100vw - 16px) !important;
-                    max-width: calc(100vw - 16px) !important;
                     right: 8px !important;
                     bottom: 90px !important;
                 }}
@@ -355,38 +339,29 @@ def render_floating_mr_dp():
             + '</div>';
         pd.body.appendChild(root);
 
-        // Scroll chat to bottom
+        // Scroll chat messages to bottom
         var msgs = pd.getElementById('mrdp-messages');
         if (msgs) msgs.scrollTop = msgs.scrollHeight;
-
-        // Prevent hidden chat_input from stealing focus and dragging page down
-        if (!shouldOpen) {{
-            // Blur immediately and after delays to catch Streamlit's auto-focus
-            function blurAndScroll() {{
-                var inp = pd.querySelector('[data-testid="stChatInput"] textarea');
-                if (inp) inp.blur();
-                inp = pd.querySelector('[data-testid="stChatInput"] input');
-                if (inp) inp.blur();
-                // Scroll page back to top
-                window.parent.scrollTo(0, 0);
-                var container = pd.querySelector('[data-testid="stAppViewContainer"]');
-                if (container) container.scrollTop = 0;
-            }}
-            blurAndScroll();
-            setTimeout(blurAndScroll, 50);
-            setTimeout(blurAndScroll, 150);
-            setTimeout(blurAndScroll, 300);
-        }}
     }})();
     </script>
     """
 
     components.html(inject_script, height=0, scrolling=False)
 
-    # Native Streamlit chat input (positioned by CSS at popup location when open)
-    user_input = st.chat_input("How are you feeling?", key="mr_dp_chat_input")
+    # Use a form with text_input instead of st.chat_input to avoid auto-focus scroll
+    # The form is always rendered but hidden via CSS when popup is closed
+    with st.container():
+        with st.form("mr_dp_form", clear_on_submit=True, border=False):
+            user_input = st.text_input(
+                "Message",
+                placeholder="How are you feeling?",
+                key="mr_dp_text_input",
+                label_visibility="collapsed"
+            )
+            submitted = st.form_submit_button("Send", use_container_width=True)
 
-    if user_input:
-        st.session_state.mr_dp_open = True
+            if submitted and user_input:
+                st.session_state.mr_dp_open = True
+                return user_input
 
-    return user_input
+    return None
