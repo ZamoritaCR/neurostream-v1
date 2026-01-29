@@ -1930,7 +1930,14 @@ if st.session_state.get("do_logout"):
         </style>
         <script>
             try {{ localStorage.removeItem('dopamine_user'); localStorage.clear(); }} catch(e) {{}}
-            setTimeout(function() {{ window.location.href = "{LANDING_PAGE_URL}"; }}, 500);
+            setTimeout(function() {{
+                // Use top.location to escape the Streamlit iframe
+                try {{
+                    window.top.location.href = "{LANDING_PAGE_URL}";
+                }} catch(e) {{
+                    window.location.href = "{LANDING_PAGE_URL}";
+                }}
+            }}, 500);
         </script>
     </head>
     <body>
@@ -4271,10 +4278,15 @@ if not st.session_state.get("user"):
             .link:hover {{ background: #9D4EDD; color: white; }}
         </style>
         <script>
-            // Clear localStorage and redirect
+            // Clear localStorage and redirect the parent window (not the iframe)
             try {{ localStorage.removeItem('dopamine_user'); }} catch(e) {{}}
             setTimeout(function() {{
-                window.location.href = "{LANDING_PAGE_URL}";
+                // Use top.location to escape the Streamlit iframe
+                try {{
+                    window.top.location.href = "{LANDING_PAGE_URL}";
+                }} catch(e) {{
+                    window.location.href = "{LANDING_PAGE_URL}";
+                }}
             }}, 100);
         </script>
     </head>
