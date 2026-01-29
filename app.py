@@ -39,6 +39,9 @@ from streamlit_javascript import st_javascript
 # Mr.DP Floating Chat Widget
 from mr_dp_floating import render_floating_mr_dp
 
+# Subscription utilities (NEW - added for premium features)
+from subscription_utils import check_can_use, increment_usage, is_premium, show_usage_sidebar
+
 # --------------------------------------------------
 # 1. CONFIG
 # --------------------------------------------------
@@ -188,6 +191,34 @@ get_oauth_url = lambda provider: None
 handle_oauth_callback = lambda: None
 create_user_profile = lambda *args: None
 check_referral_code = lambda *args: None
+
+
+# --------------------------------------------------
+# SOCIAL PROOF NOTIFICATIONS (NEW)
+# --------------------------------------------------
+def show_social_proof():
+    """Show social proof notifications occasionally"""
+    if 'last_social_proof' not in st.session_state:
+        st.session_state.last_social_proof = datetime.now() - timedelta(minutes=5)
+
+    # Show every 45-90 seconds
+    if datetime.now() - st.session_state.last_social_proof > timedelta(seconds=random.randint(45, 90)):
+        names = ['Sarah', 'Mike', 'Emma', 'Alex', 'Jordan', 'Casey', 'Riley', 'Morgan', 'Taylor', 'Jamie']
+        cities = ['Portland', 'Austin', 'Denver', 'Seattle', 'Chicago', 'Miami', 'NYC', 'LA', 'Boston', 'Phoenix']
+        actions = [
+            'just found the perfect movie',
+            'discovered a new podcast',
+            'got a Quick Dope Hit',
+            'matched their mood perfectly',
+            'found something to watch'
+        ]
+
+        name = random.choice(names)
+        city = random.choice(cities)
+        action = random.choice(actions)
+
+        st.toast(f"{name} from {city} {action}!")
+        st.session_state.last_social_proof = datetime.now()
 
 
 # --------------------------------------------------
@@ -3376,9 +3407,15 @@ def render_sidebar():
         
         if st.session_state.get("is_premium"):
             st.markdown("<span class='premium-badge'>⭐ Premium</span>", unsafe_allow_html=True)
-        
+        else:
+            # Show daily usage for free users
+            user_id = st.session_state.get("db_user_id")
+            if user_id and supabase:
+                mr_dp_uses = st.session_state.user.get("mr_dp_uses", 0)
+                st.progress(min(mr_dp_uses / FREE_MR_DP_LIMIT, 1.0), text=f"Mr.DP: {mr_dp_uses}/{FREE_MR_DP_LIMIT}")
+
         st.markdown("---")
-        
+
         # NAVIGATION MENU
         st.markdown("#### 📍 Navigate")
         
@@ -4216,6 +4253,9 @@ else:
 
     # Render premium modal (if triggered)
     render_premium_modal()
+
+    # Show social proof notifications occasionally
+    show_social_proof()
 
     # Render floating Mr.DP chat widget
     user_message = render_floating_mr_dp()
