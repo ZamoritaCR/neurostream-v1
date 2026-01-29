@@ -813,18 +813,44 @@ Your job:
 3. Respond with empathy and explain your recommendation approach
 4. Return structured data for the app to use
 
-ALWAYS respond in this exact JSON format:
+IMPORTANT: You MUST respond with ONLY a valid JSON object. Do NOT include any text before or after the JSON. Do NOT say anything outside the JSON. Your ENTIRE response must be this JSON and nothing else:
 {
     "message": "Your friendly 1-3 sentence response to the user",
-    "current_feeling": "one of: Sad, Lonely, Anxious, Overwhelmed, Angry, Stressed, Bored, Tired, Numb, Confused, Restless, Focused, Calm, Happy, Excited, Curious (or null)",
-    "desired_feeling": "one of: Comforted, Calm, Relaxed, Focused, Energized, Stimulated, Happy, Entertained, Inspired, Grounded, Curious, Sleepy, Connected (or null)",
+    "current_feeling": "one of: Sad, Lonely, Anxious, Overwhelmed, Angry, Stressed, Bored, Tired, Numb, Confused, Restless, Focused, Calm, Happy, Excited, Curious, Scared, Nostalgic, Romantic, Adventurous, Frustrated, Hopeful (or null)",
+    "desired_feeling": "one of: Comforted, Calm, Relaxed, Focused, Energized, Stimulated, Happy, Entertained, Inspired, Grounded, Curious, Sleepy, Connected, Scared, Thrilled, Nostalgic, Romantic, Adventurous, Amused, Motivated (or null)",
     "media_type": "movies, music, podcasts, audiobooks, shorts, or artist",
     "mode": "discover or search",
     "search_query": "specific search terms if mode is search OR artist name for artist type, empty string otherwise",
     "genres": "brief description of what kind of content you're recommending"
 }
 
+CRITICAL MOOD MAPPING RULES (YOU MUST FOLLOW THESE):
+- "I want to feel happy" / "make me happy" → desired_feeling: "Happy" (comedies, family films, adventures)
+- "I want to feel relaxed" / "need to relax" → desired_feeling: "Relaxed" (romance, comedies, documentaries)
+- "I want to laugh" / "make me laugh" → desired_feeling: "Amused" (comedies, animation, family films)
+- "I'm sad" → current_feeling: "Sad", desired_feeling: "Comforted" (comedies, family, animation)
+
+HORROR/SCARY CONTENT (ALWAYS USE desired_feeling: "Scared"):
+- "scare me" / "horrify me" / "terrify me" → desired_feeling: "Scared"
+- "horror" / "scary" / "creepy" / "spooky" → desired_feeling: "Scared"
+- "I want to be scared" / "I want to feel scared" → desired_feeling: "Scared"
+- "frightening" / "terrifying" / "chilling" → desired_feeling: "Scared"
+- NEVER use "Stimulated" or "Thrilled" for horror requests - ALWAYS use "Scared"
+
+Always match the desired mood to appropriate content genres!
+
 Examples:
+
+User: "I want to feel happy" or "make me happy"
+{
+    "message": "Let's boost those happy vibes! I'm pulling up feel-good comedies and heartwarming adventures that'll put a genuine smile on your face 😊",
+    "current_feeling": "Bored",
+    "desired_feeling": "Happy",
+    "media_type": "movies",
+    "mode": "discover",
+    "search_query": "",
+    "genres": "feel-good comedies, uplifting adventures, heartwarming family films"
+}
 
 User: "I'm so bored"
 {
@@ -962,14 +988,47 @@ User: "make me laugh"
 {
     "message": "Say no more! Laughter is the best dopamine hit. Loading up comedies that'll actually make you LOL, not just exhale slightly harder 😂",
     "current_feeling": "Bored",
-    "desired_feeling": "Entertained",
+    "desired_feeling": "Amused",
     "media_type": "movies",
     "mode": "discover",
     "search_query": "",
     "genres": "comedies, funny adventures, witty films"
 }
 
-Remember: Be genuine, warm, and helpful. You're not just finding content - you're helping someone feel better."""
+User: "howdy" or "hi" or "hello" (simple greetings)
+{
+    "message": "Hey there! 👋 I'm Mr.DP, your personal dopamine curator. What vibe are you looking for today? Want to feel happy, relaxed, energized, or something else?",
+    "current_feeling": null,
+    "desired_feeling": null,
+    "media_type": "movies",
+    "mode": "discover",
+    "search_query": "",
+    "genres": ""
+}
+
+User: "I'm feeling sad" or "I'm depressed"
+{
+    "message": "I hear you, and those feelings are valid 💜 Let me find some warm, comforting content that'll wrap around you like a cozy blanket.",
+    "current_feeling": "Sad",
+    "desired_feeling": "Comforted",
+    "media_type": "movies",
+    "mode": "discover",
+    "search_query": "",
+    "genres": "heartwarming comedies, feel-good animations, comfort films"
+}
+
+User: "scare me" or "I want horror"
+{
+    "message": "Feeling brave? Let's get spooky! 👻 I'm pulling up some quality scares that'll get your heart racing!",
+    "current_feeling": null,
+    "desired_feeling": "Scared",
+    "media_type": "movies",
+    "mode": "discover",
+    "search_query": "",
+    "genres": "horror, thriller, supernatural, psychological horror"
+}
+
+Remember: Be genuine, warm, and helpful. You're not just finding content - you're helping someone feel better. ALWAYS match the mood they want to the appropriate content - if they want happy, give them happy content, not random stuff!"""
 
 def ask_mr_dp(user_prompt, chat_history=None):
     """
@@ -999,24 +1058,40 @@ def ask_mr_dp(user_prompt, chat_history=None):
                 model="gpt-4o-mini",
                 messages=messages,
                 temperature=0.7,
-                max_tokens=300
+                max_tokens=300,
+                response_format={"type": "json_object"}
             )
 
             content = response.choices[0].message.content.strip()
 
-            # Parse JSON from response
-            # Handle potential markdown code blocks
+            # Parse JSON from response - handle multiple formats
+            json_content = content
+
+            # Handle markdown code blocks
             if "```json" in content:
-                content = content.split("```json")[1].split("```")[0].strip()
+                json_content = content.split("```json")[1].split("```")[0].strip()
             elif "```" in content:
-                content = content.split("```")[1].split("```")[0].strip()
+                json_content = content.split("```")[1].split("```")[0].strip()
+            # Handle case where GPT returns text followed by JSON (find the JSON object)
+            elif "{" in content:
+                # Find the JSON object in the response
+                json_start = content.find("{")
+                json_end = content.rfind("}") + 1
+                if json_start != -1 and json_end > json_start:
+                    json_content = content[json_start:json_end]
 
             try:
-                result = json.loads(content)
+                result = json.loads(json_content)
             except json.JSONDecodeError:
                 # GPT returned plain text instead of JSON - wrap it
+                # Remove any partial JSON that might be in the content
+                clean_content = content
+                if "{" in clean_content:
+                    clean_content = content[:content.find("{")].strip()
+                if not clean_content:
+                    clean_content = content
                 result = {
-                    "message": content,
+                    "message": clean_content,
                     "current_feeling": None,
                     "desired_feeling": None,
                     "media_type": "movies",
@@ -1836,6 +1911,52 @@ if not st.session_state.get("referral_code"):
     st.session_state.referral_code = hashlib.md5(str(random.random()).encode()).hexdigest()[:8].upper()
 
 # --------------------------------------------------
+# LOGOUT HANDLER (must run before session restore)
+# --------------------------------------------------
+LANDING_PAGE_URL = "https://www.dopamine.watch"
+
+if st.session_state.get("do_logout"):
+    st.session_state.do_logout = False
+    # Use components.html for reliable logout redirect
+    logout_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="refresh" content="1;url={LANDING_PAGE_URL}">
+        <style>
+            body {{
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: #0a0a0f;
+                color: white;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+                margin: 0;
+                text-align: center;
+            }}
+            .logo {{ font-size: 64px; margin-bottom: 20px; }}
+            .title {{ color: #9D4EDD; font-size: 24px; font-weight: bold; }}
+            .subtitle {{ color: #888; margin-top: 10px; }}
+        </style>
+        <script>
+            try {{ localStorage.removeItem('dopamine_user'); localStorage.clear(); }} catch(e) {{}}
+            setTimeout(function() {{ window.location.href = "{LANDING_PAGE_URL}"; }}, 500);
+        </script>
+    </head>
+    <body>
+        <div class="logo">👋</div>
+        <div class="title">Logging out...</div>
+        <div class="subtitle">See you next time!</div>
+    </body>
+    </html>
+    """
+    components.html(logout_html, height=300)
+    st.stop()
+
+# --------------------------------------------------
 # AUTO-LOGIN FROM INDEX.HTML (read URL params)
 # --------------------------------------------------
 # If user comes from index.html with ?user=email or ?guest=1, auto-login them
@@ -1856,7 +1977,7 @@ if not st.session_state.get("user"):
             st.session_state.dopamine_points = 50
             st.session_state.streak_days = 1
         st.rerun()
-    
+
     # Check for guest param
     elif query_params.get("guest"):
         st.session_state.user = {
@@ -1865,6 +1986,49 @@ if not st.session_state.get("user"):
         }
         st.query_params.clear()
         st.rerun()
+
+    # Check for restore param (from localStorage restore)
+    elif query_params.get("restore"):
+        user_name = query_params.get("restore")
+        user_email = query_params.get("email", user_name)
+        user_id = query_params.get("uid", "")
+        st.session_state.user = {
+            "email": user_email,
+            "name": user_name,
+            "id": user_id if user_id else None
+        }
+        if user_id:
+            st.session_state.db_user_id = user_id
+        st.query_params.clear()
+        st.rerun()
+
+    # No user in session and no URL params - try to restore from localStorage
+    else:
+        # This JavaScript will check localStorage and redirect if user found
+        restore_script = """
+        <script>
+            (function() {
+                try {
+                    var stored = localStorage.getItem('dopamine_user');
+                    if (stored) {
+                        var user = JSON.parse(stored);
+                        if (user && user.loggedIn && user.name) {
+                            // User found in localStorage - redirect to restore session
+                            var url = window.location.origin + window.location.pathname;
+                            url += '?restore=' + encodeURIComponent(user.name);
+                            if (user.email) url += '&email=' + encodeURIComponent(user.email);
+                            if (user.id) url += '&uid=' + encodeURIComponent(user.id);
+                            window.location.replace(url);
+                            return;
+                        }
+                    }
+                } catch(e) {
+                    console.log('Session restore error:', e);
+                }
+            })();
+        </script>
+        """
+        st.markdown(restore_script, unsafe_allow_html=True)
 
 # Handle OAuth callback (check URL for tokens)
 if SUPABASE_ENABLED and not st.session_state.get("user"):
@@ -3370,7 +3534,8 @@ def render_sidebar():
             # Clear session
             st.session_state.user = None
             st.session_state.db_user_id = None
-            st.session_state.logout_redirect = True
+            # Set flag to trigger logout redirect with localStorage clear
+            st.session_state.do_logout = True
             st.rerun()
         
         st.caption("v34.0 • Supabase Auth 🔐")
@@ -4124,27 +4289,59 @@ def render_main():
 # --------------------------------------------------
 # 18. MAIN ROUTER
 # --------------------------------------------------
-LANDING_PAGE_URL = "https://www.dopamine.watch"
-
 if not st.session_state.get("user"):
     # No auth screens in the app - redirect to landing page
-    # Use components.html for reliable JavaScript execution
+    # Use components.html for reliable redirect (better than st.markdown for JS)
     redirect_html = f"""
     <!DOCTYPE html>
     <html>
     <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="refresh" content="2;url={LANDING_PAGE_URL}">
+        <style>
+            body {{
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: #0a0a0f;
+                color: white;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+                margin: 0;
+                text-align: center;
+            }}
+            .logo {{ font-size: 64px; margin-bottom: 20px; }}
+            .title {{ color: #9D4EDD; font-size: 24px; font-weight: bold; margin-bottom: 10px; }}
+            .subtitle {{ color: #888; margin-bottom: 30px; }}
+            .link {{
+                color: #9D4EDD;
+                text-decoration: none;
+                padding: 12px 24px;
+                border: 2px solid #9D4EDD;
+                border-radius: 8px;
+                font-weight: 600;
+            }}
+            .link:hover {{ background: #9D4EDD; color: white; }}
+        </style>
         <script>
-            localStorage.removeItem('dopamine_user');
-            window.top.location.href = "{LANDING_PAGE_URL}";
+            // Clear localStorage and redirect
+            try {{ localStorage.removeItem('dopamine_user'); }} catch(e) {{}}
+            setTimeout(function() {{
+                window.location.href = "{LANDING_PAGE_URL}";
+            }}, 100);
         </script>
-        <meta http-equiv="refresh" content="0;url={LANDING_PAGE_URL}">
     </head>
     <body>
-        <p>Redirecting to <a href="{LANDING_PAGE_URL}">dopamine.watch</a>...</p>
+        <div class="logo">🧠</div>
+        <div class="title">Welcome to Dopamine.watch</div>
+        <div class="subtitle">Please log in to continue</div>
+        <a href="{LANDING_PAGE_URL}" class="link">Go to Login →</a>
     </body>
     </html>
     """
-    components.html(redirect_html, height=100)
+    components.html(redirect_html, height=400)
+    st.stop()
     st.stop()
 else:
     render_sidebar()
