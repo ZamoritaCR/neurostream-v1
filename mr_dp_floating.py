@@ -245,12 +245,12 @@ def render_floating_mr_dp():
                 transition: opacity 0.2s;
             }}
             #mrdp-send:hover {{ opacity: 0.9; }}
-            /* Hide Streamlit's form completely */
+            /* Hide Streamlit's form off-screen but keep it interactable */
             [data-testid="stForm"] {{
-                position: absolute !important;
+                position: fixed !important;
                 left: -9999px !important;
-                visibility: hidden !important;
-                pointer-events: none !important;
+                top: 0 !important;
+                opacity: 0 !important;
             }}
             @media (max-width: 480px) {{
                 #mrdp-popup {{ width: calc(100vw - 16px); right: 8px; bottom: 100px; height: 400px; }}
@@ -291,17 +291,26 @@ def render_floating_mr_dp():
                 inp.value = '';
 
                 // Find the Streamlit hidden form input and submit
-                var stInput = document.querySelector('[data-testid="stForm"] input[type="text"]');
-                var stBtn = document.querySelector('[data-testid="stForm"] button[type="submit"]');
+                var formEl = document.querySelector('[data-testid="stForm"]');
+                if (!formEl) {{
+                    console.log('MrDP: Form not found');
+                    return;
+                }}
+                var stInput = formEl.querySelector('input');
+                var stBtn = formEl.querySelector('button');
+                console.log('MrDP: Found input:', !!stInput, 'button:', !!stBtn);
                 if (stInput && stBtn) {{
                     // Set value using native setter to trigger React
                     var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
                     nativeInputValueSetter.call(stInput, msg);
                     stInput.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                    stInput.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                    console.log('MrDP: Set value to:', msg);
                     // Small delay then submit
                     setTimeout(function() {{
+                        console.log('MrDP: Clicking submit');
                         stBtn.click();
-                    }}, 50);
+                    }}, 100);
                 }}
             }}
         `;
