@@ -1752,95 +1752,82 @@ def render_premium_modal():
     """Render premium upgrade modal"""
     if not st.session_state.get("show_premium_modal"):
         return
-    
+
+    # Premium modal HTML - all in one markdown block
     st.markdown("""
     <div style="
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.8);
-        z-index: 9998;
-    "></div>
-    """, unsafe_allow_html=True)
-    
-    with st.container():
-        st.markdown("""
+        background: linear-gradient(135deg, #1a1a2e, #16213e);
+        border: 2px solid rgba(139,92,246,0.5);
+        border-radius: 24px;
+        padding: 40px;
+        max-width: 500px;
+        margin: 40px auto;
+        text-align: center;
+        box-shadow: 0 25px 80px rgba(139,92,246,0.3);
+    ">
+        <div style="font-size: 3rem; margin-bottom: 16px;">👑</div>
+        <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 2rem; margin-bottom: 8px; color: white;">
+            Go Premium
+        </h2>
+        <p style="color: rgba(255,255,255,0.7); margin-bottom: 24px;">
+            Unlock the full dopamine.watch experience
+        </p>
+
         <div style="
-            background: linear-gradient(135deg, #1a1a2e, #16213e);
-            border: 2px solid rgba(139,92,246,0.5);
-            border-radius: 24px;
-            padding: 40px;
-            max-width: 500px;
-            margin: 40px auto;
-            text-align: center;
-            box-shadow: 0 25px 80px rgba(139,92,246,0.3);
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            text-align: left;
         ">
-            <div style="font-size: 3rem; margin-bottom: 16px;">👑</div>
-            <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 2rem; margin-bottom: 8px;">
-                Go Premium
-            </h2>
-            <p style="color: rgba(255,255,255,0.7); margin-bottom: 24px;">
-                Unlock the full dopamine.watch experience
-            </p>
-            
-            <div style="
-                background: rgba(255,255,255,0.05);
-                border-radius: 16px;
-                padding: 20px;
-                margin-bottom: 24px;
-                text-align: left;
-            ">
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                    <span style="color: #10b981;">✓</span>
-                    <span>No ads — ever</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                    <span style="color: #10b981;">✓</span>
-                    <span>Unlimited Mr.DP conversations</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                    <span style="color: #10b981;">✓</span>
-                    <span>Priority AI recommendations</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                    <span style="color: #10b981;">✓</span>
-                    <span>Exclusive 👑 badge</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <span style="color: #10b981;">✓</span>
-                    <span>Early access to new features</span>
-                </div>
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; color: white;">
+                <span style="color: #10b981;">✓</span>
+                <span>No ads — ever</span>
             </div>
-            
-            <div style="
-                background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(6,182,212,0.2));
-                border: 2px solid rgba(139,92,246,0.5);
-                border-radius: 16px;
-                padding: 24px;
-                margin-bottom: 20px;
-            ">
-                <div style="font-size: 0.9rem; color: rgba(255,255,255,0.6);">PREMIUM</div>
-                <div style="font-size: 2.5rem; font-weight: 700;">$4.99</div>
-                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.5);">per month</div>
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; color: white;">
+                <span style="color: #10b981;">✓</span>
+                <span>Unlimited Mr.DP conversations</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; color: white;">
+                <span style="color: #10b981;">✓</span>
+                <span>Priority AI recommendations</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; color: white;">
+                <span style="color: #10b981;">✓</span>
+                <span>Exclusive 👑 badge</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; color: white;">
+                <span style="color: #10b981;">✓</span>
+                <span>Early access to new features</span>
             </div>
         </div>
-        """, unsafe_allow_html=True)
-        
-        # Single pricing button
-        if STRIPE_ENABLED and STRIPE_PAYMENT_LINK_MONTHLY:
-            if st.button("⭐ Upgrade to Premium", key="premium_monthly", use_container_width=True):
-                st.markdown(f'<meta http-equiv="refresh" content="0;url={STRIPE_PAYMENT_LINK_MONTHLY}">', unsafe_allow_html=True)
-        else:
-            if st.button("⭐ Upgrade to Premium", key="premium_monthly_placeholder", use_container_width=True):
-                st.toast("Payment coming soon! 🚀", icon="⭐")
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        
+
+        <div style="
+            background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(6,182,212,0.2));
+            border: 2px solid rgba(139,92,246,0.5);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+        ">
+            <div style="font-size: 0.9rem; color: rgba(255,255,255,0.6);">PREMIUM</div>
+            <div style="font-size: 2.5rem; font-weight: 700; color: white;">$4.99</div>
+            <div style="font-size: 0.85rem; color: rgba(255,255,255,0.5);">per month</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Buttons below the modal content
+    col1, col2 = st.columns(2)
+    with col1:
         if st.button("Maybe Later", key="close_premium_modal", use_container_width=True):
             st.session_state.show_premium_modal = False
             st.rerun()
+    with col2:
+        if STRIPE_ENABLED and STRIPE_PAYMENT_LINK_MONTHLY:
+            st.link_button("⭐ Upgrade - $4.99/mo", STRIPE_PAYMENT_LINK_MONTHLY, use_container_width=True)
+        else:
+            if st.button("⭐ Upgrade to Premium", key="premium_monthly_placeholder", use_container_width=True):
+                st.toast("Payment coming soon! 🚀", icon="⭐")
 
 # --------------------------------------------------
 # 11. STATE INITIALIZATION
@@ -4243,48 +4230,7 @@ def render_main():
         </div>
         """, unsafe_allow_html=True)
     
-    # PREMIUM MODAL
-    if st.session_state.get("show_premium_modal"):
-        st.markdown("---")
-        st.markdown("<div class='section-header'><span class='section-icon'>⭐</span><h2 class='section-title'>Unlock Premium</h2></div>", unsafe_allow_html=True)
-        
-        st.markdown("""
-        <div class="glass-card" style="border-color: #ffd700;">
-            <h3 style="margin-top: 0; text-align: center;">Dopamine<span style="color: #ffd700;">+</span> Premium</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0;">
-                <div style="padding: 12px; background: var(--glass); border-radius: 12px;">🚫 No ads</div>
-                <div style="padding: 12px; background: var(--glass); border-radius: 12px;">🤖 Advanced AI</div>
-                <div style="padding: 12px; background: var(--glass); border-radius: 12px;">📊 Mood analytics</div>
-                <div style="padding: 12px; background: var(--glass); border-radius: 12px;">🔥 2x DP earnings</div>
-                <div style="padding: 12px; background: var(--glass); border-radius: 12px;">🏆 Exclusive badges</div>
-                <div style="padding: 12px; background: var(--glass); border-radius: 12px;">💬 Priority support</div>
-            </div>
-            <div style="text-align: center; margin: 24px 0;">
-                <span style="font-size: 2.5rem; font-weight: 700;">$4.99</span>
-                <span style="color: var(--text-secondary);">/month</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Maybe Later", use_container_width=True, key="premium_later"):
-                st.session_state.show_premium_modal = False
-                st.rerun()
-        with col2:
-            # Stripe Payment Link - set in secrets or use placeholder
-            stripe_link = st.secrets.get("stripe", {}).get("payment_link", "")
-            user = st.session_state.get("user", {})
-            user_email = user.get("email", "")
-
-            if stripe_link:
-                # Add client_reference_id (user_id) and prefilled_email to link
-                checkout_url = f"{stripe_link}?client_reference_id={user.get('id', '')}&prefilled_email={user_email}"
-                st.link_button("🚀 Subscribe - $4.99/mo", checkout_url, use_container_width=True)
-            else:
-                if st.button("🚀 Subscribe", use_container_width=True, key="premium_subscribe"):
-                    st.toast("Premium coming soon! Set up Stripe payment link in secrets.", icon="⭐")
-                    st.session_state.show_premium_modal = False
+    # PREMIUM MODAL - handled by render_premium_modal() below
 
 # --------------------------------------------------
 # 18. MAIN ROUTER
