@@ -1749,85 +1749,45 @@ def render_ad_banner(placement="default"):
         st.rerun()
 
 def render_premium_modal():
-    """Render premium upgrade modal"""
+    """Render premium upgrade modal using native Streamlit components"""
     if not st.session_state.get("show_premium_modal"):
         return
 
-    # Premium modal HTML - all in one markdown block
-    st.markdown("""
-    <div style="
-        background: linear-gradient(135deg, #1a1a2e, #16213e);
-        border: 2px solid rgba(139,92,246,0.5);
-        border-radius: 24px;
-        padding: 40px;
-        max-width: 500px;
-        margin: 40px auto;
-        text-align: center;
-        box-shadow: 0 25px 80px rgba(139,92,246,0.3);
-    ">
-        <div style="font-size: 3rem; margin-bottom: 16px;">👑</div>
-        <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 2rem; margin-bottom: 8px; color: white;">
-            Go Premium
-        </h2>
-        <p style="color: rgba(255,255,255,0.7); margin-bottom: 24px;">
-            Unlock the full dopamine.watch experience
-        </p>
+    st.markdown("---")
 
-        <div style="
-            background: rgba(255,255,255,0.05);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 24px;
-            text-align: left;
-        ">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; color: white;">
-                <span style="color: #10b981;">✓</span>
-                <span>No ads — ever</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; color: white;">
-                <span style="color: #10b981;">✓</span>
-                <span>Unlimited Mr.DP conversations</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; color: white;">
-                <span style="color: #10b981;">✓</span>
-                <span>Priority AI recommendations</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; color: white;">
-                <span style="color: #10b981;">✓</span>
-                <span>Exclusive 👑 badge</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 12px; color: white;">
-                <span style="color: #10b981;">✓</span>
-                <span>Early access to new features</span>
-            </div>
-        </div>
+    # Use native Streamlit components for reliability
+    col_spacer1, col_main, col_spacer2 = st.columns([1, 2, 1])
 
-        <div style="
-            background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(6,182,212,0.2));
-            border: 2px solid rgba(139,92,246,0.5);
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 20px;
-        ">
-            <div style="font-size: 0.9rem; color: rgba(255,255,255,0.6);">PREMIUM</div>
-            <div style="font-size: 2.5rem; font-weight: 700; color: white;">$4.99</div>
-            <div style="font-size: 0.85rem; color: rgba(255,255,255,0.5);">per month</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    with col_main:
+        st.markdown("### 👑 Go Premium")
+        st.markdown("*Unlock the full dopamine.watch experience*")
+        st.markdown("")
 
-    # Buttons below the modal content
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Maybe Later", key="close_premium_modal", use_container_width=True):
-            st.session_state.show_premium_modal = False
-            st.rerun()
-    with col2:
-        if STRIPE_ENABLED and STRIPE_PAYMENT_LINK_MONTHLY:
-            st.link_button("⭐ Upgrade - $4.99/mo", STRIPE_PAYMENT_LINK_MONTHLY, use_container_width=True)
-        else:
-            if st.button("⭐ Upgrade to Premium", key="premium_monthly_placeholder", use_container_width=True):
-                st.toast("Payment coming soon! 🚀", icon="⭐")
+        # Features list using native components
+        st.success("✓ No ads — ever")
+        st.success("✓ Unlimited Mr.DP conversations")
+        st.success("✓ Priority AI recommendations")
+        st.success("✓ Exclusive 👑 badge")
+        st.success("✓ Early access to new features")
+
+        st.markdown("")
+        st.markdown("#### **$4.99** /month")
+        st.markdown("")
+
+        # Buttons
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Maybe Later", key="close_premium_modal", use_container_width=True):
+                st.session_state.show_premium_modal = False
+                st.rerun()
+        with col2:
+            if STRIPE_ENABLED and STRIPE_PAYMENT_LINK_MONTHLY:
+                st.link_button("⭐ Upgrade Now", STRIPE_PAYMENT_LINK_MONTHLY, use_container_width=True)
+            else:
+                if st.button("⭐ Upgrade Now", key="premium_monthly_placeholder", use_container_width=True):
+                    st.toast("Payment coming soon! 🚀", icon="⭐")
+
+    st.markdown("---")
 
 # --------------------------------------------------
 # 11. STATE INITIALIZATION
