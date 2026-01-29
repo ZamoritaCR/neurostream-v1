@@ -218,17 +218,22 @@ def render_floating_mr_dp():
             }}
 
             /* ---- Native Streamlit chat_input positioning ---- */
-            /* Default: hidden at natural position (bottom:0 prevents scroll drag) */
+            /* Default: completely hidden (visibility:hidden prevents focus & scroll) */
             [data-testid="stBottom"],
             .stBottom {{
                 position: fixed !important;
                 bottom: 0 !important;
                 right: 0 !important;
+                visibility: hidden !important;
                 opacity: 0 !important;
                 height: 0 !important;
                 overflow: hidden !important;
                 pointer-events: none !important;
                 z-index: -1 !important;
+            }}
+            [data-testid="stChatInput"] textarea,
+            [data-testid="stChatInput"] input {{
+                tabindex: -1;
             }}
             /* When popup is open: position at popup base */
             body.mrdp-open [data-testid="stBottom"],
@@ -241,6 +246,7 @@ def render_floating_mr_dp():
                 max-width: 380px !important;
                 height: auto !important;
                 overflow: visible !important;
+                visibility: visible !important;
                 opacity: 1 !important;
                 pointer-events: auto !important;
                 z-index: 2147483644 !important;
