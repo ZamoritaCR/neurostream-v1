@@ -355,12 +355,21 @@ def render_floating_mr_dp():
 
         // Prevent hidden chat_input from stealing focus and dragging page down
         if (!shouldOpen) {{
-            setTimeout(function() {{
+            // Blur immediately and after delays to catch Streamlit's auto-focus
+            function blurAndScroll() {{
                 var inp = pd.querySelector('[data-testid="stChatInput"] textarea');
                 if (inp) inp.blur();
                 inp = pd.querySelector('[data-testid="stChatInput"] input');
                 if (inp) inp.blur();
-            }}, 100);
+                // Scroll page back to top
+                window.parent.scrollTo(0, 0);
+                var container = pd.querySelector('[data-testid="stAppViewContainer"]');
+                if (container) container.scrollTop = 0;
+            }}
+            blurAndScroll();
+            setTimeout(blurAndScroll, 50);
+            setTimeout(blurAndScroll, 150);
+            setTimeout(blurAndScroll, 300);
         }}
     }})();
     </script>
