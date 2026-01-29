@@ -34,6 +34,7 @@ import random
 from datetime import datetime, timedelta
 import hashlib
 import re
+from streamlit_javascript import st_javascript
 
 # Mr.DP Floating Chat Widget
 from mr_dp_floating import render_floating_mr_dp
@@ -1864,50 +1865,19 @@ LANDING_PAGE_URL = "https://www.dopamine.watch"
 
 if st.session_state.get("do_logout"):
     st.session_state.do_logout = False
-    # Use components.html for reliable logout redirect
-    logout_html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="refresh" content="1;url={LANDING_PAGE_URL}">
-        <style>
-            body {{
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                background: #0a0a0f;
-                color: white;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                height: 100vh;
-                margin: 0;
-                text-align: center;
-            }}
-            .logo {{ font-size: 64px; margin-bottom: 20px; }}
-            .title {{ color: #9D4EDD; font-size: 24px; font-weight: bold; }}
-            .subtitle {{ color: #888; margin-top: 10px; }}
-        </style>
-        <script>
-            try {{ localStorage.removeItem('dopamine_user'); localStorage.clear(); }} catch(e) {{}}
-            setTimeout(function() {{
-                // Use top.location to escape the Streamlit iframe
-                try {{
-                    window.top.location.href = "{LANDING_PAGE_URL}";
-                }} catch(e) {{
-                    window.location.href = "{LANDING_PAGE_URL}";
-                }}
-            }}, 500);
-        </script>
-    </head>
-    <body>
-        <div class="logo">👋</div>
-        <div class="title">Logging out...</div>
-        <div class="subtitle">See you next time!</div>
-    </body>
-    </html>
-    """
-    components.html(logout_html, height=300)
+    # Clear all session state
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+
+    # Show brief message
+    st.markdown("")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("<div style='text-align: center; font-size: 64px;'>👋</div>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: #9D4EDD;'>Logging out...</p>", unsafe_allow_html=True)
+
+    # Redirect using streamlit-javascript (runs in main page context, not iframe)
+    st_javascript(f"localStorage.clear(); window.location.href = '{LANDING_PAGE_URL}';")
     st.stop()
 
 # --------------------------------------------------
@@ -4203,63 +4173,15 @@ def render_main():
 # 18. MAIN ROUTER
 # --------------------------------------------------
 if not st.session_state.get("user"):
-    # No auth screens in the app - redirect to landing page
-    # Use components.html for reliable redirect (better than st.markdown for JS)
-    redirect_html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="refresh" content="2;url={LANDING_PAGE_URL}">
-        <style>
-            body {{
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                background: #0a0a0f;
-                color: white;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                height: 100vh;
-                margin: 0;
-                text-align: center;
-            }}
-            .logo {{ font-size: 64px; margin-bottom: 20px; }}
-            .title {{ color: #9D4EDD; font-size: 24px; font-weight: bold; margin-bottom: 10px; }}
-            .subtitle {{ color: #888; margin-bottom: 30px; }}
-            .link {{
-                color: #9D4EDD;
-                text-decoration: none;
-                padding: 12px 24px;
-                border: 2px solid #9D4EDD;
-                border-radius: 8px;
-                font-weight: 600;
-            }}
-            .link:hover {{ background: #9D4EDD; color: white; }}
-        </style>
-        <script>
-            // Clear localStorage and redirect the parent window (not the iframe)
-            try {{ localStorage.removeItem('dopamine_user'); }} catch(e) {{}}
-            setTimeout(function() {{
-                // Use top.location to escape the Streamlit iframe
-                try {{
-                    window.top.location.href = "{LANDING_PAGE_URL}";
-                }} catch(e) {{
-                    window.location.href = "{LANDING_PAGE_URL}";
-                }}
-            }}, 100);
-        </script>
-    </head>
-    <body>
-        <div class="logo">🧠</div>
-        <div class="title">Welcome to Dopamine.watch</div>
-        <div class="subtitle">Please log in to continue</div>
-        <a href="{LANDING_PAGE_URL}" class="link">Go to Login →</a>
-    </body>
-    </html>
-    """
-    components.html(redirect_html, height=400)
-    st.stop()
+    # No session - redirect to landing page for login
+    st.markdown("")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("<div style='text-align: center; font-size: 64px;'>🧠</div>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: #9D4EDD;'>Redirecting to login...</p>", unsafe_allow_html=True)
+
+    # Redirect using streamlit-javascript (runs in main page context, not iframe)
+    st_javascript(f"window.location.href = '{LANDING_PAGE_URL}';")
     st.stop()
 else:
     render_sidebar()

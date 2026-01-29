@@ -187,7 +187,7 @@ st.session_state.mr_dp_chat_history = [
 
 After Streamlit redeploys (2-3 min):
 
-- [ ] Visit https://dopaminewatch.streamlit.app/
+- [ ] Visit https://app.dopamine.watch/
 - [ ] See floating 🧠 brain icon (top-right)
 - [ ] Open sidebar
 - [ ] See "🧠 Mr.DP Chat" section
@@ -313,7 +313,7 @@ Track after deployment:
 
 **Branch:** `main`
 
-**Live URL:** https://dopaminewatch.streamlit.app/
+**Live URL:** https://app.dopamine.watch/
 
 **Deploy Time:** ~2-3 minutes
 
