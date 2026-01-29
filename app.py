@@ -63,6 +63,7 @@ from supabase import create_client, Client
 SUPABASE_URL = st.secrets.get("supabase", {}).get("url", "")
 SUPABASE_KEY = st.secrets.get("supabase", {}).get("anon_key", "")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL and SUPABASE_KEY else None
+SUPABASE_ENABLED = supabase is not None  # For backward compatibility
 
 FREE_MR_DP_LIMIT = 5  # Free users get 5 Mr.DP chats
 
