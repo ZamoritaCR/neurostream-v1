@@ -3367,10 +3367,17 @@ def render_sidebar():
         if st.button("🚪 Log Out", use_container_width=True, key="logout_btn"):
             if SUPABASE_ENABLED:
                 supabase_sign_out()
+            # Clear session
             st.session_state.user = None
             st.session_state.db_user_id = None
-            st.session_state.auth_step = "landing"
-            st.rerun()
+            # Clear localStorage and redirect to landing page
+            st.markdown("""
+            <script>
+                localStorage.removeItem('dopamine_user');
+                window.location.href = 'https://www.dopamine.watch';
+            </script>
+            """, unsafe_allow_html=True)
+            st.stop()
         
         st.caption("v34.0 • Supabase Auth 🔐")
 
@@ -4123,15 +4130,16 @@ def render_main():
 # --------------------------------------------------
 # 18. MAIN ROUTER
 # --------------------------------------------------
+LANDING_PAGE_URL = "https://www.dopamine.watch"
+
 if not st.session_state.get("user"):
-    if st.session_state.get("auth_step") == "login":
-        render_login()
-    elif st.session_state.get("auth_step") == "signup":
-        render_signup()
-    elif st.session_state.get("auth_step") == "reset":
-        render_reset_password()
-    else:
-        render_landing()
+    # No auth screens in the app - redirect to landing page
+    st.markdown(f"""
+    <meta http-equiv="refresh" content="0;url={LANDING_PAGE_URL}">
+    <script>window.location.href = "{LANDING_PAGE_URL}";</script>
+    """, unsafe_allow_html=True)
+    st.info("Redirecting to login page...")
+    st.stop()
 else:
     render_sidebar()
 
