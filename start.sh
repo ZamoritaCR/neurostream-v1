@@ -13,4 +13,4 @@ echo "secrets.toml created"
 echo "TMDB key length: ${#TMDB_API_KEY}"
 echo "OpenAI key length: ${#OPENAI_API_KEY}"
 
-python -m streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
+/opt/venv/bin/python -m streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
