@@ -5790,6 +5790,7 @@ if "init" not in st.session_state:
         "mr_dp_chat_history": [],
         "mr_dp_open": False,
         "mr_dp_thinking": False,
+        "mr_dp_just_responded": False,  # Flag to trigger speaking animation
         "mr_dp_v2_response": None,  # Mr.DP 2.0 rich response storage
         "use_mr_dp_v2": True,  # Feature flag for Mr.DP 2.0
 
@@ -9052,28 +9053,6 @@ def render_sidebar():
                 st.session_state.quick_hit = None
                 st.rerun()
 
-        # Mr.DP Companion
-        st.markdown("---")
-        st.markdown("#### 🟣 Mr.DP Companion")
-
-        # Show Mr.DP evolution status mini card
-        evo = get_current_evolution()
-        next_evo = get_next_evolution()
-        xp = st.session_state.get("mr_dp_game", {}).get("xp", 0)
-
-        st.markdown(f"""
-        <div style="background: linear-gradient(135deg, rgba(138, 86, 226, 0.15), rgba(0, 201, 167, 0.1));
-                    border-radius: 12px; padding: 10px; margin-bottom: 8px;">
-            <div style="font-size: 0.85rem; font-weight: 600;">{evo['name']} <span style="color: #00C9A7;">✨ {xp} XP</span></div>
-            {f'<div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">Next: {next_evo["name"]} ({next_evo["xp_needed"]} XP)</div>' if next_evo else ''}
-        </div>
-        """, unsafe_allow_html=True)
-
-        if st.button("🟣 Chat with Mr.DP", use_container_width=True, key="nav_mr_dp",
-                    type="primary" if st.session_state.active_page == "🟣 Mr.DP" else "secondary"):
-            st.session_state.active_page = "🟣 Mr.DP"
-            st.rerun()
-
         # Phase 6: Gamification Pages
         st.markdown("---")
         st.markdown(f"#### 🎮 {t('gamification')}")
@@ -10248,6 +10227,7 @@ else:
                     "role": "assistant",
                     "content": "You've used all 5 free Mr.DP chats! 💜 Upgrade to Premium for unlimited access and support dopamine.watch!"
                 })
+                st.session_state.mr_dp_just_responded = True
                 st.session_state.mr_dp_open = True
                 st.session_state.show_premium_modal = True
                 st.rerun()
@@ -10302,6 +10282,7 @@ else:
                     "role": "assistant",
                     "content": sanitize_chat_content(response.get("message", "Here's what I found!"))
                 })
+                st.session_state.mr_dp_just_responded = True
 
                 # Update mood state from v2 response
                 mood_update = response.get("mood_update", {})
@@ -10357,6 +10338,7 @@ else:
                     "role": "assistant",
                     "content": "Hmm, my neurons misfired! Try asking again?"
                 })
+                st.session_state.mr_dp_just_responded = True
 
         st.session_state.mr_dp_open = True
         st.rerun()

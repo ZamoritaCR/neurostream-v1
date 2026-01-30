@@ -40,10 +40,18 @@ def sanitize_chat_content(content: str) -> str:
 def get_mr_dp_svg(expression='happy'):
     """Generate SVG for Mr.DP neuron character with different expressions"""
     expressions = {
-        'happy': {'left_eye': '◠', 'right_eye': '◠', 'mouth': 'smile', 'blush': True},
-        'sleeping': {'left_eye': '−', 'right_eye': '−', 'mouth': 'sleeping', 'blush': False},
-        'thinking': {'left_eye': '•', 'right_eye': '•', 'mouth': 'hmm', 'blush': False},
-        'excited': {'left_eye': '★', 'right_eye': '★', 'mouth': 'big_smile', 'blush': True}
+        'happy': {'left_eye': '◠', 'right_eye': '◠', 'mouth': 'smile', 'blush': True, 'color': '#8b5cf6'},
+        'sleeping': {'left_eye': '−', 'right_eye': '−', 'mouth': 'sleeping', 'blush': False, 'color': '#6366f1'},
+        'thinking': {'left_eye': '•', 'right_eye': '◐', 'mouth': 'hmm', 'blush': False, 'color': '#8b5cf6'},
+        'excited': {'left_eye': '★', 'right_eye': '★', 'mouth': 'big_smile', 'blush': True, 'color': '#a855f7'},
+        'listening': {'left_eye': '◉', 'right_eye': '◉', 'mouth': 'open', 'blush': False, 'color': '#06b6d4'},
+        'sad': {'left_eye': '◡', 'right_eye': '◡', 'mouth': 'sad', 'blush': False, 'color': '#6366f1'},
+        'love': {'left_eye': '♥', 'right_eye': '♥', 'mouth': 'smile', 'blush': True, 'color': '#ec4899'},
+        'surprised': {'left_eye': '◯', 'right_eye': '◯', 'mouth': 'wow', 'blush': False, 'color': '#f59e0b'},
+        'wink': {'left_eye': '◠', 'right_eye': '−', 'mouth': 'smile', 'blush': True, 'color': '#8b5cf6'},
+        'confused': {'left_eye': '◔', 'right_eye': '◕', 'mouth': 'hmm', 'blush': False, 'color': '#8b5cf6'},
+        'cool': {'left_eye': '▬', 'right_eye': '▬', 'mouth': 'smile', 'blush': False, 'color': '#10b981'},
+        'focused': {'left_eye': '●', 'right_eye': '●', 'mouth': 'determined', 'blush': False, 'color': '#06b6d4'}
     }
 
     expr = expressions.get(expression, expressions['happy'])
@@ -52,7 +60,11 @@ def get_mr_dp_svg(expression='happy'):
         'smile': '<path d="M24 38 Q32 46 40 38" stroke="#ff6b9d" stroke-width="3" fill="none" stroke-linecap="round"/>',
         'sleeping': '<path d="M26 40 L38 40" stroke="#ff6b9d" stroke-width="2" fill="none" stroke-linecap="round"/>',
         'hmm': '<path d="M26 40 L38 38" stroke="#ff6b9d" stroke-width="2.5" fill="none" stroke-linecap="round"/>',
-        'big_smile': '<path d="M22 36 Q32 48 42 36" stroke="#ff6b9d" stroke-width="3" fill="none" stroke-linecap="round"/>'
+        'big_smile': '<path d="M22 36 Q32 48 42 36" stroke="#ff6b9d" stroke-width="3" fill="none" stroke-linecap="round"/>',
+        'open': '<ellipse cx="32" cy="40" rx="6" ry="4" fill="#ff6b9d"/>',
+        'sad': '<path d="M24 42 Q32 36 40 42" stroke="#ff6b9d" stroke-width="3" fill="none" stroke-linecap="round"/>',
+        'wow': '<ellipse cx="32" cy="40" rx="5" ry="6" fill="#ff6b9d"/>',
+        'determined': '<path d="M26 40 L38 40" stroke="#ff6b9d" stroke-width="3" fill="none" stroke-linecap="round"/>'
     }
 
     blush = '<circle cx="18" cy="36" r="5" fill="#ff6b9d" opacity="0.3"/><circle cx="46" cy="36" r="5" fill="#ff6b9d" opacity="0.3"/>' if expr['blush'] else ''
@@ -118,7 +130,21 @@ def render_floating_mr_dp():
         st.session_state.mr_dp_open = False
 
     # Build chat HTML
-    expression = 'thinking' if is_thinking else ('happy' if is_open else 'sleeping')
+    # Determine expression and animation state based on context
+    just_responded = st.session_state.get("mr_dp_just_responded", False)
+    if is_thinking:
+        expression = 'thinking'
+        anim_state = 'thinking'
+    elif just_responded:
+        expression = 'excited'
+        anim_state = 'speaking'
+        st.session_state.mr_dp_just_responded = False  # Reset flag
+    elif is_open:
+        expression = 'happy'
+        anim_state = 'idle'
+    else:
+        expression = 'sleeping'
+        anim_state = 'idle'
     mr_dp_svg = get_mr_dp_svg(expression)
 
     chat_html = ""
@@ -145,6 +171,8 @@ def render_floating_mr_dp():
     header_svg_escaped = json.dumps(get_mr_dp_svg("happy").replace("\n", ""))
     chat_html_escaped = json.dumps(chat_html)
     is_open_json = json.dumps(is_open)
+    anim_state_json = json.dumps(anim_state)
+    expression_json = json.dumps(expression)
 
     inject_script = f"""
     <script>
@@ -174,59 +202,108 @@ def render_floating_mr_dp():
             #mrdp-root * {{ box-sizing: border-box; }}
             #mrdp-avatar {{
                 position: fixed; bottom: 24px; right: 24px;
-                width: 100px; height: 100px; border-radius: 50%;
+                width: 120px; height: 120px; border-radius: 50%;
                 background: linear-gradient(135deg, #1a1a2e, #16213e);
-                box-shadow: 0 8px 32px rgba(139,92,246,0.6), 0 0 60px rgba(139,92,246,0.3);
+                box-shadow: 0 10px 40px rgba(139,92,246,0.7), 0 0 80px rgba(139,92,246,0.4);
                 cursor: pointer; z-index: 2147483647;
-                animation: mrdp-bounce 2s ease-in-out infinite, mrdp-glow 3s ease-in-out infinite;
+                animation: mrdp-idle 3s ease-in-out infinite, mrdp-glow 2s ease-in-out infinite;
                 display: flex; align-items: center; justify-content: center;
-                padding: 12px; transition: transform 0.3s;
-                border: 3px solid rgba(139,92,246,0.5);
+                padding: 15px; transition: all 0.3s ease;
+                border: 4px solid rgba(139,92,246,0.6);
             }}
-            #mrdp-avatar:hover {{ transform: scale(1.15); }}
-            @keyframes mrdp-bounce {{
-                0%, 100% {{ transform: translateY(0); }}
-                25% {{ transform: translateY(-8px); }}
-                50% {{ transform: translateY(0); }}
-                75% {{ transform: translateY(-4px); }}
+            #mrdp-avatar:hover {{
+                transform: scale(1.15) rotate(5deg);
+                box-shadow: 0 15px 50px rgba(139,92,246,0.9), 0 0 100px rgba(139,92,246,0.6);
+            }}
+            /* Idle animation - gentle breathing and looking around */
+            @keyframes mrdp-idle {{
+                0%, 100% {{ transform: translateY(0) rotate(0deg); }}
+                15% {{ transform: translateY(-6px) rotate(-2deg); }}
+                30% {{ transform: translateY(-3px) rotate(0deg); }}
+                45% {{ transform: translateY(-8px) rotate(2deg); }}
+                60% {{ transform: translateY(-4px) rotate(0deg); }}
+                75% {{ transform: translateY(-10px) rotate(-1deg); }}
             }}
             @keyframes mrdp-glow {{
-                0%, 100% {{ box-shadow: 0 8px 32px rgba(139,92,246,0.6), 0 0 60px rgba(139,92,246,0.3); }}
-                50% {{ box-shadow: 0 12px 48px rgba(139,92,246,0.8), 0 0 80px rgba(139,92,246,0.5); }}
+                0%, 100% {{ box-shadow: 0 10px 40px rgba(139,92,246,0.7), 0 0 80px rgba(139,92,246,0.4); }}
+                50% {{ box-shadow: 0 15px 60px rgba(139,92,246,0.9), 0 0 120px rgba(139,92,246,0.6); }}
+            }}
+            /* Thinking animation */
+            #mrdp-avatar.thinking {{
+                animation: mrdp-thinking 1s ease-in-out infinite, mrdp-glow-think 1.5s ease-in-out infinite;
+            }}
+            @keyframes mrdp-thinking {{
+                0%, 100% {{ transform: translateY(0) rotate(0deg); }}
+                25% {{ transform: translateY(-5px) rotate(-8deg); }}
+                50% {{ transform: translateY(-3px) rotate(0deg); }}
+                75% {{ transform: translateY(-5px) rotate(8deg); }}
+            }}
+            @keyframes mrdp-glow-think {{
+                0%, 100% {{ box-shadow: 0 10px 40px rgba(6,182,212,0.7), 0 0 80px rgba(6,182,212,0.4); }}
+                50% {{ box-shadow: 0 15px 60px rgba(6,182,212,0.9), 0 0 120px rgba(6,182,212,0.6); }}
+            }}
+            /* Speaking/responding animation */
+            #mrdp-avatar.speaking {{
+                animation: mrdp-speaking 0.5s ease-in-out infinite, mrdp-glow-speak 0.8s ease-in-out infinite;
+            }}
+            @keyframes mrdp-speaking {{
+                0%, 100% {{ transform: scale(1); }}
+                50% {{ transform: scale(1.08); }}
+            }}
+            @keyframes mrdp-glow-speak {{
+                0%, 100% {{ box-shadow: 0 10px 40px rgba(168,85,247,0.7), 0 0 80px rgba(168,85,247,0.4); }}
+                50% {{ box-shadow: 0 15px 60px rgba(236,72,153,0.9), 0 0 120px rgba(236,72,153,0.6); }}
+            }}
+            /* Listening animation */
+            #mrdp-avatar.listening {{
+                animation: mrdp-listening 0.8s ease-in-out infinite;
+            }}
+            @keyframes mrdp-listening {{
+                0%, 100% {{ transform: scale(1) rotate(0deg); }}
+                25% {{ transform: scale(1.05) rotate(-3deg); }}
+                75% {{ transform: scale(1.05) rotate(3deg); }}
+            }}
+            /* Excited animation */
+            #mrdp-avatar.excited {{
+                animation: mrdp-excited 0.4s ease-in-out infinite;
+            }}
+            @keyframes mrdp-excited {{
+                0%, 100% {{ transform: translateY(0) scale(1); }}
+                50% {{ transform: translateY(-15px) scale(1.1); }}
             }}
             #mrdp-badge {{
-                position: absolute; top: -2px; right: -2px;
-                width: 22px; height: 22px; border-radius: 50%;
-                background: #10b981; border: 3px solid #1a1a2e;
+                position: absolute; top: -4px; right: -4px;
+                width: 28px; height: 28px; border-radius: 50%;
+                background: #10b981; border: 4px solid #1a1a2e;
                 animation: mrdp-badge-pulse 1.5s ease-in-out infinite;
             }}
             @keyframes mrdp-badge-pulse {{
                 0%, 100% {{ transform: scale(1); }}
-                50% {{ transform: scale(1.2); }}
+                50% {{ transform: scale(1.3); }}
             }}
             /* Click me tooltip for first-time users */
             #mrdp-tooltip {{
-                position: fixed; bottom: 135px; right: 24px;
+                position: fixed; bottom: 160px; right: 24px;
                 background: linear-gradient(135deg, #8b5cf6, #06b6d4);
-                color: white; padding: 12px 18px; border-radius: 12px;
-                font-weight: 600; font-size: 14px; z-index: 2147483646;
-                box-shadow: 0 8px 32px rgba(139,92,246,0.4);
-                animation: mrdp-tooltip-bounce 1.5s ease-in-out infinite;
+                color: white; padding: 14px 22px; border-radius: 16px;
+                font-weight: 700; font-size: 16px; z-index: 2147483646;
+                box-shadow: 0 10px 40px rgba(139,92,246,0.5);
+                animation: mrdp-tooltip-bounce 1.2s ease-in-out infinite;
                 white-space: nowrap;
             }}
             #mrdp-tooltip::after {{
-                content: ''; position: absolute; bottom: -8px; right: 40px;
-                border-left: 8px solid transparent; border-right: 8px solid transparent;
-                border-top: 8px solid #06b6d4;
+                content: ''; position: absolute; bottom: -10px; right: 50px;
+                border-left: 10px solid transparent; border-right: 10px solid transparent;
+                border-top: 10px solid #06b6d4;
             }}
             @keyframes mrdp-tooltip-bounce {{
-                0%, 100% {{ transform: translateY(0); opacity: 1; }}
-                50% {{ transform: translateY(-5px); opacity: 0.9; }}
+                0%, 100% {{ transform: translateY(0) scale(1); opacity: 1; }}
+                50% {{ transform: translateY(-8px) scale(1.05); opacity: 0.95; }}
             }}
             .mrdp-tooltip-hidden {{ display: none !important; }}
             #mrdp-popup {{
-                position: fixed; bottom: 140px; right: 24px;
-                width: 400px; height: 500px;
+                position: fixed; bottom: 160px; right: 24px;
+                width: 420px; height: 520px;
                 background: #0d0d14; border: 1px solid rgba(139,92,246,0.3);
                 border-radius: 16px; z-index: 2147483645;
                 box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(139,92,246,0.1);
@@ -322,8 +399,8 @@ def render_floating_mr_dp():
             }}
             @media (max-width: 480px) {{
                 #mrdp-popup {{ width: calc(100vw - 16px); right: 8px; bottom: 130px; height: 420px; }}
-                #mrdp-avatar {{ width: 80px; height: 80px; bottom: 16px; right: 16px; padding: 10px; }}
-                #mrdp-tooltip {{ bottom: 110px; right: 16px; font-size: 12px; padding: 10px 14px; }}
+                #mrdp-avatar {{ width: 90px; height: 90px; bottom: 16px; right: 16px; padding: 12px; }}
+                #mrdp-tooltip {{ bottom: 120px; right: 16px; font-size: 14px; padding: 12px 16px; }}
             }}
         `;
         pd.head.appendChild(css);
@@ -332,6 +409,47 @@ def render_floating_mr_dp():
         var js = pd.createElement('script');
         js.id = 'mrdp-js';
         js.textContent = `
+            // Expression SVGs for dynamic updates
+            var mrdpExpressions = {{
+                happy: '◠|◠|smile|true|#8b5cf6',
+                sleeping: '−|−|sleeping|false|#6366f1',
+                thinking: '•|◐|hmm|false|#8b5cf6',
+                excited: '★|★|big_smile|true|#a855f7',
+                listening: '◉|◉|open|false|#06b6d4',
+                sad: '◡|◡|sad|false|#6366f1',
+                love: '♥|♥|smile|true|#ec4899',
+                surprised: '◯|◯|wow|false|#f59e0b',
+                wink: '◠|−|smile|true|#8b5cf6',
+                confused: '◔|◕|hmm|false|#8b5cf6',
+                cool: '▬|▬|smile|false|#10b981',
+                focused: '●|●|determined|false|#06b6d4'
+            }};
+
+            // Change avatar animation state
+            function mrdpSetState(state) {{
+                var avatar = document.getElementById('mrdp-avatar');
+                if (!avatar) return;
+                avatar.classList.remove('thinking', 'speaking', 'listening', 'excited');
+                if (state && state !== 'idle') {{
+                    avatar.classList.add(state);
+                }}
+            }}
+
+            // Change expression (eyes and mouth)
+            function mrdpSetExpression(expr) {{
+                var avatar = document.getElementById('mrdp-avatar');
+                if (!avatar) return;
+                var parts = mrdpExpressions[expr];
+                if (!parts) parts = mrdpExpressions['happy'];
+                var p = parts.split('|');
+                // Update eyes in the SVG
+                var texts = avatar.querySelectorAll('text');
+                if (texts.length >= 2) {{
+                    texts[0].textContent = p[0]; // left eye
+                    texts[1].textContent = p[1]; // right eye
+                }}
+            }}
+
             function mrdpToggle() {{
                 var popup = document.getElementById('mrdp-popup');
                 var tooltip = document.getElementById('mrdp-tooltip');
@@ -348,6 +466,12 @@ def render_floating_mr_dp():
                     if (isHidden) {{
                         document.body.classList.add('mrdp-open');
                         document.body.setAttribute('data-mrdp-open', 'true');
+                        mrdpSetState('excited');
+                        mrdpSetExpression('excited');
+                        setTimeout(function() {{
+                            mrdpSetState('idle');
+                            mrdpSetExpression('happy');
+                        }}, 1500);
                         var msgs = document.getElementById('mrdp-messages');
                         if (msgs) msgs.scrollTop = msgs.scrollHeight;
                         // Focus native input
@@ -358,6 +482,8 @@ def render_floating_mr_dp():
                     }} else {{
                         document.body.classList.remove('mrdp-open');
                         document.body.setAttribute('data-mrdp-open', 'false');
+                        mrdpSetState('idle');
+                        mrdpSetExpression('sleeping');
                     }}
                 }}
             }}
@@ -366,6 +492,10 @@ def render_floating_mr_dp():
                 if (!inp || !inp.value.trim()) return;
                 var msg = inp.value.trim();
                 inp.value = '';
+
+                // Set thinking state when sending
+                mrdpSetState('thinking');
+                mrdpSetExpression('thinking');
 
                 // Find the Streamlit hidden form input and submit
                 var formEl = document.querySelector('[data-testid="stForm"]');
@@ -390,6 +520,24 @@ def render_floating_mr_dp():
                     }}, 100);
                 }}
             }}
+
+            // Listen for input events to show listening state
+            document.addEventListener('DOMContentLoaded', function() {{
+                setTimeout(function() {{
+                    var inp = document.getElementById('mrdp-input');
+                    if (inp) {{
+                        inp.addEventListener('input', function() {{
+                            if (inp.value.length > 0) {{
+                                mrdpSetState('listening');
+                                mrdpSetExpression('listening');
+                            }} else {{
+                                mrdpSetState('idle');
+                                mrdpSetExpression('happy');
+                            }}
+                        }});
+                    }}
+                }}, 500);
+            }});
         `;
         pd.head.appendChild(js);
 
@@ -410,8 +558,10 @@ def render_floating_mr_dp():
             ? '<div id="mrdp-tooltip">&#128075; Hey! Click me to get started!</div>'
             : '';
 
+        var animState = {anim_state_json};
+        var animClass = animState !== 'idle' ? ' ' + animState : '';
         root.innerHTML = tooltipHtml
-            + '<div id="mrdp-avatar" onclick="mrdpToggle()">'
+            + '<div id="mrdp-avatar" class="' + animClass.trim() + '" onclick="mrdpToggle()">'
             + {svg_escaped}
             + '<div id="mrdp-badge"></div>'
             + '</div>'
@@ -432,6 +582,31 @@ def render_floating_mr_dp():
         // Scroll chat messages to bottom
         var msgs = pd.getElementById('mrdp-messages');
         if (msgs) msgs.scrollTop = msgs.scrollHeight;
+
+        // Set up input listener for listening state
+        setTimeout(function() {{
+            var inp = pd.getElementById('mrdp-input');
+            if (inp && !inp.hasAttribute('data-mrdp-listener')) {{
+                inp.setAttribute('data-mrdp-listener', 'true');
+                inp.addEventListener('input', function() {{
+                    if (inp.value.length > 0) {{
+                        pd.defaultView.mrdpSetState('listening');
+                        pd.defaultView.mrdpSetExpression('listening');
+                    }} else {{
+                        pd.defaultView.mrdpSetState('idle');
+                        pd.defaultView.mrdpSetExpression('happy');
+                    }}
+                }});
+            }}
+        }}, 200);
+
+        // If just responded, show speaking animation then transition to happy
+        if (animState === 'speaking') {{
+            setTimeout(function() {{
+                pd.defaultView.mrdpSetState('idle');
+                pd.defaultView.mrdpSetExpression('happy');
+            }}, 2000);
+        }}
     }})();
     </script>
     """
