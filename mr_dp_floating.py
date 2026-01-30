@@ -7,6 +7,34 @@ Uses JavaScript for UI and bridges to Streamlit via hidden form.
 import streamlit as st
 import streamlit.components.v1 as components
 import json
+import re
+
+
+def sanitize_chat_content(content: str) -> str:
+    """Remove any SVG tags or SVG-related content that might have leaked into chat messages."""
+    if not content:
+        return content
+
+    # Remove SVG tags and their content
+    content = re.sub(r'<svg[^>]*>.*?</svg>', '', content, flags=re.DOTALL | re.IGNORECASE)
+
+    # Remove partial SVG elements that might appear
+    content = re.sub(r'<(circle|rect|path|ellipse|polygon|line|polyline|g|defs|linearGradient|radialGradient|filter|animate|text|tspan)[^>]*/?>', '', content, flags=re.IGNORECASE)
+
+    # Remove SVG closing tags
+    content = re.sub(r'</(svg|circle|rect|path|ellipse|polygon|line|polyline|g|defs|linearGradient|radialGradient|filter|animate|text|tspan)>', '', content, flags=re.IGNORECASE)
+
+    # Remove dpGradient references and other SVG ID patterns
+    content = re.sub(r'(dpGradient|dpGlow|ng-|ag-)_?\w*', '', content, flags=re.IGNORECASE)
+
+    # Remove any remaining SVG attributes
+    content = re.sub(r'fill="url\([^)]*\)"', '', content)
+    content = re.sub(r'(stroke|fill|opacity|transform|viewBox|xmlns)[^"]*="[^"]*"', '', content)
+
+    # Clean up multiple spaces and newlines
+    content = re.sub(r'\s+', ' ', content).strip()
+
+    return content
 
 
 def get_mr_dp_svg(expression='happy'):
@@ -96,13 +124,18 @@ def render_floating_mr_dp():
     chat_html = ""
     if chat_history:
         for msg in chat_history[-8:]:
-            content = msg["content"].replace("<", "&lt;").replace(">", "&gt;").replace("'", "&#39;").replace('"', "&quot;").replace("\n", "<br>")
+            # Sanitize content to remove any SVG that might have leaked in
+            raw_content = sanitize_chat_content(msg.get("content", ""))
+            content = raw_content.replace("<", "&lt;").replace(">", "&gt;").replace("'", "&#39;").replace('"', "&quot;").replace("\n", "<br>")
             if msg["role"] == "assistant":
                 chat_html += f'<div class="mrdp-msg mrdp-assistant"><div class="mrdp-avatar">&#129504;</div><div class="mrdp-bubble mrdp-bubble-ai">{content}</div></div>'
             else:
                 chat_html += f'<div class="mrdp-msg mrdp-user"><div class="mrdp-bubble mrdp-bubble-user">{content}</div></div>'
     else:
-        chat_html = '<div class="mrdp-msg mrdp-assistant"><div class="mrdp-avatar">&#129504;</div><div class="mrdp-bubble mrdp-bubble-ai">&#128075; Hey! Tell me how you\'re feeling and I\'ll find the perfect content for you!</div></div>'
+        # First-time onboarding message - explain what Mr.DP can do
+        chat_html = '''<div class="mrdp-msg mrdp-assistant"><div class="mrdp-avatar">&#129504;</div><div class="mrdp-bubble mrdp-bubble-ai">&#128075; Hey there! I'm <b>Mr.DP</b> - your personal dopamine curator!</div></div>
+<div class="mrdp-msg mrdp-assistant"><div class="mrdp-avatar">&#129504;</div><div class="mrdp-bubble mrdp-bubble-ai">Here's what I can do for you:<br><br>&#127916; <b>Find movies & shows</b> that match your mood<br>&#127926; <b>Create playlists</b> for any vibe<br>&#127897; <b>Suggest podcasts</b> to keep you engaged<br>&#128218; <b>Recommend audiobooks</b> for focus or relaxation<br>&#9889; <b>Curate a movie marathon</b> for your night in</div></div>
+<div class="mrdp-msg mrdp-assistant"><div class="mrdp-avatar">&#129504;</div><div class="mrdp-bubble mrdp-bubble-ai">Try saying something like:<br>&#8226; "I need something funny"<br>&#8226; "Play some chill music"<br>&#8226; "I'm feeling stressed"<br>&#8226; "Plan a movie marathon for tonight"</div></div>'''
 
     # Add thinking indicator if processing
     if is_thinking:
@@ -131,6 +164,9 @@ def render_floating_mr_dp():
         var jsOpen = pd.body.getAttribute('data-mrdp-open') === 'true';
         var shouldOpen = pythonOpen || jsOpen;
 
+        // Check if first time user (no previous interactions)
+        var isFirstTime = !localStorage.getItem('mrdp_interacted');
+
         // CSS
         var css = pd.createElement('style');
         css.id = 'mrdp-css';
@@ -138,27 +174,59 @@ def render_floating_mr_dp():
             #mrdp-root * {{ box-sizing: border-box; }}
             #mrdp-avatar {{
                 position: fixed; bottom: 24px; right: 24px;
-                width: 70px; height: 70px; border-radius: 50%;
+                width: 100px; height: 100px; border-radius: 50%;
                 background: linear-gradient(135deg, #1a1a2e, #16213e);
-                box-shadow: 0 8px 32px rgba(139,92,246,0.5);
+                box-shadow: 0 8px 32px rgba(139,92,246,0.6), 0 0 60px rgba(139,92,246,0.3);
                 cursor: pointer; z-index: 2147483647;
-                animation: mrdp-pulse 3s ease-in-out infinite;
+                animation: mrdp-bounce 2s ease-in-out infinite, mrdp-glow 3s ease-in-out infinite;
                 display: flex; align-items: center; justify-content: center;
-                padding: 10px; transition: transform 0.3s;
+                padding: 12px; transition: transform 0.3s;
+                border: 3px solid rgba(139,92,246,0.5);
             }}
-            #mrdp-avatar:hover {{ transform: scale(1.1); }}
-            @keyframes mrdp-pulse {{
-                0%, 100% {{ box-shadow: 0 8px 32px rgba(139,92,246,0.5); }}
-                50% {{ box-shadow: 0 8px 40px rgba(139,92,246,0.8); }}
+            #mrdp-avatar:hover {{ transform: scale(1.15); }}
+            @keyframes mrdp-bounce {{
+                0%, 100% {{ transform: translateY(0); }}
+                25% {{ transform: translateY(-8px); }}
+                50% {{ transform: translateY(0); }}
+                75% {{ transform: translateY(-4px); }}
+            }}
+            @keyframes mrdp-glow {{
+                0%, 100% {{ box-shadow: 0 8px 32px rgba(139,92,246,0.6), 0 0 60px rgba(139,92,246,0.3); }}
+                50% {{ box-shadow: 0 12px 48px rgba(139,92,246,0.8), 0 0 80px rgba(139,92,246,0.5); }}
             }}
             #mrdp-badge {{
                 position: absolute; top: -2px; right: -2px;
-                width: 18px; height: 18px; border-radius: 50%;
-                background: #10b981; border: 2px solid #1a1a2e;
+                width: 22px; height: 22px; border-radius: 50%;
+                background: #10b981; border: 3px solid #1a1a2e;
+                animation: mrdp-badge-pulse 1.5s ease-in-out infinite;
             }}
+            @keyframes mrdp-badge-pulse {{
+                0%, 100% {{ transform: scale(1); }}
+                50% {{ transform: scale(1.2); }}
+            }}
+            /* Click me tooltip for first-time users */
+            #mrdp-tooltip {{
+                position: fixed; bottom: 135px; right: 24px;
+                background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                color: white; padding: 12px 18px; border-radius: 12px;
+                font-weight: 600; font-size: 14px; z-index: 2147483646;
+                box-shadow: 0 8px 32px rgba(139,92,246,0.4);
+                animation: mrdp-tooltip-bounce 1.5s ease-in-out infinite;
+                white-space: nowrap;
+            }}
+            #mrdp-tooltip::after {{
+                content: ''; position: absolute; bottom: -8px; right: 40px;
+                border-left: 8px solid transparent; border-right: 8px solid transparent;
+                border-top: 8px solid #06b6d4;
+            }}
+            @keyframes mrdp-tooltip-bounce {{
+                0%, 100% {{ transform: translateY(0); opacity: 1; }}
+                50% {{ transform: translateY(-5px); opacity: 0.9; }}
+            }}
+            .mrdp-tooltip-hidden {{ display: none !important; }}
             #mrdp-popup {{
-                position: fixed; bottom: 110px; right: 24px;
-                width: 380px; height: 450px;
+                position: fixed; bottom: 140px; right: 24px;
+                width: 400px; height: 500px;
                 background: #0d0d14; border: 1px solid rgba(139,92,246,0.3);
                 border-radius: 16px; z-index: 2147483645;
                 box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(139,92,246,0.1);
@@ -253,8 +321,9 @@ def render_floating_mr_dp():
                 opacity: 0 !important;
             }}
             @media (max-width: 480px) {{
-                #mrdp-popup {{ width: calc(100vw - 16px); right: 8px; bottom: 100px; height: 400px; }}
-                #mrdp-avatar {{ width: 56px; height: 56px; bottom: 16px; right: 16px; padding: 8px; }}
+                #mrdp-popup {{ width: calc(100vw - 16px); right: 8px; bottom: 130px; height: 420px; }}
+                #mrdp-avatar {{ width: 80px; height: 80px; bottom: 16px; right: 16px; padding: 10px; }}
+                #mrdp-tooltip {{ bottom: 110px; right: 16px; font-size: 12px; padding: 10px 14px; }}
             }}
         `;
         pd.head.appendChild(css);
@@ -265,6 +334,14 @@ def render_floating_mr_dp():
         js.textContent = `
             function mrdpToggle() {{
                 var popup = document.getElementById('mrdp-popup');
+                var tooltip = document.getElementById('mrdp-tooltip');
+
+                // Hide tooltip on first click and mark as interacted
+                if (tooltip) {{
+                    tooltip.classList.add('mrdp-tooltip-hidden');
+                    localStorage.setItem('mrdp_interacted', 'true');
+                }}
+
                 if (popup) {{
                     var isHidden = popup.style.display === 'none';
                     popup.style.display = isHidden ? 'flex' : 'none';
@@ -327,19 +404,26 @@ def render_floating_mr_dp():
         // Widget HTML with native input
         var root = pd.createElement('div');
         root.id = 'mrdp-root';
-        root.innerHTML = '<div id="mrdp-avatar" onclick="mrdpToggle()">'
+
+        // Tooltip for first-time users
+        var tooltipHtml = isFirstTime
+            ? '<div id="mrdp-tooltip">&#128075; Hey! Click me to get started!</div>'
+            : '';
+
+        root.innerHTML = tooltipHtml
+            + '<div id="mrdp-avatar" onclick="mrdpToggle()">'
             + {svg_escaped}
             + '<div id="mrdp-badge"></div>'
             + '</div>'
             + '<div id="mrdp-popup" style="display: ' + (shouldOpen ? 'flex' : 'none') + '">'
             + '<div id="mrdp-header">'
             + '<div id="mrdp-header-avatar">' + {header_svg_escaped} + '</div>'
-            + '<div id="mrdp-header-info"><div id="mrdp-header-name">Mr.DP</div><div id="mrdp-header-status">&#9679; Online</div></div>'
+            + '<div id="mrdp-header-info"><div id="mrdp-header-name">Mr.DP - Your Dopamine Curator</div><div id="mrdp-header-status">&#9679; Ready to help!</div></div>'
             + '<button id="mrdp-close" onclick="mrdpToggle()">&#10005;</button>'
             + '</div>'
             + '<div id="mrdp-messages">' + {chat_html_escaped} + '</div>'
             + '<div id="mrdp-input-area">'
-            + '<input type="text" id="mrdp-input" placeholder="How are you feeling?" onkeydown="if(event.key===\\'Enter\\')mrdpSend()">'
+            + '<input type="text" id="mrdp-input" placeholder="Tell me what you\\'re in the mood for..." onkeydown="if(event.key===\\'Enter\\')mrdpSend()">'
             + '<button id="mrdp-send" onclick="mrdpSend()">Send</button>'
             + '</div>'
             + '</div>';

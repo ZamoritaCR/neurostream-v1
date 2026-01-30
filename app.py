@@ -40,7 +40,7 @@ import re
 from streamlit_javascript import st_javascript
 
 # Mr.DP Floating Chat Widget
-from mr_dp_floating import render_floating_mr_dp
+from mr_dp_floating import render_floating_mr_dp, sanitize_chat_content
 
 # Mr.DP Intelligence System
 from mr_dp_intelligence import (
@@ -2111,7 +2111,8 @@ Respond with a JSON object containing:
     "mood_update": {
         "current": "detected current feeling or null",
         "desired": "detected desired feeling or null"
-    }
+    },
+    "focus_page": "music|movies|podcasts|audiobooks|shorts|null"
 }
 
 ## CONTENT DATA FORMATS
@@ -2148,12 +2149,49 @@ Current feelings: Sad, Lonely, Anxious, Overwhelmed, Angry, Stressed, Bored, Tir
 
 Desired feelings: Happy, Calm, Relaxed, Energized, Entertained, Inspired, Comforted, Focused, Curious, Amused, Motivated, Thrilled, Sleepy
 
+## PAGE FOCUS
+When user wants ONLY a specific type of content, set focus_page to switch the main page view:
+- "music" - Switch to Music page (for requests like "play some tunes", "I want music", "give me a playlist")
+- "movies" - Switch to Movies page (for movie-specific requests)
+- "podcasts" - Switch to Podcasts page
+- "audiobooks" - Switch to Audiobooks page
+- "shorts" - Switch to Shorts page
+- null - Don't change the page (default, for mixed content or general requests)
+
 ## IMPORTANT RULES
 
 1. **Offer actions** - If user seems stressed, offer SOS mode. If they mention time constraints, offer time-based picks
 2. **Be proactive** - Suggest related content, offer to add to queue
 3. **Handle greetings** - For "hi/hello", ask about their mood warmly
-4. **Crisis awareness** - If user mentions self-harm or severe distress, gently suggest professional resources and offer SOS mode
+4. **Content focus** - When user clearly wants ONE type of content only, set focus_page to show that page exclusively
+
+## SAFETY RULES (CRITICAL - ALWAYS FOLLOW)
+
+1. **NO ADULT CONTENT** - Never suggest R-rated, explicit, or sexually suggestive content. Keep all recommendations family-friendly or PG-13 max.
+
+2. **CRISIS DETECTION** - If user mentions ANY of these, IMMEDIATELY respond with crisis support:
+   - Self-harm, suicide, wanting to die, "end it", hurting themselves
+   - Severe depression, hopelessness, feeling worthless
+   - Abuse, violence, being in danger
+
+   CRISIS RESPONSE FORMAT:
+   {
+       "message": "I hear you, and I care about you. Please know you're not alone. Here are people who can help right now: 🇺🇸 988 (Suicide & Crisis Lifeline) | 🇬🇧 116 123 (Samaritans) | 🌍 findahelpline.com | If you're in immediate danger, please call emergency services. I'm here if you want to talk, but these trained professionals can provide the support you deserve. 💜",
+       "content": [],
+       "actions": [{"type": "sos", "label": "🆘 SOS Calm Mode", "data": {}}],
+       "mood_update": {"current": null, "desired": "Comforted"}
+   }
+
+3. **DON'T PLAY THERAPIST** - If someone is distressed:
+   - DO: Acknowledge their feelings, provide support resources, offer calming content
+   - DON'T: Try to "fix" them, give mental health advice, or act as a counselor
+   - Always defer to professional help for serious emotional distress
+
+4. **NO INAPPROPRIATE REQUESTS** - Politely decline if user asks for:
+   - Adult/sexual content
+   - Violent/gore content
+   - Harmful or dangerous content
+   Simply say: "I keep things chill and family-friendly! Let me find something else for you."
 
 ## EXAMPLE INTERACTIONS
 
@@ -2177,7 +2215,19 @@ User: "play some Drake"
         {"type": "artist", "data": {"artist": "Drake"}}
     ],
     "actions": [],
-    "mood_update": {"current": null, "desired": "Entertained"}
+    "mood_update": {"current": null, "desired": "Entertained"},
+    "focus_page": "music"
+}
+
+User: "I want some cool tunes" or "give me music only"
+{
+    "message": "Music mode activated! 🎵 Here's a vibe for you",
+    "content": [
+        {"type": "music", "data": {"mood": "Happy", "description": "Upbeat hits to boost your mood"}}
+    ],
+    "actions": [],
+    "mood_update": {"current": null, "desired": "Entertained"},
+    "focus_page": "music"
 }
 
 User: "I only have 15 minutes"
@@ -2462,6 +2512,10 @@ def enrich_mr_dp_response(response: dict, user_prompt: str):
     if not response.get("actions"):
         response["actions"] = []
 
+    # Ensure focus_page is included (defaults to null/None)
+    if "focus_page" not in response:
+        response["focus_page"] = None
+
     return response
 
 
@@ -2469,7 +2523,24 @@ def fallback_mr_dp_v2(user_prompt: str):
     """Fallback when API fails - still returns structured content."""
     t = user_prompt.lower()
 
-    is_music = any(k in t for k in ["music", "song", "playlist", "spotify", "play"])
+    # CRISIS DETECTION - Always check first
+    crisis_keywords = ["suicide", "kill myself", "end it", "want to die", "hurt myself", "self harm",
+                       "don't want to live", "better off dead", "ending my life", "no reason to live"]
+    is_crisis = any(k in t for k in crisis_keywords)
+
+    if is_crisis:
+        return {
+            "message": "I hear you, and I care about you. Please know you're not alone. 💜\n\n🇺🇸 988 (Suicide & Crisis Lifeline)\n🇬🇧 116 123 (Samaritans)\n🌍 findahelpline.com\n\nIf you're in immediate danger, please call emergency services. These trained professionals can provide the support you deserve.",
+            "content": [],
+            "actions": [{"type": "sos", "label": "🆘 SOS Calm Mode", "data": {}}],
+            "mood_update": {"current": "Overwhelmed", "desired": "Comforted"},
+            "focus_page": None
+        }
+
+    is_music = any(k in t for k in ["music", "song", "playlist", "spotify", "play", "tunes", "tune"])
+    is_podcast = any(k in t for k in ["podcast", "podcasts", "pod"])
+    is_audiobook = any(k in t for k in ["audiobook", "audiobooks", "book", "books", "read", "listen to a book"])
+    is_shorts = any(k in t for k in ["shorts", "short", "tiktok", "reels", "quick video"])
     is_stressed = any(k in t for k in ["stress", "anxious", "overwhelm", "calm", "relax"])
     is_greeting = any(k in t for k in ["hi", "hello", "hey", "howdy"])
 
@@ -2504,6 +2575,7 @@ def fallback_mr_dp_v2(user_prompt: str):
     actions = []
     message = "Let me find something for you!"
     mood_update = {"current": None, "desired": "Entertained"}
+    focus_page = None  # Which page to show
 
     if is_greeting:
         message = "Hey! 👋 I'm Mr.DP, your dopamine curator. What vibe are you chasing today?"
@@ -2523,6 +2595,7 @@ def fallback_mr_dp_v2(user_prompt: str):
         actions.append({"type": "sos", "label": "🆘 SOS Calm Mode", "data": {}})
 
     elif is_music:
+        focus_page = "music"  # Switch to music page
         for pattern in ["play ", "listen to ", "put on "]:
             if pattern in t:
                 artist = t.split(pattern)[1].split()[0:3]
@@ -2532,13 +2605,29 @@ def fallback_mr_dp_v2(user_prompt: str):
                 content.append({"type": "music", "data": spotify})
                 break
         else:
-            message = "Here's some tunes for your vibe! 🎵"
+            message = "Music mode! 🎵 Here's some tunes for your vibe"
             spotify = get_spotify_playlist_for_mood("Happy")
             content.append({"type": "music", "data": spotify})
+
+    elif is_podcast:
+        focus_page = "podcasts"  # Switch to podcasts page
+        message = "Podcast mode! 🎙️ Check out the Podcasts section"
+        mood_update = {"current": None, "desired": "Curious"}
+
+    elif is_audiobook:
+        focus_page = "audiobooks"  # Switch to audiobooks page
+        message = "Audiobook mode! 📚 Check out the Audiobooks section"
+        mood_update = {"current": None, "desired": "Focused"}
+
+    elif is_shorts:
+        focus_page = "shorts"  # Switch to shorts page
+        message = "Quick hits mode! ⚡ Check out the Shorts section"
+        mood_update = {"current": None, "desired": "Entertained"}
 
     elif detected_genre:
         mood, message = detected_genre
         mood_update = {"current": None, "desired": mood}
+        focus_page = "movies"  # Stay on movies for genre requests
         movies = search_movies_with_links(mood=mood, limit=3)
         for m in movies:
             content.append({"type": "movie", "data": m})
@@ -2552,7 +2641,8 @@ def fallback_mr_dp_v2(user_prompt: str):
         "message": message,
         "content": content,
         "actions": actions,
-        "mood_update": mood_update
+        "mood_update": mood_update,
+        "focus_page": focus_page
     }
 
 
@@ -2598,8 +2688,8 @@ def render_mr_dp_response(response: dict):
                         st.rerun()
 
 
-def render_mr_dp_movie_card(data: dict):
-    """Render a movie card from Mr.DP response"""
+def render_mr_dp_movie_card(data: dict, card_id: str = None):
+    """Render a movie card from Mr.DP response with save button"""
     if not data or not data.get("title"):
         return
 
@@ -2610,6 +2700,10 @@ def render_mr_dp_movie_card(data: dict):
     overview = data.get("overview", "")
     why = data.get("why", "")
     providers = data.get("providers", [])
+
+    # Generate unique ID for this card
+    if not card_id:
+        card_id = f"mrdp_movie_{data.get('id', title.replace(' ', '_'))}"
 
     # Build the why section if present
     why_html = f'<div style="color: #8b5cf6; font-size: 0.85rem; font-style: italic;">💡 {safe(why)}</div>' if why else ''
@@ -2624,6 +2718,16 @@ def render_mr_dp_movie_card(data: dict):
 </div>
 </div>""", unsafe_allow_html=True)
 
+    # Save button and provider buttons
+    btn_cols = st.columns([1, 3])
+    with btn_cols[0]:
+        if st.button("💾 Save", key=f"save_{card_id}", use_container_width=True):
+            if save_dopamine_item("movie", data):
+                st.toast(f"Saved '{title}' for later! 💜", icon="💾")
+            else:
+                st.toast("Already saved!", icon="✓")
+            st.rerun()
+
     if providers:
         cols = st.columns(min(len(providers) + 1, 5))
         for idx, p in enumerate(providers[:4]):
@@ -2631,8 +2735,8 @@ def render_mr_dp_movie_card(data: dict):
                 st.link_button(f"▶️ {p['name']}", p['link'], use_container_width=True)
 
 
-def render_mr_dp_music_card(data: dict):
-    """Render a music card with Spotify embed"""
+def render_mr_dp_music_card(data: dict, card_id: str = None):
+    """Render a music card with Spotify embed and save button"""
     if not data:
         return
 
@@ -2640,6 +2744,11 @@ def render_mr_dp_music_card(data: dict):
     description = data.get("description", "")
     playlist_url = data.get("playlist_url", "")
     embed_url = data.get("embed_url", "")
+    playlist_id = data.get("playlist_id", "")
+
+    # Generate unique ID for this card
+    if not card_id:
+        card_id = f"mrdp_music_{playlist_id or name.replace(' ', '_')}"
 
     st.markdown(f"""<div style="background: linear-gradient(135deg, rgba(29,185,84,0.1), rgba(29,185,84,0.05)); border: 1px solid rgba(29,185,84,0.3); border-radius: 16px; padding: 16px; margin: 12px 0;">
 <div style="font-weight: 600; font-size: 1.1rem; color: #1DB954;">🎵 {safe(name)}</div>
@@ -2659,8 +2768,18 @@ def render_mr_dp_music_card(data: dict):
         </iframe>
         ''', height=160)
 
-    if playlist_url:
-        st.link_button("🎧 Open in Spotify", playlist_url, use_container_width=True)
+    # Save and Open buttons
+    btn_cols = st.columns([1, 2])
+    with btn_cols[0]:
+        if st.button("💾 Save", key=f"save_{card_id}", use_container_width=True):
+            if save_dopamine_item("music", data):
+                st.toast(f"Saved '{name}' for later! 🎵", icon="💾")
+            else:
+                st.toast("Already saved!", icon="✓")
+            st.rerun()
+    with btn_cols[1]:
+        if playlist_url:
+            st.link_button("🎧 Open in Spotify", playlist_url, use_container_width=True)
 
 
 def ask_mr_dp_smart(user_prompt, chat_history=None, user_context=None):
@@ -5164,6 +5283,315 @@ def get_level():
     else:
         return ("Dopamine Master", 5, 999999)
 
+
+# --------------------------------------------------
+# SAVED DOPAMINE - Save for Later Feature
+# --------------------------------------------------
+def save_dopamine_item(item_type: str, data: dict):
+    """Save an item to the user's Saved Dopamine list."""
+    if "saved_dopamine" not in st.session_state:
+        st.session_state.saved_dopamine = []
+
+    # Check if already saved (by ID for movies, by playlist_id for music)
+    item_id = data.get("id") or data.get("playlist_id") or data.get("title", "")
+    for saved in st.session_state.saved_dopamine:
+        saved_id = saved["data"].get("id") or saved["data"].get("playlist_id") or saved["data"].get("title", "")
+        if saved_id == item_id:
+            return False  # Already saved
+
+    saved_item = {
+        "type": item_type,
+        "data": data,
+        "saved_at": datetime.now().isoformat()
+    }
+    st.session_state.saved_dopamine.append(saved_item)
+    add_dopamine_points(5, "Saved for later!")
+    return True
+
+
+def remove_dopamine_item(index: int):
+    """Remove an item from Saved Dopamine by index."""
+    if "saved_dopamine" in st.session_state and 0 <= index < len(st.session_state.saved_dopamine):
+        st.session_state.saved_dopamine.pop(index)
+        return True
+    return False
+
+
+def get_saved_dopamine():
+    """Get all saved dopamine items."""
+    return st.session_state.get("saved_dopamine", [])
+
+
+# --------------------------------------------------
+# FEEDBACK SYSTEM - Gamified Questionnaire
+# --------------------------------------------------
+FEEDBACK_QUESTIONS = [
+    {
+        "id": "overall_experience",
+        "question": "How's your dopamine.watch experience so far?",
+        "type": "emoji_scale",
+        "options": [
+            {"emoji": "😍", "label": "Love it!", "value": 5, "points": 15},
+            {"emoji": "😊", "label": "Pretty good", "value": 4, "points": 12},
+            {"emoji": "😐", "label": "It's okay", "value": 3, "points": 10},
+            {"emoji": "😕", "label": "Could be better", "value": 2, "points": 10},
+            {"emoji": "😢", "label": "Not great", "value": 1, "points": 10}
+        ]
+    },
+    {
+        "id": "mr_dp_helpful",
+        "question": "How helpful is Mr.DP at finding content?",
+        "type": "emoji_scale",
+        "options": [
+            {"emoji": "🧠", "label": "Super smart!", "value": 5, "points": 15},
+            {"emoji": "👍", "label": "Usually helpful", "value": 4, "points": 12},
+            {"emoji": "🤷", "label": "Hit or miss", "value": 3, "points": 10},
+            {"emoji": "👎", "label": "Needs work", "value": 2, "points": 10},
+            {"emoji": "❌", "label": "Not helpful", "value": 1, "points": 10}
+        ]
+    },
+    {
+        "id": "favorite_feature",
+        "question": "What's your favorite feature?",
+        "type": "multi_choice",
+        "options": [
+            {"label": "🧠 Mr.DP Chat", "value": "mr_dp", "points": 10},
+            {"label": "⚡ Quick Dope Hit", "value": "quick_hit", "points": 10},
+            {"label": "🎵 Music Recommendations", "value": "music", "points": 10},
+            {"label": "🎬 Movie Mood Matching", "value": "movies", "points": 10},
+            {"label": "🆘 SOS Calm Mode", "value": "sos", "points": 10},
+            {"label": "💾 Save for Later", "value": "saved", "points": 10}
+        ]
+    },
+    {
+        "id": "missing_feature",
+        "question": "What would make dopamine.watch even better?",
+        "type": "multi_choice",
+        "options": [
+            {"label": "📺 More streaming services", "value": "more_services", "points": 10},
+            {"label": "🎮 Gaming recommendations", "value": "gaming", "points": 10},
+            {"label": "👥 Social features", "value": "social", "points": 10},
+            {"label": "📱 Mobile app", "value": "mobile_app", "points": 10},
+            {"label": "🔔 Smart notifications", "value": "notifications", "points": 10},
+            {"label": "🎨 More themes", "value": "themes", "points": 10}
+        ]
+    },
+    {
+        "id": "adhd_helpful",
+        "question": "Does the ADHD-friendly design actually help you?",
+        "type": "emoji_scale",
+        "options": [
+            {"emoji": "💜", "label": "Finally something that gets me!", "value": 5, "points": 20},
+            {"emoji": "😊", "label": "Yes, it helps", "value": 4, "points": 15},
+            {"emoji": "🤔", "label": "Somewhat", "value": 3, "points": 10},
+            {"emoji": "😐", "label": "Not sure", "value": 2, "points": 10},
+            {"emoji": "🙅", "label": "Doesn't apply to me", "value": 1, "points": 10}
+        ]
+    },
+    {
+        "id": "recommend_friends",
+        "question": "Would you recommend dopamine.watch to a friend?",
+        "type": "emoji_scale",
+        "options": [
+            {"emoji": "📣", "label": "Already have!", "value": 5, "points": 25},
+            {"emoji": "👍", "label": "Definitely", "value": 4, "points": 20},
+            {"emoji": "🤔", "label": "Maybe", "value": 3, "points": 10},
+            {"emoji": "😬", "label": "Probably not", "value": 2, "points": 10},
+            {"emoji": "👎", "label": "No", "value": 1, "points": 10}
+        ]
+    },
+    {
+        "id": "open_feedback",
+        "question": "Any other thoughts? (optional - bonus points!)",
+        "type": "text",
+        "points": 30
+    }
+]
+
+
+def save_feedback_to_db(feedback_data: dict):
+    """Save feedback to Supabase for analytics."""
+    if not SUPABASE_ENABLED or not supabase:
+        return False
+
+    try:
+        user_id = st.session_state.get("db_user_id")
+        data = {
+            "user_id": user_id,
+            "feedback_data": feedback_data,
+            "created_at": datetime.now().isoformat(),
+            "user_agent": st.session_state.get("user_agent", "unknown"),
+            "session_id": st.session_state.get("analytics_session_id", "")
+        }
+        supabase.table("user_feedback").insert(data).execute()
+        return True
+    except Exception as e:
+        print(f"[Feedback] Error saving: {e}")
+        return False
+
+
+def render_feedback_modal():
+    """Render the gamified feedback questionnaire."""
+    if not st.session_state.get("show_feedback_modal"):
+        return
+
+    # Initialize feedback state
+    if "feedback_step" not in st.session_state:
+        st.session_state.feedback_step = 0
+        st.session_state.feedback_answers = {}
+        st.session_state.feedback_points = 0
+
+    current_step = st.session_state.feedback_step
+    total_steps = len(FEEDBACK_QUESTIONS)
+
+    # Modal overlay
+    st.markdown("""
+    <style>
+    .feedback-modal {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.9); z-index: 9999;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .feedback-content {
+        background: linear-gradient(135deg, #1a1a2e, #16213e);
+        border-radius: 24px; padding: 32px; max-width: 500px; width: 90%;
+        border: 2px solid rgba(139,92,246,0.3);
+        box-shadow: 0 20px 60px rgba(139,92,246,0.3);
+    }
+    .feedback-progress {
+        height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px;
+        margin-bottom: 24px; overflow: hidden;
+    }
+    .feedback-progress-bar {
+        height: 100%; background: linear-gradient(90deg, #8b5cf6, #06b6d4);
+        border-radius: 4px; transition: width 0.3s ease;
+    }
+    .feedback-points {
+        text-align: center; font-size: 1.5rem; font-weight: 700;
+        background: linear-gradient(135deg, #ffd700, #ffaa00);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        margin-bottom: 16px;
+    }
+    .emoji-option {
+        display: inline-flex; flex-direction: column; align-items: center;
+        padding: 16px; margin: 8px; border-radius: 16px; cursor: pointer;
+        background: rgba(255,255,255,0.05); border: 2px solid transparent;
+        transition: all 0.2s ease;
+    }
+    .emoji-option:hover {
+        background: rgba(139,92,246,0.2); border-color: rgba(139,92,246,0.5);
+        transform: scale(1.05);
+    }
+    .emoji-option.selected {
+        background: rgba(139,92,246,0.3); border-color: #8b5cf6;
+    }
+    .emoji-option .emoji { font-size: 2.5rem; margin-bottom: 8px; }
+    .emoji-option .label { font-size: 0.85rem; color: rgba(255,255,255,0.8); }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # Check if completed
+    if current_step >= total_steps:
+        # Completion screen
+        total_points = st.session_state.feedback_points
+
+        st.markdown(f"""
+        <div style="text-align: center; padding: 40px;">
+            <div style="font-size: 4rem; margin-bottom: 16px;">🎉</div>
+            <h2 style="color: white; margin-bottom: 8px;">Thank You!</h2>
+            <div class="feedback-points">+{total_points} DP Earned!</div>
+            <p style="color: rgba(255,255,255,0.7);">Your feedback helps us make dopamine.watch even better for everyone!</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Award points
+        add_dopamine_points(total_points, "Completed feedback!")
+
+        # Save feedback to database
+        save_feedback_to_db(st.session_state.feedback_answers)
+
+        # Mark as completed
+        st.session_state.feedback_completed = True
+
+        if st.button("🎯 Continue", key="feedback_done", use_container_width=True, type="primary"):
+            st.session_state.show_feedback_modal = False
+            st.session_state.feedback_step = 0
+            st.session_state.feedback_answers = {}
+            st.session_state.feedback_points = 0
+            st.rerun()
+        return
+
+    # Current question
+    question = FEEDBACK_QUESTIONS[current_step]
+    progress = ((current_step) / total_steps) * 100
+
+    st.markdown(f"""
+    <div style="margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">Question {current_step + 1} of {total_steps}</span>
+            <span style="color: #ffd700; font-weight: 600;">+{st.session_state.feedback_points} DP</span>
+        </div>
+        <div class="feedback-progress">
+            <div class="feedback-progress-bar" style="width: {progress}%"></div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown(f"### {question['question']}")
+
+    if question["type"] == "emoji_scale":
+        cols = st.columns(len(question["options"]))
+        for idx, opt in enumerate(question["options"]):
+            with cols[idx]:
+                if st.button(f"{opt['emoji']}\n{opt['label']}", key=f"fb_{question['id']}_{idx}", use_container_width=True):
+                    st.session_state.feedback_answers[question["id"]] = {
+                        "value": opt["value"],
+                        "label": opt["label"]
+                    }
+                    st.session_state.feedback_points += opt["points"]
+                    st.session_state.feedback_step += 1
+                    st.rerun()
+
+    elif question["type"] == "multi_choice":
+        cols = st.columns(2)
+        for idx, opt in enumerate(question["options"]):
+            with cols[idx % 2]:
+                if st.button(opt["label"], key=f"fb_{question['id']}_{idx}", use_container_width=True):
+                    st.session_state.feedback_answers[question["id"]] = {
+                        "value": opt["value"],
+                        "label": opt["label"]
+                    }
+                    st.session_state.feedback_points += opt["points"]
+                    st.session_state.feedback_step += 1
+                    st.rerun()
+
+    elif question["type"] == "text":
+        text_input = st.text_area("Share your thoughts...", key=f"fb_text_{question['id']}", height=100)
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Skip", key="fb_skip_text"):
+                st.session_state.feedback_step += 1
+                st.rerun()
+        with col2:
+            if st.button("Submit (+30 DP)", key="fb_submit_text", type="primary"):
+                if text_input.strip():
+                    st.session_state.feedback_answers[question["id"]] = {
+                        "value": text_input.strip()
+                    }
+                    st.session_state.feedback_points += question["points"]
+                st.session_state.feedback_step += 1
+                st.rerun()
+
+    # Close button
+    st.markdown("---")
+    if st.button("✕ Close (lose progress)", key="fb_close"):
+        st.session_state.show_feedback_modal = False
+        st.session_state.feedback_step = 0
+        st.session_state.feedback_answers = {}
+        st.session_state.feedback_points = 0
+        st.rerun()
+
+
 def get_achievements():
     achievements = []
     points = get_dopamine_points()
@@ -5364,6 +5792,16 @@ if "init" not in st.session_state:
         "mr_dp_thinking": False,
         "mr_dp_v2_response": None,  # Mr.DP 2.0 rich response storage
         "use_mr_dp_v2": True,  # Feature flag for Mr.DP 2.0
+
+        # Saved Dopamine - user's saved content for later
+        "saved_dopamine": [],  # List of saved items with type, data, timestamp
+
+        # Feedback system
+        "show_feedback_modal": False,
+        "feedback_completed": False,
+        "feedback_step": 0,
+        "feedback_answers": {},
+        "feedback_points": 0,
 
         # Phase 4: Onboarding
         "onboarding_complete": False,
@@ -8780,6 +9218,33 @@ def render_sidebar():
 
         st.markdown("---")
 
+        # YOUR SAVED DOPAMINE
+        st.markdown("#### 💾 Your Saved Dopamine")
+        saved_items = get_saved_dopamine()
+        if saved_items:
+            for idx, item in enumerate(saved_items[:5]):  # Show top 5
+                item_type = item.get("type", "movie")
+                item_data = item.get("data", {})
+                icon = "🎬" if item_type == "movie" else "🎵" if item_type == "music" else "📦"
+                title = item_data.get("title") or item_data.get("playlist_name", "Saved Item")
+                col1, col2 = st.columns([4, 1])
+                with col1:
+                    st.markdown(f"<small>{icon} {title[:25]}...</small>" if len(title) > 25 else f"<small>{icon} {title}</small>", unsafe_allow_html=True)
+                with col2:
+                    if st.button("✕", key=f"del_saved_{idx}", help="Remove"):
+                        remove_dopamine_item(idx)
+                        st.toast("Removed!", icon="🗑️")
+                        st.rerun()
+            if len(saved_items) > 5:
+                st.caption(f"+{len(saved_items) - 5} more saved")
+            if st.button("📂 View All Saved", key="view_saved_btn", use_container_width=True):
+                st.session_state.active_page = "💾 Saved"
+                st.rerun()
+        else:
+            st.caption("No saved items yet. Ask Mr.DP for recommendations and save your favorites!")
+
+        st.markdown("---")
+
         # TIME OF DAY SUGGESTION
         time_suggestion = get_time_of_day_suggestions()
         st.markdown(f"#### {time_suggestion['emoji']} {time_suggestion['period']}")
@@ -8809,6 +9274,19 @@ def render_sidebar():
 
         st.markdown("---")
 
+        # FEEDBACK - Gamified Survey
+        if not st.session_state.get("feedback_completed"):
+            st.markdown("#### 💬 Tell Us What You Think!")
+            st.caption("Earn bonus DP for your feedback")
+            if st.button("📝 Take Survey (+100 DP)", use_container_width=True, key="feedback_sidebar", type="primary"):
+                st.session_state.show_feedback_modal = True
+                st.rerun()
+        else:
+            st.markdown("#### 💬 Feedback")
+            st.markdown("✅ Thanks for your feedback!", unsafe_allow_html=True)
+
+        st.markdown("---")
+
         # LOGOUT
         if st.button("🚪 Log Out", use_container_width=True, key="logout_btn"):
             if SUPABASE_ENABLED:
@@ -8820,7 +9298,7 @@ def render_sidebar():
             st.session_state.do_logout = True
             st.rerun()
 
-        st.caption("v41.0 • Mobile & PWA")
+        st.caption("v42.0 • Mobile & PWA")
 
 # --------------------------------------------------
 # 17. MAIN CONTENT
@@ -9589,6 +10067,100 @@ def render_main():
     elif page == "🟣 Mr.DP":
         render_mr_dp_companion_page()
 
+    elif page == "💾 Saved":
+        # YOUR SAVED DOPAMINE PAGE
+        st.markdown("<div class='section-header'><span class='section-icon'>💾</span><h2 class='section-title'>Your Saved Dopamine</h2></div>", unsafe_allow_html=True)
+        st.caption("Your saved movies, playlists, and content for later")
+
+        saved_items = get_saved_dopamine()
+        if saved_items:
+            # Movies section
+            movies = [item for item in saved_items if item.get("type") == "movie"]
+            music = [item for item in saved_items if item.get("type") == "music"]
+            other = [item for item in saved_items if item.get("type") not in ["movie", "music"]]
+
+            if movies:
+                st.markdown("### 🎬 Saved Movies & Shows")
+                for idx, item in enumerate(movies):
+                    data = item.get("data", {})
+                    title = data.get("title", "Unknown")
+                    year = data.get("year", "")
+                    poster = data.get("poster", "")
+                    rating = data.get("rating", 0)
+
+                    col1, col2, col3 = st.columns([1, 4, 1])
+                    with col1:
+                        if poster:
+                            st.image(poster, width=80)
+                        else:
+                            st.markdown("🎬")
+                    with col2:
+                        st.markdown(f"**{title}** {f'({year})' if year else ''}")
+                        if rating:
+                            st.caption(f"⭐ {rating}")
+                        saved_at = item.get("saved_at", "")[:10]
+                        if saved_at:
+                            st.caption(f"Saved on {saved_at}")
+                    with col3:
+                        # Find the original index in the full list
+                        orig_idx = saved_items.index(item)
+                        if st.button("🗑️", key=f"del_movie_{idx}", help="Remove"):
+                            remove_dopamine_item(orig_idx)
+                            st.toast(f"Removed '{title}'", icon="🗑️")
+                            st.rerun()
+                    st.markdown("---")
+
+            if music:
+                st.markdown("### 🎵 Saved Playlists")
+                for idx, item in enumerate(music):
+                    data = item.get("data", {})
+                    name = data.get("playlist_name", "Unknown Playlist")
+                    description = data.get("description", "")
+                    playlist_url = data.get("playlist_url", "")
+                    embed_url = data.get("embed_url", "")
+
+                    col1, col2, col3 = st.columns([1, 4, 1])
+                    with col1:
+                        st.markdown("🎵", unsafe_allow_html=True)
+                    with col2:
+                        st.markdown(f"**{name}**")
+                        if description:
+                            st.caption(description[:100])
+                        saved_at = item.get("saved_at", "")[:10]
+                        if saved_at:
+                            st.caption(f"Saved on {saved_at}")
+                        if playlist_url:
+                            st.link_button("🎧 Open in Spotify", playlist_url)
+                    with col3:
+                        orig_idx = saved_items.index(item)
+                        if st.button("🗑️", key=f"del_music_{idx}", help="Remove"):
+                            remove_dopamine_item(orig_idx)
+                            st.toast(f"Removed '{name}'", icon="🗑️")
+                            st.rerun()
+                    st.markdown("---")
+
+            if not movies and not music:
+                st.info("No saved items yet. Ask Mr.DP for recommendations and click 💾 Save to add items here!")
+
+            # Clear all button
+            if saved_items:
+                if st.button("🗑️ Clear All Saved", key="clear_all_saved"):
+                    st.session_state.saved_dopamine = []
+                    st.toast("Cleared all saved items!", icon="🗑️")
+                    st.rerun()
+        else:
+            st.info("No saved items yet!")
+            st.markdown("""
+            **How to save content:**
+            1. Chat with Mr.DP (the purple bubble) and ask for recommendations
+            2. Click the 💾 Save button on any movie or playlist
+            3. Access your saved content here anytime!
+            """)
+            if st.button("💬 Chat with Mr.DP", key="open_mrdp_from_saved", use_container_width=True):
+                st.session_state.mr_dp_open = True
+                st.session_state.active_page = "🎬 Movies"
+                st.rerun()
+
     # SHARE
     st.markdown("---")
     st.markdown("<div class='section-header'><span class='section-icon'>📤</span><h2 class='section-title'>Share Your Vibe</h2></div>", unsafe_allow_html=True)
@@ -9647,6 +10219,10 @@ else:
 
     # Render premium modal (if triggered)
     render_premium_modal()
+
+    # Render feedback modal (if triggered)
+    if st.session_state.get("show_feedback_modal"):
+        render_feedback_modal()
 
     # Show social proof notifications occasionally
     show_social_proof()
@@ -9724,7 +10300,7 @@ else:
 
                 st.session_state.mr_dp_chat_history.append({
                     "role": "assistant",
-                    "content": response.get("message", "Here's what I found!")
+                    "content": sanitize_chat_content(response.get("message", "Here's what I found!"))
                 })
 
                 # Update mood state from v2 response
@@ -9733,6 +10309,19 @@ else:
                     st.session_state.current_feeling = mood_update["current"]
                 if mood_update.get("desired"):
                     st.session_state.desired_feeling = mood_update["desired"]
+
+                # Handle focus_page to switch content view
+                focus_page = response.get("focus_page")
+                if focus_page:
+                    page_map = {
+                        "music": "🎵 Music",
+                        "movies": "🎬 Movies",
+                        "podcasts": "🎙️ Podcasts",
+                        "audiobooks": "📚 Audiobooks",
+                        "shorts": "⚡ Shorts"
+                    }
+                    if focus_page in page_map:
+                        st.session_state.active_page = page_map[focus_page]
 
                 # Also store for v1 compatibility
                 st.session_state.mr_dp_response = {
