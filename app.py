@@ -44,6 +44,7 @@ from mr_dp_floating import render_floating_mr_dp
 
 # Subscription utilities (NEW - added for premium features)
 from subscription_utils import check_can_use, increment_usage, is_premium, show_usage_sidebar
+from stripe_utils import render_pricing_page, create_checkout_url, SUBSCRIPTION_PLANS
 
 # Phase 1 & 2 Features
 from mood_utils import log_mood_selection, get_mood_history, get_top_moods, get_mood_patterns
@@ -8072,6 +8073,12 @@ def render_sidebar():
                 st.session_state.active_page = full_label
                 st.rerun()
 
+        # Pricing Page
+        if st.button("💎 Pricing", use_container_width=True, key="nav_pricing",
+                    type="primary" if st.session_state.active_page == "💎 Pricing" else "secondary"):
+            st.session_state.active_page = "💎 Pricing"
+            st.rerun()
+
         # Admin (only for admins)
         if is_admin():
             if st.button("⚙️ Admin", use_container_width=True, key="nav_admin", type="primary" if st.session_state.active_page == "⚙️ Admin" else "secondary"):
@@ -8953,6 +8960,9 @@ def render_main():
 
     elif page == "⚙️ Admin":
         render_admin_dashboard()
+
+    elif page == "💎 Pricing":
+        render_pricing_page()
 
     # SHARE
     st.markdown("---")
