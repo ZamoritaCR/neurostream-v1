@@ -45,6 +45,11 @@ from mr_dp_floating import render_floating_mr_dp
 # Subscription utilities (NEW - added for premium features)
 from subscription_utils import check_can_use, increment_usage, is_premium, show_usage_sidebar
 from stripe_utils import render_pricing_page, create_checkout_url, SUBSCRIPTION_PLANS
+from analytics_utils import (
+    init_analytics_session, track_page_view, track_click,
+    track_mood_selection, track_content_interaction, track_feature_usage,
+    get_session_stats, render_analytics_dashboard
+)
 
 # Phase 1 & 2 Features
 from mood_utils import log_mood_selection, get_mood_history, get_top_moods, get_mood_patterns
@@ -4705,6 +4710,15 @@ def render_admin_dashboard():
 
     st.markdown("---")
 
+    # Session Analytics Section
+    st.markdown("### 📊 Session Analytics")
+    if supabase:
+        render_analytics_dashboard(supabase, is_admin=True)
+    else:
+        st.info("Connect to Supabase to view detailed analytics")
+
+    st.markdown("---")
+
     st.markdown("### 🛠️ Quick Actions")
 
     col1, col2, col3 = st.columns(3)
@@ -5017,6 +5031,9 @@ if "init" not in st.session_state:
         "show_trailers": True,
     })
     st.session_state.init = True
+
+# Initialize analytics session
+init_analytics_session()
 
 # Generate referral code (fallback)
 if not st.session_state.get("referral_code"):
@@ -8126,6 +8143,8 @@ def render_sidebar():
                     new_desired,
                     source='manual'
                 )
+            # Track for analytics
+            track_mood_selection(st.session_state.current_feeling, new_desired, st.session_state.get("db_user_id"))
 
         st.markdown("---")
         
@@ -8138,6 +8157,8 @@ def render_sidebar():
             # Log behavior
             if st.session_state.get('db_user_id') and SUPABASE_ENABLED:
                 log_user_action(supabase, st.session_state.db_user_id, 'quick_hit')
+            # Track feature usage
+            track_feature_usage("quick_dope_hit", st.session_state.get("db_user_id"))
             st.rerun()
 
         st.markdown("---")
@@ -8686,7 +8707,10 @@ def render_main():
     
     # PAGE CONTENT
     page = st.session_state.active_page
-    
+
+    # Track page view
+    track_page_view(page, st.session_state.get("db_user_id"))
+
     if page == "🎬 Movies":
         st.markdown(f"<div class='section-header'><span class='section-icon'>🎬</span><h2 class='section-title'>Movies for {MOOD_EMOJIS.get(st.session_state.current_feeling, '')} → {MOOD_EMOJIS.get(st.session_state.desired_feeling, '')}</h2></div>", unsafe_allow_html=True)
         st.caption(f"Feeling {st.session_state.current_feeling}, seeking {st.session_state.desired_feeling}")
