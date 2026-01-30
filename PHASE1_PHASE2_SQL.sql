@@ -215,6 +215,13 @@ CREATE POLICY "Users can update own usage"
     USING (auth.uid() = user_id);
 
 -- ============================================
+-- 7. PROFILES TABLE ADDITIONS (Phase 4)
+-- Add new columns to existing profiles table
+-- ============================================
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS daily_digest BOOLEAN DEFAULT false;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS onboarding_complete BOOLEAN DEFAULT false;
+
+-- ============================================
 -- VERIFICATION QUERIES
 -- Run these to confirm tables were created
 -- ============================================

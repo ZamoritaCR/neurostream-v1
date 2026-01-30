@@ -1,15 +1,15 @@
 # FILE: app.py
 # --------------------------------------------------
-# DOPAMINE.WATCH v36.0 - MR.DP 2.0 INTELLIGENCE
-# Mother Code v35.0 + Mr.DP Intelligent Assistant
+# DOPAMINE.WATCH v37.0 - PERSONALIZATION + MONETIZATION
+# Mother Code v36.0 + Phase 4 Features
 # --------------------------------------------------
-# NEW IN v36:
-# ✅ Mr.DP 2.0 - Upgraded to GPT-4o for smarter responses
-# ✅ Spotify Integration - Real playlist embeds & links
-# ✅ Rich Movie Cards - Posters, ratings, streaming links
-# ✅ Action Buttons - SOS, Focus Timer, Time Picks in chat
-# ✅ User Context - Personalized based on queue & moods
-# ✅ Phase 1 & 2 features (Mood, Behavior, Queue, SOS, Timer)
+# NEW IN v37:
+# ✅ "For You" Personalized Feed - Content based on mood patterns
+# ✅ Mood Analytics Dashboard - Premium insights (charts, patterns)
+# ✅ Smart Premium Triggers - Contextual upgrade prompts
+# ✅ New User Onboarding - Guided 5-step welcome flow
+# ✅ Phase 3: Mr.DP 2.0 (GPT-4o, Spotify, Rich Cards)
+# ✅ Phase 1 & 2: (Mood, Behavior, Queue, SOS, Timer)
 # --------------------------------------------------
 
 import os
@@ -2196,6 +2196,768 @@ def ask_mr_dp_smart(user_prompt, chat_history=None, user_context=None):
 
 
 # --------------------------------------------------
+# 9.6 PERSONALIZED "FOR YOU" FEED (PHASE 4)
+# --------------------------------------------------
+def get_time_based_mood(hour: int) -> str:
+    """Get recommended mood based on time of day"""
+    if 5 <= hour < 9:
+        return "Energized"
+    elif 9 <= hour < 12:
+        return "Focused"
+    elif 12 <= hour < 14:
+        return "Entertained"
+    elif 14 <= hour < 17:
+        return "Focused"
+    elif 17 <= hour < 20:
+        return "Relaxed"
+    elif 20 <= hour < 23:
+        return "Entertained"
+    else:
+        return "Sleepy"
+
+
+def get_time_period(hour: int) -> str:
+    """Get time period name"""
+    if 5 <= hour < 12:
+        return "morning"
+    elif 12 <= hour < 17:
+        return "afternoon"
+    elif 17 <= hour < 21:
+        return "evening"
+    else:
+        return "night"
+
+
+def get_time_greeting():
+    """Get appropriate greeting based on time"""
+    hour = datetime.now().hour
+    if 5 <= hour < 12:
+        return "Good morning"
+    elif 12 <= hour < 17:
+        return "Good afternoon"
+    elif 17 <= hour < 21:
+        return "Good evening"
+    else:
+        return "Hey night owl"
+
+
+def get_personalized_feed(user_id: str, limit: int = 12):
+    """Generate personalized content feed based on mood history, behavior, and time of day"""
+    if not user_id:
+        return get_default_feed(limit)
+
+    sections = []
+
+    # Get user's mood patterns
+    try:
+        top_moods = get_top_moods(supabase, user_id, 'desired', days=14, limit=3)
+    except:
+        top_moods = []
+
+    # Time-based recommendation
+    hour = datetime.now().hour
+    time_mood = get_time_based_mood(hour)
+
+    # Section 1: Based on most frequent desired mood
+    if top_moods:
+        top_desired_mood = top_moods[0][0]
+        section_movies = discover_movies_fresh(desired_feeling=top_desired_mood)[:4]
+        if section_movies:
+            sections.append({
+                "title": f"Because you love feeling {top_desired_mood.lower()}",
+                "icon": "💜",
+                "reason": "Your top mood choice",
+                "items": section_movies,
+                "type": "movies"
+            })
+
+    # Section 2: Time-based picks
+    time_section_title = {
+        "morning": "☀️ Morning Boost",
+        "afternoon": "☕ Afternoon Pick",
+        "evening": "🌆 Evening Vibes",
+        "night": "🌙 Late Night Mood"
+    }
+    time_movies = discover_movies_fresh(desired_feeling=time_mood)[:4]
+    if time_movies:
+        sections.append({
+            "title": time_section_title.get(get_time_period(hour), "Right Now"),
+            "icon": "⏰",
+            "reason": f"Perfect for {get_time_period(hour)}",
+            "items": time_movies,
+            "type": "movies"
+        })
+
+    # Section 3: From queue
+    try:
+        queue = get_watch_queue(supabase, user_id, status='queued', limit=4)
+        if queue:
+            sections.append({
+                "title": "From Your Queue",
+                "icon": "📋",
+                "reason": f"{len(queue)} items saved",
+                "items": queue,
+                "type": "queue"
+            })
+    except:
+        pass
+
+    # Section 4: Comfort classics
+    comfort_movies = discover_movies_fresh(desired_feeling="Comforted")[:4]
+    if comfort_movies:
+        sections.append({
+            "title": "Comfort Classics",
+            "icon": "🛋️",
+            "reason": "Always here when you need them",
+            "items": comfort_movies,
+            "type": "movies"
+        })
+
+    return sections
+
+
+def get_default_feed(limit: int = 12):
+    """Default feed for non-logged-in users"""
+    sections = [
+        {
+            "title": "Trending Now",
+            "icon": "🔥",
+            "reason": "What everyone's watching",
+            "items": discover_movies_fresh()[:4],
+            "type": "movies"
+        },
+        {
+            "title": "Feel-Good Picks",
+            "icon": "😊",
+            "reason": "Guaranteed mood boost",
+            "items": discover_movies_fresh(desired_feeling="Happy")[:4],
+            "type": "movies"
+        },
+        {
+            "title": "Calm & Cozy",
+            "icon": "🛋️",
+            "reason": "Stress-free viewing",
+            "items": discover_movies_fresh(desired_feeling="Calm")[:4],
+            "type": "movies"
+        }
+    ]
+    return sections
+
+
+def render_feed_section(section: dict):
+    """Render a single feed section"""
+    title = section.get("title", "")
+    icon = section.get("icon", "🎬")
+    reason = section.get("reason", "")
+    items = section.get("items", [])
+    section_type = section.get("type", "movies")
+
+    st.markdown(f"""
+    <div style="margin-bottom: 8px;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 4px;">
+            <span style="font-size: 1.5rem;">{icon}</span>
+            <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.3rem; font-weight: 600; margin: 0;">{title}</h3>
+        </div>
+        <p style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin: 0 0 16px 0;">{reason}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if section_type == "movies" and items:
+        cols = st.columns(4)
+        for idx, item in enumerate(items[:4]):
+            with cols[idx]:
+                render_movie_card(item)
+
+    elif section_type == "queue" and items:
+        cols = st.columns(4)
+        for idx, item in enumerate(items[:4]):
+            with cols[idx]:
+                poster = item.get('poster_path', '')
+                if poster and not poster.startswith('http'):
+                    poster = f"{TMDB_IMAGE_URL}{poster}"
+                st.markdown(f"""
+                <div class="movie-card">
+                    <img src="{safe(poster)}" class="movie-poster" onerror="this.style.display='none'">
+                    <div class="movie-info">
+                        <div class="movie-title">{safe(item.get('title', '')[:25])}</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+    st.markdown("<div style='margin-bottom: 32px;'></div>", unsafe_allow_html=True)
+
+
+def render_personalized_feed():
+    """Render the personalized 'For You' home feed"""
+    user_id = st.session_state.get("db_user_id")
+
+    user_name = st.session_state.get("user", {}).get("name", "")
+    greeting = get_time_greeting()
+
+    st.markdown(f"""
+    <div style="margin-bottom: 24px;">
+        <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 2rem; margin-bottom: 8px;">
+            {greeting}{f', {user_name.split()[0]}' if user_name else ''}! 👋
+        </h1>
+        <p style="color: rgba(255,255,255,0.6);">Here's your personalized dopamine feed</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    sections = get_personalized_feed(user_id) if user_id else get_default_feed()
+
+    for section in sections:
+        render_feed_section(section)
+
+
+# --------------------------------------------------
+# 9.7 MOOD ANALYTICS DASHBOARD (PREMIUM - PHASE 4)
+# --------------------------------------------------
+def get_mood_analytics(user_id: str, days: int = 30):
+    """Generate mood analytics for dashboard"""
+    if not user_id or not supabase:
+        return None
+
+    try:
+        history = get_mood_history(supabase, user_id, days=days)
+        if not history:
+            return None
+
+        from collections import Counter
+
+        current_counts = Counter(h["current_feeling"] for h in history if h.get("current_feeling"))
+        desired_counts = Counter(h["desired_feeling"] for h in history if h.get("desired_feeling"))
+
+        # Weekly journey (last 7 days)
+        weekly_journey = []
+        for i in range(7):
+            day = datetime.now() - timedelta(days=6-i)
+            day_str = day.strftime("%Y-%m-%d")
+            day_moods_list = [h for h in history if h.get("created_at", "").startswith(day_str)]
+            if day_moods_list:
+                day_current = Counter(h.get("current_feeling", "") for h in day_moods_list).most_common(1)
+                weekly_journey.append({
+                    "day": day.strftime("%a"),
+                    "mood": day_current[0][0] if day_current else None,
+                    "count": len(day_moods_list)
+                })
+            else:
+                weekly_journey.append({"day": day.strftime("%a"), "mood": None, "count": 0})
+
+        # Time patterns
+        time_moods = {"morning": [], "afternoon": [], "evening": [], "night": []}
+        for h in history:
+            try:
+                created = h.get("created_at", "")
+                if "T" in created:
+                    hour = int(created.split("T")[1][:2])
+                    period = get_time_period(hour)
+                    if h.get("current_feeling"):
+                        time_moods[period].append(h["current_feeling"])
+            except:
+                pass
+
+        time_patterns = {}
+        for period, moods in time_moods.items():
+            if moods:
+                time_patterns[period] = Counter(moods).most_common(1)[0][0]
+            else:
+                time_patterns[period] = None
+
+        # Insights
+        insights = []
+        negative_moods = ["Sad", "Anxious", "Stressed", "Overwhelmed", "Angry", "Lonely"]
+        for mood, count in current_counts.most_common():
+            if mood in negative_moods:
+                total = sum(current_counts.values())
+                pct = int((count / total) * 100)
+                insights.append({
+                    "type": "pattern",
+                    "icon": "💜",
+                    "text": f"You felt {mood.lower()} {pct}% of the time. That's okay - we're here to help!"
+                })
+                break
+
+        if desired_counts:
+            top_desired = desired_counts.most_common(1)[0]
+            insights.append({
+                "type": "positive",
+                "icon": "🎯",
+                "text": f"You most often want to feel {top_desired[0].lower()}. We've got you!"
+            })
+
+        return {
+            "current_moods": dict(current_counts.most_common(10)),
+            "desired_moods": dict(desired_counts.most_common(10)),
+            "weekly_journey": weekly_journey,
+            "time_patterns": time_patterns,
+            "insights": insights,
+            "total_logs": len(history),
+            "days_active": len(set(h.get("created_at", "")[:10] for h in history if h.get("created_at")))
+        }
+    except Exception as e:
+        print(f"Analytics error: {e}")
+        return None
+
+
+def render_weekly_mood_chart(weekly_journey: list):
+    """Render the weekly mood journey chart"""
+    mood_emojis = {
+        "Sad": "😢", "Lonely": "😔", "Anxious": "😰", "Overwhelmed": "😵",
+        "Angry": "😤", "Stressed": "😫", "Bored": "😑", "Tired": "😴",
+        "Calm": "😌", "Happy": "😊", "Excited": "🤩", "Curious": "🧐",
+        "Focused": "🎯", "Relaxed": "😎", "Energized": "⚡", "Comforted": "🥰"
+    }
+
+    cols = st.columns(7)
+    for idx, day in enumerate(weekly_journey):
+        with cols[idx]:
+            mood = day.get("mood")
+            emoji = mood_emojis.get(mood, "⚪") if mood else "⚪"
+            count = day.get("count", 0)
+
+            st.markdown(f"""
+            <div style="text-align: center;">
+                <div style="font-size: 2rem;">{emoji}</div>
+                <div style="font-weight: 600; margin-top: 4px;">{day['day']}</div>
+                <div style="font-size: 0.75rem; color: rgba(255,255,255,0.5);">
+                    {f'{count} logs' if count else 'No data'}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+
+def render_mood_breakdown(mood_counts: dict, mood_type: str):
+    """Render mood frequency breakdown"""
+    if not mood_counts:
+        st.info("No data yet")
+        return
+
+    total = sum(mood_counts.values())
+
+    for mood, count in list(mood_counts.items())[:5]:
+        pct = int((count / total) * 100)
+        color = "#8b5cf6" if mood_type == "current" else "#06b6d4"
+
+        st.markdown(f"""
+        <div style="margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span>{mood}</span>
+                <span style="color: rgba(255,255,255,0.6);">{pct}%</span>
+            </div>
+            <div style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                <div style="width: {pct}%; height: 100%; background: {color}; border-radius: 4px;"></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+def render_time_patterns(time_patterns: dict):
+    """Render time-of-day mood patterns"""
+    time_icons = {"morning": "🌅", "afternoon": "☀️", "evening": "🌆", "night": "🌙"}
+
+    cols = st.columns(4)
+    for idx, (period, mood) in enumerate(time_patterns.items()):
+        with cols[idx]:
+            st.markdown(f"""
+            <div style="
+                background: rgba(255,255,255,0.03);
+                border: 1px solid rgba(255,255,255,0.1);
+                border-radius: 12px;
+                padding: 16px;
+                text-align: center;
+            ">
+                <div style="font-size: 1.5rem;">{time_icons.get(period, '⏰')}</div>
+                <div style="font-weight: 600; margin: 8px 0;">{period.title()}</div>
+                <div style="color: rgba(255,255,255,0.6); font-size: 0.85rem;">
+                    {mood if mood else 'No data'}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+
+def render_analytics_preview(user_id: str):
+    """Show blurred preview for non-premium users"""
+    st.markdown("""
+    <div style="
+        background: linear-gradient(135deg, rgba(139,92,246,0.1), rgba(6,182,212,0.1));
+        border: 1px solid rgba(139,92,246,0.3);
+        border-radius: 20px;
+        padding: 32px;
+        text-align: center;
+    ">
+        <div style="font-size: 3rem; margin-bottom: 16px;">📊</div>
+        <h3 style="margin-bottom: 8px;">Unlock Your Mood Analytics</h3>
+        <p style="color: rgba(255,255,255,0.7); margin-bottom: 24px;">
+            See your mood patterns, weekly journey, and personalized insights.
+        </p>
+        <div style="
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            text-align: left;
+        ">
+            <p style="font-size: 0.9rem; color: rgba(255,255,255,0.6); margin: 0;">
+                ✓ Weekly mood charts<br>
+                ✓ Time-of-day patterns<br>
+                ✓ Content that helps you most<br>
+                ✓ Personalized insights
+            </p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if st.button("🔓 Upgrade to Premium - $4.99/mo", key="analytics_upgrade", use_container_width=True, type="primary"):
+        st.session_state.show_premium_modal = True
+        st.rerun()
+
+
+def render_mood_analytics_dashboard():
+    """Render the mood analytics dashboard (premium feature)"""
+    user_id = st.session_state.get("db_user_id")
+    is_premium_user = st.session_state.get("is_premium", False)
+
+    st.markdown("""
+    <div class="section-header">
+        <span class="section-icon">📊</span>
+        <h2 class="section-title">Your Dopamine Dashboard</h2>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if not user_id:
+        st.info("Log in to see your mood analytics!")
+        return
+
+    if not is_premium_user:
+        render_analytics_preview(user_id)
+        return
+
+    analytics = get_mood_analytics(user_id, days=30)
+
+    if not analytics:
+        st.info("Start using dopamine.watch to see your mood patterns!")
+        return
+
+    # Stats bar
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Mood Logs", analytics["total_logs"])
+    with col2:
+        st.metric("Days Active", analytics["days_active"])
+    with col3:
+        streak = st.session_state.get("streak_days", 0)
+        st.metric("Current Streak", f"🔥 {streak}")
+    with col4:
+        points = get_dopamine_points()
+        st.metric("Dopamine Points", f"⚡ {points}")
+
+    st.markdown("---")
+
+    # Weekly Journey
+    st.markdown("### 📅 Your Week in Moods")
+    render_weekly_mood_chart(analytics["weekly_journey"])
+
+    st.markdown("---")
+
+    # Two columns
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("### 💭 How You've Been Feeling")
+        render_mood_breakdown(analytics["current_moods"], "current")
+
+    with col2:
+        st.markdown("### 🎯 What You've Wanted to Feel")
+        render_mood_breakdown(analytics["desired_moods"], "desired")
+
+    st.markdown("---")
+
+    # Time patterns
+    st.markdown("### ⏰ Your Mood by Time of Day")
+    render_time_patterns(analytics["time_patterns"])
+
+    st.markdown("---")
+
+    # Insights
+    st.markdown("### 💡 Insights")
+    for insight in analytics.get("insights", []):
+        st.markdown(f"""
+        <div style="
+            background: rgba(139,92,246,0.1);
+            border-left: 3px solid #8b5cf6;
+            padding: 12px 16px;
+            margin: 8px 0;
+            border-radius: 0 8px 8px 0;
+        ">
+            <span style="margin-right: 8px;">{insight['icon']}</span>
+            {insight['text']}
+        </div>
+        """, unsafe_allow_html=True)
+
+
+# --------------------------------------------------
+# 9.8 SMART PREMIUM TRIGGERS (PHASE 4)
+# --------------------------------------------------
+def check_premium_triggers():
+    """Check if any premium trigger conditions are met"""
+    if st.session_state.get("is_premium"):
+        return None
+
+    # Don't trigger too often
+    last_trigger = st.session_state.get("last_premium_trigger")
+    if last_trigger and (datetime.now() - last_trigger) < timedelta(minutes=10):
+        return None
+
+    triggers = []
+
+    # Mr.DP limit approaching
+    mr_dp_uses = st.session_state.get("user", {}).get("mr_dp_uses", 0)
+    if mr_dp_uses >= 4:
+        triggers.append({
+            "priority": 1,
+            "message": "You're loving Mr.DP! 🧠",
+            "cta": "Get unlimited chats"
+        })
+
+    # Queue getting full
+    try:
+        user_id = st.session_state.get("db_user_id")
+        if user_id:
+            queue = get_watch_queue(supabase, user_id, status='queued')
+            if len(queue) >= 8:
+                triggers.append({
+                    "priority": 2,
+                    "message": "Your queue is growing! 📋",
+                    "cta": "Unlock unlimited saves"
+                })
+    except:
+        pass
+
+    # SOS power user
+    if st.session_state.get("sos_use_count", 0) >= 3:
+        triggers.append({
+            "priority": 3,
+            "message": "SOS Mode is helping you! 🆘",
+            "cta": "Support us & get more"
+        })
+
+    # Streak milestone
+    streak = st.session_state.get("streak_days", 0)
+    if streak in [7, 14, 30]:
+        triggers.append({
+            "priority": 4,
+            "message": f"🔥 {streak}-day streak! Amazing!",
+            "cta": "Celebrate with Premium"
+        })
+
+    if triggers:
+        triggers.sort(key=lambda x: x["priority"])
+        return triggers[0]
+
+    return None
+
+
+def render_smart_premium_prompt(trigger: dict):
+    """Render contextual premium prompt"""
+    if not trigger:
+        return
+
+    st.session_state.last_premium_trigger = datetime.now()
+
+    st.markdown(f"""
+    <div style="
+        background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(6,182,212,0.15));
+        border: 1px solid rgba(139,92,246,0.4);
+        border-radius: 16px;
+        padding: 20px;
+        margin: 16px 0;
+        text-align: center;
+    ">
+        <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px;">
+            {trigger['message']}
+        </div>
+        <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 16px;">
+            Premium members get unlimited access to all features.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Maybe Later", key="trigger_dismiss", use_container_width=True):
+            st.session_state.trigger_dismissed = True
+    with col2:
+        if st.button(f"🔓 {trigger['cta']}", key="trigger_upgrade", use_container_width=True, type="primary"):
+            st.session_state.show_premium_modal = True
+            st.rerun()
+
+
+def should_show_premium_trigger():
+    """Determine if we should show a premium trigger"""
+    if st.session_state.get("is_premium"):
+        return False
+    if st.session_state.get("trigger_dismissed"):
+        return False
+    if st.session_state.get("show_premium_modal"):
+        return False
+    return True
+
+
+# --------------------------------------------------
+# 9.9 ONBOARDING FLOW (PHASE 4)
+# --------------------------------------------------
+ONBOARDING_STEPS = [
+    {"title": "Welcome to dopamine.watch! 🧠", "subtitle": "Let's set you up in 30 seconds", "type": "welcome"},
+    {"title": "How are you feeling right now?", "subtitle": "This helps us personalize your experience", "type": "mood_current",
+     "options": ["😊 Pretty Good", "😐 Meh", "😔 Not Great", "😰 Stressed/Anxious", "😴 Tired"]},
+    {"title": "What would you like to feel?", "subtitle": "We'll find content to get you there", "type": "mood_desired",
+     "options": ["😊 Happy", "😌 Calm", "⚡ Energized", "🎬 Entertained", "😴 Sleepy"]},
+    {"title": "Meet Mr.DP! 🧠", "subtitle": "Your AI dopamine curator", "type": "feature_intro"},
+    {"title": "You're all set!", "subtitle": "Here's 50 Dopamine Points to get started", "type": "complete"}
+]
+
+
+def render_onboarding():
+    """Render the onboarding flow"""
+    step = st.session_state.get("onboarding_step", 0)
+
+    if step >= len(ONBOARDING_STEPS):
+        complete_onboarding()
+        return
+
+    current = ONBOARDING_STEPS[step]
+
+    col1, col2, col3 = st.columns([1, 2, 1])
+
+    with col2:
+        # Progress dots
+        progress_html = ""
+        for i in range(len(ONBOARDING_STEPS)):
+            if i == step:
+                progress_html += '<div style="width:10px;height:10px;border-radius:50%;background:#8b5cf6;transform:scale(1.2);"></div>'
+            elif i < step:
+                progress_html += '<div style="width:10px;height:10px;border-radius:50%;background:#10b981;"></div>'
+            else:
+                progress_html += '<div style="width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.2);"></div>'
+
+        st.markdown(f"""
+        <div style="
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 48px 32px;
+            text-align: center;
+            max-width: 500px;
+            margin: 0 auto;
+        ">
+            <div style="display:flex;justify-content:center;gap:8px;margin-bottom:32px;">{progress_html}</div>
+            <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; font-weight: 700; margin-bottom: 8px;">
+                {current['title']}
+            </h2>
+            <p style="color: rgba(255,255,255,0.6); margin-bottom: 32px;">{current['subtitle']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("")
+
+        if current["type"] == "welcome":
+            if st.button("Let's Go! 🚀", key="onboard_start", use_container_width=True, type="primary"):
+                st.session_state.onboarding_step = 1
+                st.rerun()
+
+        elif current["type"] == "mood_current":
+            mood_map = {
+                "😊 Pretty Good": "Happy", "😐 Meh": "Bored", "😔 Not Great": "Sad",
+                "😰 Stressed/Anxious": "Anxious", "😴 Tired": "Tired"
+            }
+            for option in current["options"]:
+                if st.button(option, key=f"mood_c_{option}", use_container_width=True):
+                    st.session_state.current_feeling = mood_map.get(option, "Bored")
+                    st.session_state.onboarding_step = 2
+                    st.rerun()
+
+        elif current["type"] == "mood_desired":
+            mood_map = {
+                "😊 Happy": "Happy", "😌 Calm": "Calm", "⚡ Energized": "Energized",
+                "🎬 Entertained": "Entertained", "😴 Sleepy": "Sleepy"
+            }
+            for option in current["options"]:
+                if st.button(option, key=f"mood_d_{option}", use_container_width=True):
+                    st.session_state.desired_feeling = mood_map.get(option, "Happy")
+                    st.session_state.onboarding_step = 3
+                    st.rerun()
+
+        elif current["type"] == "feature_intro":
+            st.markdown("""
+            <div style="
+                background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(6,182,212,0.2));
+                border-radius: 16px;
+                padding: 24px;
+                margin: 16px 0;
+            ">
+                <div style="font-size: 3rem; text-align: center; margin-bottom: 16px;">🧠💬</div>
+                <p style="text-align: center;">
+                    <strong>Mr.DP</strong> is your AI assistant who understands ADHD brains.<br><br>
+                    Just tell him how you're feeling, and he'll find the perfect content!
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            if st.button("Nice! What else? →", key="onboard_feature", use_container_width=True, type="primary"):
+                st.session_state.onboarding_step = 4
+                st.rerun()
+
+        elif current["type"] == "complete":
+            st.markdown("""
+            <div style="text-align: center; margin: 24px 0;">
+                <div style="font-size: 4rem;">🎉</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.success("You earned 50 Dopamine Points!")
+
+            if st.button("Start Exploring! 🚀", key="onboard_complete", use_container_width=True, type="primary"):
+                complete_onboarding()
+                st.rerun()
+
+
+def complete_onboarding():
+    """Complete onboarding and award points"""
+    st.session_state.onboarding_complete = True
+    st.session_state.onboarding_step = 0
+
+    add_dopamine_points(50, "Welcome to dopamine.watch!")
+
+    user_id = st.session_state.get("db_user_id")
+    if user_id and supabase:
+        log_mood_selection(
+            supabase, user_id,
+            st.session_state.get("current_feeling", "Bored"),
+            st.session_state.get("desired_feeling", "Happy"),
+            "onboarding"
+        )
+        update_user_profile(user_id, {"onboarding_complete": True})
+
+
+def should_show_onboarding():
+    """Check if user needs onboarding"""
+    if not st.session_state.get("user"):
+        return False
+
+    if st.session_state.get("onboarding_complete"):
+        return False
+
+    user_id = st.session_state.get("db_user_id")
+    if user_id:
+        profile = get_user_profile(user_id)
+        if profile.get("onboarding_complete"):
+            st.session_state.onboarding_complete = True
+            return False
+
+    return True
+
+
+# --------------------------------------------------
 # 10. GAMIFICATION ENGINE
 # --------------------------------------------------
 def get_dopamine_points():
@@ -2450,6 +3212,13 @@ if "init" not in st.session_state:
         "mr_dp_thinking": False,
         "mr_dp_v2_response": None,  # Mr.DP 2.0 rich response storage
         "use_mr_dp_v2": True,  # Feature flag for Mr.DP 2.0
+
+        # Phase 4: Onboarding
+        "onboarding_complete": False,
+        "onboarding_step": 0,
+        "trigger_dismissed": False,
+        "last_premium_trigger": None,
+        "sos_use_count": 0,
         
         # Quick Hit
         "quick_hit": None,
@@ -4144,7 +4913,7 @@ def render_sidebar():
             st.session_state.do_logout = True
             st.rerun()
         
-        st.caption("v36.0 • Mr.DP 2.0 Intelligence")
+        st.caption("v37.0 • Personalization Engine")
 
 # --------------------------------------------------
 # 17. MAIN CONTENT
@@ -4189,7 +4958,13 @@ def render_main():
     if achievements:
         ach_html = "".join([f"<span class='achievement'><span class='achievement-icon'>{a[0]}</span><span class='achievement-text'>{a[1]}</span></span>" for a in achievements[:5]])
         st.markdown(f"<div style='margin-bottom: 20px;'>{ach_html}</div>", unsafe_allow_html=True)
-    
+
+    # PERSONALIZED "FOR YOU" FEED (Phase 4)
+    if st.session_state.get("db_user_id"):
+        with st.expander("🎯 **For You** - Personalized Picks", expanded=False):
+            render_personalized_feed()
+        st.markdown("---")
+
     # GLOBAL SEARCH
     st.markdown("#### 🔍 Search Everything")
     search_col1, search_col2 = st.columns([5, 1])
@@ -4951,8 +5726,12 @@ else:
         st.session_state.mr_dp_open = True
         st.rerun()
 
-    # Main content
-    render_main()
+    # Check for onboarding (new users)
+    if should_show_onboarding():
+        render_onboarding()
+    else:
+        # Main content
+        render_main()
 
     # Phase 2: Process pending Mr.DP message (runs after page renders)
     if st.session_state.get("mr_dp_thinking"):
