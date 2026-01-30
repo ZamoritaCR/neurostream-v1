@@ -1,6 +1,6 @@
 # FILE: app.py
 # --------------------------------------------------
-# DOPAMINE.WATCH v40.0 - BRAND & VISUAL OVERHAUL
+# DOPAMINE.WATCH v41.0 - MOBILE & PWA OPTIMIZATION
 # Complete Phase 7: Mr.DP Character, Bento Grid, Animated Hero, Credibility Section
 # --------------------------------------------------
 # NEW IN v40:
@@ -62,6 +62,39 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# --------------------------------------------------
+# PWA SETUP - Progressive Web App Support
+# --------------------------------------------------
+def inject_pwa_head():
+    """Inject PWA meta tags and service worker registration"""
+    st.markdown("""
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#8b5cf6">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="dopamine.watch">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+
+    <!-- Viewport for mobile -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover">
+
+    <script>
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/static/sw.js')
+                .then(reg => console.log('[PWA] Service Worker registered'))
+                .catch(err => console.log('[PWA] SW registration failed:', err));
+        });
+    }
+    </script>
+    """, unsafe_allow_html=True)
+
+# Initialize PWA
+inject_pwa_head()
 
 APP_NAME = "Dopamine.watch"
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
@@ -6361,6 +6394,149 @@ section[data-testid="stSidebar"] .stTextArea textarea {
     .hero-stats { flex-direction: column; gap: 16px; }
     .stat-number { font-size: 1.5rem; }
 }
+
+/* ============================================
+   MOBILE-FIRST PWA RESPONSIVE STYLES
+   ============================================ */
+
+/* Base mobile adjustments */
+@media (max-width: 768px) {
+    /* Reduce padding on mobile */
+    .main .block-container {
+        padding: 1rem 0.75rem !important;
+        max-width: 100% !important;
+    }
+
+    /* Larger touch targets */
+    button, .stButton > button {
+        min-height: 48px !important;
+        font-size: 1rem !important;
+    }
+
+    /* Better input fields - prevent iOS zoom */
+    input, textarea, select, .stTextInput input, .stSelectbox select {
+        font-size: 16px !important;
+        min-height: 48px !important;
+    }
+
+    /* Stack columns on mobile */
+    [data-testid="column"] {
+        width: 100% !important;
+        flex: 1 1 100% !important;
+    }
+
+    /* Movie cards - 2 per row on mobile */
+    .movie-card {
+        width: calc(50% - 8px) !important;
+    }
+
+    /* Mood buttons - larger on mobile */
+    .mood-btn {
+        padding: 16px !important;
+        font-size: 1rem !important;
+        min-height: 60px !important;
+    }
+
+    /* Section headers */
+    .section-title {
+        font-size: 1.3rem !important;
+    }
+
+    /* Mr.DP chat - fixed at bottom on mobile */
+    .mr-dp-chat-container {
+        position: relative;
+    }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+    /* Single column movie cards */
+    .movie-card {
+        width: 100% !important;
+    }
+
+    /* Smaller headers */
+    .section-title {
+        font-size: 1.1rem !important;
+    }
+
+    /* Compact mood selector */
+    .mood-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+    }
+
+    /* Smaller landing title */
+    .landing-title {
+        font-size: 2rem !important;
+    }
+}
+
+/* Safe area for notched phones (iPhone X+) */
+@supports (padding: max(0px)) {
+    .main .block-container {
+        padding-left: max(0.75rem, env(safe-area-inset-left)) !important;
+        padding-right: max(0.75rem, env(safe-area-inset-right)) !important;
+        padding-bottom: max(1rem, env(safe-area-inset-bottom)) !important;
+    }
+}
+
+/* Touch-friendly interactions */
+@media (hover: none) and (pointer: coarse) {
+    /* Remove hover effects on touch devices */
+    .movie-card:hover {
+        transform: none !important;
+    }
+
+    /* Add active states instead */
+    .movie-card:active {
+        transform: scale(0.98) !important;
+        opacity: 0.9 !important;
+    }
+
+    button:active, .stButton > button:active {
+        transform: scale(0.95) !important;
+    }
+
+    /* Bento items - touch feedback */
+    .bento-item:active {
+        transform: scale(0.98) !important;
+    }
+}
+
+/* PWA standalone mode - extra padding for status bar */
+@media (display-mode: standalone) {
+    .main .block-container {
+        padding-top: max(1rem, env(safe-area-inset-top)) !important;
+    }
+
+    /* Hide "Add to Home Screen" banner in standalone mode */
+    .pwa-banner {
+        display: none !important;
+    }
+}
+
+/* Landscape mobile */
+@media (max-width: 896px) and (orientation: landscape) {
+    .mood-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+    }
+
+    .landing-hero {
+        padding: 40px 20px !important;
+    }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .movie-card {
+        width: calc(33.333% - 12px) !important;
+    }
+
+    .bento-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -6369,6 +6545,213 @@ section[data-testid="stSidebar"] .stTextArea textarea {
 # --------------------------------------------------
 def safe(s):
     return html_lib.escape(s or "")
+
+# --------------------------------------------------
+# MOBILE APP INSTALL BANNER (PWA)
+# --------------------------------------------------
+def render_install_app_banner():
+    """Render the 'Get the App' install banner for mobile users"""
+
+    # Don't show if user dismissed it recently (stored in session)
+    if st.session_state.get("pwa_banner_dismissed"):
+        return
+
+    st.markdown("""
+    <style>
+    .pwa-banner {
+        background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(6,182,212,0.15));
+        border: 1px solid rgba(139,92,246,0.4);
+        border-radius: 16px;
+        padding: 16px 20px;
+        margin-bottom: 20px;
+        display: none;
+    }
+    .pwa-banner.show { display: block; }
+    .pwa-banner-content {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+    .pwa-banner-icon {
+        font-size: 2.5rem;
+        flex-shrink: 0;
+    }
+    .pwa-banner-text { flex: 1; }
+    .pwa-banner-title {
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-bottom: 4px;
+    }
+    .pwa-banner-subtitle {
+        color: rgba(255,255,255,0.6);
+        font-size: 0.85rem;
+    }
+    .pwa-banner-buttons {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+    }
+    .pwa-btn {
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        border: none;
+        transition: transform 0.2s;
+    }
+    .pwa-btn:active { transform: scale(0.95); }
+    .pwa-btn-primary {
+        background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+        color: white;
+    }
+    .pwa-btn-secondary {
+        background: rgba(255,255,255,0.1);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    /* iOS-specific install instructions */
+    .ios-instructions {
+        display: none;
+        background: rgba(0,0,0,0.95);
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 24px 20px;
+        padding-bottom: max(24px, env(safe-area-inset-bottom));
+        border-radius: 20px 20px 0 0;
+        z-index: 9999;
+        text-align: center;
+    }
+    .ios-instructions.show { display: block; }
+    .ios-step {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 12px 0;
+        text-align: left;
+    }
+    .ios-step-num {
+        background: linear-gradient(135deg, #8b5cf6, #ec4899);
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+    @media (max-width: 480px) {
+        .pwa-banner-content { flex-direction: column; text-align: center; }
+        .pwa-banner-buttons { justify-content: center; }
+    }
+    </style>
+
+    <div class="pwa-banner" id="pwaBanner">
+        <div class="pwa-banner-content">
+            <div class="pwa-banner-icon">📱</div>
+            <div class="pwa-banner-text">
+                <div class="pwa-banner-title">Get the App!</div>
+                <div class="pwa-banner-subtitle">Add to your home screen for the best experience - works offline!</div>
+            </div>
+        </div>
+        <div class="pwa-banner-buttons">
+            <button class="pwa-btn pwa-btn-secondary" onclick="dismissPWABanner()">Maybe Later</button>
+            <button class="pwa-btn pwa-btn-primary" onclick="installPWA()">📲 Install App</button>
+        </div>
+    </div>
+
+    <!-- iOS Instructions Modal -->
+    <div class="ios-instructions" id="iosInstructions">
+        <div style="font-size: 1.2rem; font-weight: 700; margin-bottom: 16px;">📱 Install dopamine.watch</div>
+        <div class="ios-step">
+            <div class="ios-step-num">1</div>
+            <div>Tap the <strong>Share</strong> button <span style="font-size: 1.2rem;">⬆️</span> at the bottom</div>
+        </div>
+        <div class="ios-step">
+            <div class="ios-step-num">2</div>
+            <div>Scroll and tap <strong>"Add to Home Screen"</strong></div>
+        </div>
+        <div class="ios-step">
+            <div class="ios-step-num">3</div>
+            <div>Tap <strong>"Add"</strong> in the top right</div>
+        </div>
+        <button class="pwa-btn pwa-btn-primary" style="margin-top: 16px; width: 100%;" onclick="hideIOSInstructions()">Got it!</button>
+    </div>
+
+    <script>
+    // PWA Install Logic
+    let deferredPrompt = null;
+    const banner = document.getElementById('pwaBanner');
+    const iosModal = document.getElementById('iosInstructions');
+
+    // Check if already installed
+    const isInstalled = window.matchMedia('(display-mode: standalone)').matches
+                     || window.navigator.standalone === true;
+
+    // Check if dismissed recently (24 hours)
+    const dismissed = localStorage.getItem('pwa_dismissed');
+    const dismissedRecently = dismissed && (Date.now() - parseInt(dismissed)) < 86400000;
+
+    // Detect iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+    // Show banner if not installed and not dismissed (and on mobile)
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (!isInstalled && !dismissedRecently && isMobile && banner) {
+        banner.classList.add('show');
+    }
+
+    // Capture install prompt (Android/Chrome)
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        if (banner && !isInstalled && !dismissedRecently) {
+            banner.classList.add('show');
+        }
+    });
+
+    function installPWA() {
+        if (deferredPrompt) {
+            // Android/Chrome - use native prompt
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choice) => {
+                if (choice.outcome === 'accepted') {
+                    console.log('[PWA] App installed');
+                    banner.classList.remove('show');
+                }
+                deferredPrompt = null;
+            });
+        } else if (isIOS) {
+            // iOS - show instructions
+            iosModal.classList.add('show');
+        } else {
+            // Fallback - show generic instructions
+            alert('To install: Open browser menu (⋮) and tap "Add to Home Screen" or "Install App"');
+        }
+    }
+
+    function dismissPWABanner() {
+        banner.classList.remove('show');
+        localStorage.setItem('pwa_dismissed', Date.now().toString());
+    }
+
+    function hideIOSInstructions() {
+        iosModal.classList.remove('show');
+        banner.classList.remove('show');
+        localStorage.setItem('pwa_dismissed', Date.now().toString());
+    }
+
+    // Hide banner if installed after prompt
+    window.addEventListener('appinstalled', () => {
+        console.log('[PWA] App installed');
+        if (banner) banner.classList.remove('show');
+    });
+    </script>
+    """, unsafe_allow_html=True)
 
 def render_support_resources_modal():
     """Render mental health support resources modal with government hotlines."""
@@ -7420,7 +7803,7 @@ def render_sidebar():
             st.session_state.do_logout = True
             st.rerun()
 
-        st.caption("v40.0 • Brand & Visual Overhaul")
+        st.caption("v41.0 • Mobile & PWA")
 
 # --------------------------------------------------
 # 17. MAIN CONTENT
@@ -7470,6 +7853,9 @@ def render_main():
             st.rerun()
 
     render_stats_bar()
+
+    # PWA Install Banner (Mobile)
+    render_install_app_banner()
 
     # Social Proof Banner (Phase 5)
     render_social_proof_banner()
