@@ -54,8 +54,11 @@ CREATE INDEX IF NOT EXISTS idx_user_behavior_user_id ON user_behavior(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_behavior_action_type ON user_behavior(action_type);
 CREATE INDEX IF NOT EXISTS idx_user_behavior_created_at ON user_behavior(created_at DESC);
 
--- RLS Policy
+-- RLS Policy (drop first to avoid conflicts)
 ALTER TABLE user_behavior ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own behavior" ON user_behavior;
+DROP POLICY IF EXISTS "Users can insert own behavior" ON user_behavior;
 
 CREATE POLICY "Users can view own behavior"
     ON user_behavior FOR SELECT
@@ -89,8 +92,13 @@ CREATE INDEX IF NOT EXISTS idx_watch_queue_user_id ON watch_queue(user_id);
 CREATE INDEX IF NOT EXISTS idx_watch_queue_status ON watch_queue(status);
 CREATE INDEX IF NOT EXISTS idx_watch_queue_added_at ON watch_queue(added_at DESC);
 
--- RLS Policy
+-- RLS Policy (drop first to avoid conflicts)
 ALTER TABLE watch_queue ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own queue" ON watch_queue;
+DROP POLICY IF EXISTS "Users can insert to own queue" ON watch_queue;
+DROP POLICY IF EXISTS "Users can update own queue" ON watch_queue;
+DROP POLICY IF EXISTS "Users can delete from own queue" ON watch_queue;
 
 CREATE POLICY "Users can view own queue"
     ON watch_queue FOR SELECT
@@ -124,8 +132,11 @@ CREATE TABLE IF NOT EXISTS focus_sessions (
 CREATE INDEX IF NOT EXISTS idx_focus_sessions_user_id ON focus_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_focus_sessions_completed_at ON focus_sessions(completed_at DESC);
 
--- RLS Policy
+-- RLS Policy (drop first to avoid conflicts)
 ALTER TABLE focus_sessions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own focus sessions" ON focus_sessions;
+DROP POLICY IF EXISTS "Users can insert own focus sessions" ON focus_sessions;
 
 CREATE POLICY "Users can view own focus sessions"
     ON focus_sessions FOR SELECT
@@ -154,8 +165,10 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
 
--- RLS Policy
+-- RLS Policy (drop first to avoid conflicts)
 ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own subscription" ON subscriptions;
 
 CREATE POLICY "Users can view own subscription"
     ON subscriptions FOR SELECT
@@ -182,8 +195,12 @@ CREATE TABLE IF NOT EXISTS daily_usage (
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_daily_usage_user_date ON daily_usage(user_id, date);
 
--- RLS Policy
+-- RLS Policy (drop first to avoid conflicts)
 ALTER TABLE daily_usage ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own usage" ON daily_usage;
+DROP POLICY IF EXISTS "Users can insert own usage" ON daily_usage;
+DROP POLICY IF EXISTS "Users can update own usage" ON daily_usage;
 
 CREATE POLICY "Users can view own usage"
     ON daily_usage FOR SELECT
