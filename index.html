@@ -1440,7 +1440,15 @@ const STREAMLIT_APP_URL = "https://app.dopamine.watch";
 // Supabase Configuration
 const SUPABASE_URL = "https://wkfewpynskakgbetscsa.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndrZmV3cHluc2tha2diZXRzY3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MDcwMTAsImV4cCI6MjA4MzQ4MzAxMH0.DXnSsvabfwfNZIJaP0UR39YQe_3CHW-RjL2o1vDsunQ";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Initialize Supabase only when available
+let supabaseClient = null;
+function initSupabase() {
+    if (window.supabase && !supabaseClient) {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+    return supabaseClient;
+}
 
 // ============================================
 // MR.DP DYNAMIC SVG GENERATION
@@ -1649,6 +1657,12 @@ async function handleLogin() {
         return;
     }
 
+    const sb = initSupabase();
+    if (!sb) {
+        alert('Authentication service is loading. Please try again.');
+        return;
+    }
+
     // Show loading state
     const btn = document.querySelector('#loginScreen .auth-btn');
     const originalText = btn.textContent;
@@ -1656,7 +1670,7 @@ async function handleLogin() {
     btn.disabled = true;
 
     try {
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await sb.auth.signInWithPassword({
             email: email,
             password: password
         });
@@ -1702,6 +1716,12 @@ async function handleSignup() {
         return;
     }
 
+    const sb = initSupabase();
+    if (!sb) {
+        alert('Authentication service is loading. Please try again.');
+        return;
+    }
+
     // Show loading state
     const btn = document.querySelector('#signupScreen .auth-btn');
     const originalText = btn.textContent;
@@ -1710,7 +1730,7 @@ async function handleSignup() {
 
     try {
         // Create auth user
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await sb.auth.signUp({
             email: email,
             password: password,
             options: {
@@ -1729,7 +1749,7 @@ async function handleSignup() {
 
         // Create profile in profiles table
         if (data.user) {
-            await supabase.from('profiles').upsert({
+            await sb.from('profiles').upsert({
                 id: data.user.id,
                 email: email,
                 name: username,
@@ -1791,6 +1811,12 @@ async function handleForgotPassword() {
         return;
     }
 
+    const sb = initSupabase();
+    if (!sb) {
+        alert('Authentication service is loading. Please try again.');
+        return;
+    }
+
     // Show loading state
     const btn = document.querySelector('#forgotScreen .auth-btn');
     const originalText = btn.textContent;
@@ -1798,7 +1824,7 @@ async function handleForgotPassword() {
     btn.disabled = true;
 
     try {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        const { error } = await sb.auth.resetPasswordForEmail(email, {
             redirectTo: STREAMLIT_APP_URL + '?reset=1'
         });
 

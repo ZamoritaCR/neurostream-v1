@@ -1,15 +1,15 @@
 # FILE: app.py
 # --------------------------------------------------
-# DOPAMINE.WATCH v34.0 - SUPABASE AUTH 🔐
-# Mother Code v33.5 + Real User Database
+# DOPAMINE.WATCH v36.0 - MR.DP 2.0 INTELLIGENCE
+# Mother Code v35.0 + Mr.DP Intelligent Assistant
 # --------------------------------------------------
-# NEW IN v34:
-# ✅ Supabase Authentication (email/password)
-# ✅ Persistent user profiles
-# ✅ Cloud-saved DP, streaks, achievements
-# ✅ Password reset flow
-# ✅ Email verification
-# ✅ Protected routes
+# NEW IN v36:
+# ✅ Mr.DP 2.0 - Upgraded to GPT-4o for smarter responses
+# ✅ Spotify Integration - Real playlist embeds & links
+# ✅ Rich Movie Cards - Posters, ratings, streaming links
+# ✅ Action Buttons - SOS, Focus Timer, Time Picks in chat
+# ✅ User Context - Personalized based on queue & moods
+# ✅ Phase 1 & 2 features (Mood, Behavior, Queue, SOS, Timer)
 # --------------------------------------------------
 
 import os
@@ -41,6 +41,14 @@ from mr_dp_floating import render_floating_mr_dp
 
 # Subscription utilities (NEW - added for premium features)
 from subscription_utils import check_can_use, increment_usage, is_premium, show_usage_sidebar
+
+# Phase 1 & 2 Features
+from mood_utils import log_mood_selection, get_mood_history, get_top_moods, get_mood_patterns
+from behavior_tracking import log_user_action, get_engagement_score
+from watch_queue import add_to_queue, remove_from_queue, get_watch_queue, is_in_queue, render_queue_button
+from sos_calm_mode import render_sos_button, render_sos_overlay, log_sos_usage
+from time_aware_picks import render_time_picker, get_time_of_day_suggestions, filter_movies_by_runtime
+from focus_timer import render_focus_timer_sidebar, render_break_reminder_overlay, init_focus_session_state
 
 # --------------------------------------------------
 # 1. CONFIG
@@ -1612,6 +1620,582 @@ def mr_dp_search(response):
     return discover_movies_fresh(current_feeling=current_feeling, desired_feeling=desired_feeling)
 
 # --------------------------------------------------
+# 9.5 MR.DP 2.0 - INTELLIGENT ASSISTANT (NEW)
+# --------------------------------------------------
+MR_DP_SYSTEM_PROMPT_V2 = """You are Mr.DP (Mr. Dopamine), an intelligent AI assistant for dopamine.watch - a streaming recommendation app built specifically for ADHD and neurodivergent users.
+
+## YOUR PERSONALITY
+- Warm, empathetic, like a supportive friend who gets ADHD struggles
+- Casual but not over-the-top (occasional emoji, not every sentence)
+- Concise - respect that ADHD brains get overwhelmed by walls of text
+- Action-oriented - don't just talk, DO things for the user
+
+## USER CONTEXT
+You will receive information about the user including:
+- Their recent mood selections
+- Their watch queue
+- Their viewing history/preferences
+- Current mood state
+
+Use this to personalize recommendations!
+
+## RESPONSE FORMAT
+Respond with a JSON object containing:
+{
+    "message": "Your conversational response (2-3 sentences max)",
+    "content": [
+        {
+            "type": "movie|music|podcast|audiobook",
+            "data": { ... content details ... }
+        }
+    ],
+    "actions": [
+        {
+            "type": "add_queue|sos|focus|time_pick",
+            "label": "Button label",
+            "data": { ... action data ... }
+        }
+    ],
+    "mood_update": {
+        "current": "detected current feeling or null",
+        "desired": "detected desired feeling or null"
+    }
+}
+
+## CONTENT DATA FORMATS
+
+### Movie/TV:
+{
+    "type": "movie",
+    "data": {
+        "title": "Movie Title",
+        "why": "Why this matches their mood (1 sentence)"
+    }
+}
+
+### Music:
+{
+    "type": "music",
+    "data": {
+        "mood": "Calm|Happy|Energized|Focused|etc",
+        "description": "Description of the vibe"
+    }
+}
+
+### Artist Request:
+{
+    "type": "artist",
+    "data": {
+        "artist": "Artist Name"
+    }
+}
+
+## MOOD MAPPINGS (use these for recommendations)
+
+Current feelings: Sad, Lonely, Anxious, Overwhelmed, Angry, Stressed, Bored, Tired, Numb, Confused, Restless, Frustrated, Scared, Nostalgic
+
+Desired feelings: Happy, Calm, Relaxed, Energized, Entertained, Inspired, Comforted, Focused, Curious, Amused, Motivated, Thrilled, Sleepy
+
+## IMPORTANT RULES
+
+1. **Offer actions** - If user seems stressed, offer SOS mode. If they mention time constraints, offer time-based picks
+2. **Be proactive** - Suggest related content, offer to add to queue
+3. **Handle greetings** - For "hi/hello", ask about their mood warmly
+4. **Crisis awareness** - If user mentions self-harm or severe distress, gently suggest professional resources and offer SOS mode
+
+## EXAMPLE INTERACTIONS
+
+User: "I'm stressed and need to chill"
+{
+    "message": "I hear you. Let's bring some calm to your brain 💜",
+    "content": [
+        {"type": "movie", "data": {"title": "Spirited Away", "why": "Studio Ghibli's gentle visuals are perfect for stress relief"}},
+        {"type": "music", "data": {"mood": "Calm", "description": "Peaceful piano for unwinding"}}
+    ],
+    "actions": [
+        {"type": "sos", "label": "🆘 Activate Calm Mode", "data": {}}
+    ],
+    "mood_update": {"current": "Stressed", "desired": "Calm"}
+}
+
+User: "play some Drake"
+{
+    "message": "Drizzy coming right up! 🎤",
+    "content": [
+        {"type": "artist", "data": {"artist": "Drake"}}
+    ],
+    "actions": [],
+    "mood_update": {"current": null, "desired": "Entertained"}
+}
+
+User: "I only have 15 minutes"
+{
+    "message": "Short on time? No problem!",
+    "content": [],
+    "actions": [
+        {"type": "time_pick", "label": "⏱️ Show 15-min picks", "data": {"minutes": 15}}
+    ],
+    "mood_update": {"current": null, "desired": null}
+}
+
+User: "hi" or "hello"
+{
+    "message": "Hey! 👋 I'm Mr.DP, your dopamine curator. What vibe are you chasing today?",
+    "content": [],
+    "actions": [],
+    "mood_update": {"current": null, "desired": null}
+}
+
+Remember: Be genuine and warm. ALWAYS return valid JSON."""
+
+# Curated Spotify playlist IDs for each mood
+SPOTIFY_MOOD_PLAYLISTS = {
+    "Calm": {"id": "37i9dQZF1DWZd79rJ6a7lp", "name": "Sleep", "description": "Gentle ambient tracks"},
+    "Relaxed": {"id": "37i9dQZF1DX4sWSpwq3LiO", "name": "Peaceful Piano", "description": "Calm piano for relaxation"},
+    "Sleepy": {"id": "37i9dQZF1DWZd79rJ6a7lp", "name": "Sleep", "description": "Drift off peacefully"},
+    "Energized": {"id": "37i9dQZF1DX76Wlfdnj7AP", "name": "Beast Mode", "description": "High energy workout hits"},
+    "Motivated": {"id": "37i9dQZF1DX5gQonLbZD9s", "name": "Motivation Mix", "description": "Get pumped and motivated"},
+    "Happy": {"id": "37i9dQZF1DXdPec7aLTmlC", "name": "Happy Hits!", "description": "Feel-good hits to boost your mood"},
+    "Entertained": {"id": "37i9dQZF1DX0XUsuxWHRQd", "name": "RapCaviar", "description": "Today's top hip-hop"},
+    "Amused": {"id": "37i9dQZF1DX2A29LI7xHn1", "name": "Pop Rising", "description": "Fun pop hits"},
+    "Focused": {"id": "37i9dQZF1DX8NTLI2TtZa6", "name": "Deep Focus", "description": "Electronic focus music"},
+    "Comforted": {"id": "37i9dQZF1DX4WYpdgoIcn6", "name": "Chill Hits", "description": "Comforting chill tracks"},
+    "Curious": {"id": "37i9dQZF1DX0SM0LYsmbMT", "name": "Jazz Vibes", "description": "Sophisticated jazz"},
+    "Inspired": {"id": "37i9dQZF1DX4sWSpwq3LiO", "name": "Peaceful Piano", "description": "Inspiring classical"},
+    "Thrilled": {"id": "37i9dQZF1DX4dyzvuaRJ0n", "name": "mint", "description": "Electronic dance hits"},
+    "Grounded": {"id": "37i9dQZF1DWWQRwui0ExPn", "name": "LoFi Beats", "description": "Chill lo-fi hip hop"},
+}
+
+# Popular artist playlist mappings
+SPOTIFY_ARTIST_PLAYLISTS = {
+    "drake": {"id": "37i9dQZF1DX7QOv5kjbU68", "name": "This Is Drake"},
+    "taylor swift": {"id": "37i9dQZF1DX5KpP2LN299J", "name": "This Is Taylor Swift"},
+    "kendrick lamar": {"id": "37i9dQZF1DX5EkyRFIV6vG", "name": "This Is Kendrick Lamar"},
+    "beyonce": {"id": "37i9dQZF1DX9xKCdCp34Kd", "name": "This Is Beyoncé"},
+    "the weeknd": {"id": "37i9dQZF1DX6bnzK9KPvrz", "name": "This Is The Weeknd"},
+    "billie eilish": {"id": "37i9dQZF1DX9xKCdCp34Kd", "name": "This Is Billie Eilish"},
+    "ed sheeran": {"id": "37i9dQZF1DX5LsNzmTvZYy", "name": "This Is Ed Sheeran"},
+    "ariana grande": {"id": "37i9dQZF1DX4F7xckJEHcj", "name": "This Is Ariana Grande"},
+    "post malone": {"id": "37i9dQZF1DX9qNs32fujYe", "name": "This Is Post Malone"},
+    "dua lipa": {"id": "37i9dQZF1DX98iKfEVjPpx", "name": "This Is Dua Lipa"},
+    "harry styles": {"id": "37i9dQZF1DX5lMITtFT2wV", "name": "This Is Harry Styles"},
+    "bad bunny": {"id": "37i9dQZF1DX3eCZ9vB1hfI", "name": "This Is Bad Bunny"},
+    "sza": {"id": "37i9dQZF1DX6H4LAnlHN3t", "name": "This Is SZA"},
+    "olivia rodrigo": {"id": "37i9dQZF1DX8bUHYxRdZiH", "name": "This Is Olivia Rodrigo"},
+    "coldplay": {"id": "37i9dQZF1DZ06evO1PxGqn", "name": "This Is Coldplay"},
+    "adele": {"id": "37i9dQZF1DX2wU4dczKqKR", "name": "This Is Adele"},
+    "bruno mars": {"id": "37i9dQZF1DX0jlEkg3XFMO", "name": "This Is Bruno Mars"},
+    "eminem": {"id": "37i9dQZF1DWY4xHQp97fN6", "name": "This Is Eminem"},
+    "kanye west": {"id": "37i9dQZF1DX0XqLqQQT5Cw", "name": "This Is Kanye West"},
+    "travis scott": {"id": "37i9dQZF1DX50vS4rNFqhj", "name": "This Is Travis Scott"},
+    "doja cat": {"id": "37i9dQZF1DX5UKzYVUxnUm", "name": "This Is Doja Cat"},
+    "the beatles": {"id": "37i9dQZF1DZ06evO2MVlpQ", "name": "This Is The Beatles"},
+    "michael jackson": {"id": "37i9dQZF1DZ06evO0E0UrV", "name": "This Is Michael Jackson"},
+    "metallica": {"id": "37i9dQZF1DX08mhnhv6g9b", "name": "This Is Metallica"},
+    "queen": {"id": "37i9dQZF1DXdxUH6sNtcDe", "name": "This Is Queen"},
+    "pink floyd": {"id": "37i9dQZF1DXa2F5aOPk2LD", "name": "This Is Pink Floyd"},
+    "nirvana": {"id": "37i9dQZF1DX1V6JdN1SWmt", "name": "This Is Nirvana"},
+    "radiohead": {"id": "37i9dQZF1DZ06evO1RuFPL", "name": "This Is Radiohead"},
+}
+
+
+def get_spotify_playlist_for_mood(desired_feeling: str):
+    """Get Spotify playlist data for a mood"""
+    playlist = SPOTIFY_MOOD_PLAYLISTS.get(desired_feeling)
+    if not playlist:
+        playlist = SPOTIFY_MOOD_PLAYLISTS["Happy"]
+
+    return {
+        "playlist_name": playlist["name"],
+        "playlist_id": playlist["id"],
+        "playlist_url": f"https://open.spotify.com/playlist/{playlist['id']}",
+        "description": playlist["description"],
+        "embed_url": f"https://open.spotify.com/embed/playlist/{playlist['id']}?utm_source=generator&theme=0"
+    }
+
+
+def get_spotify_artist_playlist(artist_name: str):
+    """Get Spotify 'This Is' playlist for an artist"""
+    artist_lower = artist_name.lower().strip()
+    playlist = SPOTIFY_ARTIST_PLAYLISTS.get(artist_lower)
+
+    if playlist:
+        return {
+            "playlist_name": playlist["name"],
+            "playlist_id": playlist["id"],
+            "playlist_url": f"https://open.spotify.com/playlist/{playlist['id']}",
+            "artist": artist_name,
+            "embed_url": f"https://open.spotify.com/embed/playlist/{playlist['id']}?utm_source=generator&theme=0"
+        }
+    else:
+        search_query = quote_plus(artist_name)
+        return {
+            "playlist_name": f"Search: {artist_name}",
+            "playlist_id": None,
+            "playlist_url": f"https://open.spotify.com/search/{search_query}",
+            "artist": artist_name,
+            "search_url": f"https://open.spotify.com/search/{search_query}"
+        }
+
+
+def search_movies_with_links(query: str = None, mood: str = None, limit: int = 3):
+    """Search movies and return full details with streaming links for Mr.DP 2.0"""
+    api_key = get_tmdb_key()
+    if not api_key:
+        return []
+
+    try:
+        if query:
+            r = requests.get(
+                f"{TMDB_BASE_URL}/search/movie",
+                params={"api_key": api_key, "query": query, "include_adult": "false"},
+                timeout=8
+            )
+        elif mood:
+            genre_map = FEELING_TO_GENRES.get(mood, {})
+            genre_ids = genre_map.get("prefer", [])[:2]
+
+            r = requests.get(
+                f"{TMDB_BASE_URL}/discover/movie",
+                params={
+                    "api_key": api_key,
+                    "sort_by": "popularity.desc",
+                    "vote_count.gte": 100,
+                    "with_genres": "|".join(map(str, genre_ids)) if genre_ids else "",
+                    "watch_region": "US",
+                    "with_watch_monetization_types": "flatrate|rent"
+                },
+                timeout=8
+            )
+        else:
+            r = requests.get(f"{TMDB_BASE_URL}/movie/popular", params={"api_key": api_key}, timeout=8)
+
+        r.raise_for_status()
+        results = r.json().get("results", [])[:limit]
+
+        enriched = []
+        for movie in results:
+            tmdb_id = movie.get("id")
+            title = movie.get("title", "")
+
+            providers, tmdb_watch_link = get_movie_providers(tmdb_id, "movie")
+            provider_links = []
+            for p in providers[:4]:
+                name = p.get("provider_name", "")
+                link = get_movie_deep_link(name, title, tmdb_id, "movie")
+                if link:
+                    provider_links.append({"name": name, "link": link})
+
+            trailer_key = get_movie_trailer(tmdb_id, "movie")
+
+            enriched.append({
+                "id": str(tmdb_id),
+                "title": title,
+                "year": movie.get("release_date", "")[:4],
+                "rating": round(movie.get("vote_average", 0), 1),
+                "poster": f"{TMDB_IMAGE_URL}{movie.get('poster_path')}" if movie.get("poster_path") else "",
+                "overview": movie.get("overview", "")[:200],
+                "providers": provider_links,
+                "trailer_key": trailer_key,
+                "tmdb_link": tmdb_watch_link
+            })
+
+        return enriched
+    except Exception as e:
+        print(f"Movie search error: {e}")
+        return []
+
+
+def ask_mr_dp_v2(user_prompt: str, chat_history: list = None, user_context: dict = None):
+    """Mr.DP 2.0 - Intelligent assistant with actual content and actions."""
+    if not user_prompt or not user_prompt.strip():
+        return None
+
+    if not openai_client:
+        return fallback_mr_dp_v2(user_prompt)
+
+    context_summary = ""
+    if user_context:
+        if user_context.get("queue"):
+            queue_titles = [q.get("title", "") for q in user_context["queue"][:5]]
+            context_summary += f"\nUser's queue: {', '.join(queue_titles)}"
+        if user_context.get("top_moods"):
+            top = user_context["top_moods"]
+            if top:
+                context_summary += f"\nUser's common moods: {top}"
+
+    current_mood = st.session_state.get("current_feeling", "")
+    desired_mood = st.session_state.get("desired_feeling", "")
+    if current_mood:
+        context_summary += f"\nCurrent selected mood: {current_mood}"
+    if desired_mood:
+        context_summary += f"\nDesired mood: {desired_mood}"
+
+    system_with_context = MR_DP_SYSTEM_PROMPT_V2
+    if context_summary:
+        system_with_context += f"\n\n## CURRENT USER CONTEXT\n{context_summary}"
+
+    messages = [{"role": "system", "content": system_with_context}]
+
+    if chat_history:
+        for msg in chat_history[-8:]:
+            role = "user" if msg["role"] == "user" else "assistant"
+            messages.append({"role": role, "content": msg["content"]})
+
+    messages.append({"role": "user", "content": user_prompt})
+
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=messages,
+            temperature=0.7,
+            max_tokens=1000,
+            response_format={"type": "json_object"}
+        )
+
+        content = response.choices[0].message.content.strip()
+        result = json.loads(content)
+        result = enrich_mr_dp_response(result, user_prompt)
+        return result
+
+    except Exception as e:
+        print(f"Mr.DP 2.0 error: {e}")
+        return fallback_mr_dp_v2(user_prompt)
+
+
+def enrich_mr_dp_response(response: dict, user_prompt: str):
+    """Enrich Mr.DP response with actual content data."""
+    enriched_content = []
+
+    for item in response.get("content", []):
+        item_type = item.get("type", "")
+        data = item.get("data", {})
+
+        if item_type == "movie":
+            title = data.get("title", "")
+            if title:
+                movies = search_movies_with_links(query=title, limit=1)
+                if movies:
+                    movies[0]["why"] = data.get("why", "Matches your vibe")
+                    data = movies[0]
+            enriched_content.append({"type": "movie", "data": data})
+
+        elif item_type == "music":
+            mood = data.get("mood", "Happy")
+            spotify_data = get_spotify_playlist_for_mood(mood)
+            spotify_data["description"] = data.get("description", spotify_data.get("description", ""))
+            enriched_content.append({"type": "music", "data": spotify_data})
+
+        elif item_type == "artist":
+            artist_name = data.get("artist", data.get("name", ""))
+            spotify_data = get_spotify_artist_playlist(artist_name)
+            enriched_content.append({"type": "music", "data": spotify_data})
+
+        else:
+            enriched_content.append(item)
+
+    response["content"] = enriched_content
+
+    if not response.get("message"):
+        response["message"] = "Here's what I found for you!"
+
+    if not response.get("mood_update"):
+        response["mood_update"] = {"current": None, "desired": None}
+
+    if not response.get("actions"):
+        response["actions"] = []
+
+    return response
+
+
+def fallback_mr_dp_v2(user_prompt: str):
+    """Fallback when API fails - still returns structured content."""
+    t = user_prompt.lower()
+
+    is_music = any(k in t for k in ["music", "song", "playlist", "spotify", "play"])
+    is_stressed = any(k in t for k in ["stress", "anxious", "overwhelm", "calm", "relax"])
+    is_greeting = any(k in t for k in ["hi", "hello", "hey", "howdy"])
+
+    content = []
+    actions = []
+    message = "Let me find something for you!"
+    mood_update = {"current": None, "desired": "Entertained"}
+
+    if is_greeting:
+        message = "Hey! 👋 I'm Mr.DP, your dopamine curator. What vibe are you chasing today?"
+        mood_update = {"current": None, "desired": None}
+
+    elif is_stressed:
+        message = "I hear you. Let's bring some calm 💜"
+        mood_update = {"current": "Stressed", "desired": "Calm"}
+
+        movies = search_movies_with_links(mood="Calm", limit=1)
+        if movies:
+            movies[0]["why"] = "Gentle visuals to help you decompress"
+            content.append({"type": "movie", "data": movies[0]})
+
+        spotify = get_spotify_playlist_for_mood("Calm")
+        content.append({"type": "music", "data": spotify})
+        actions.append({"type": "sos", "label": "🆘 SOS Calm Mode", "data": {}})
+
+    elif is_music:
+        for pattern in ["play ", "listen to ", "put on "]:
+            if pattern in t:
+                artist = t.split(pattern)[1].split()[0:3]
+                artist_name = " ".join(artist).strip(".,!?")
+                message = f"Loading up {artist_name.title()}! 🎤"
+                spotify = get_spotify_artist_playlist(artist_name)
+                content.append({"type": "music", "data": spotify})
+                break
+        else:
+            message = "Here's some tunes for your vibe! 🎵"
+            spotify = get_spotify_playlist_for_mood("Happy")
+            content.append({"type": "music", "data": spotify})
+
+    else:
+        movies = search_movies_with_links(limit=2)
+        for m in movies:
+            content.append({"type": "movie", "data": m})
+
+    return {
+        "message": message,
+        "content": content,
+        "actions": actions,
+        "mood_update": mood_update
+    }
+
+
+def render_mr_dp_response(response: dict):
+    """Render Mr.DP 2.0 response with actual content cards and actions."""
+    if not response:
+        return
+
+    for item in response.get("content", []):
+        item_type = item.get("type", "")
+        data = item.get("data", {})
+
+        if item_type == "movie":
+            render_mr_dp_movie_card(data)
+        elif item_type == "music":
+            render_mr_dp_music_card(data)
+
+    actions = response.get("actions", [])
+    if actions:
+        cols = st.columns(len(actions))
+        for idx, action in enumerate(actions):
+            with cols[idx]:
+                action_type = action.get("type", "")
+                label = action.get("label", "Action")
+                action_data = action.get("data", {})
+
+                if action_type == "sos":
+                    if st.button(label, key=f"mr_dp_sos_{idx}", use_container_width=True):
+                        st.session_state.sos_mode = True
+                        st.rerun()
+
+                elif action_type == "focus":
+                    if st.button(label, key=f"mr_dp_focus_{idx}", use_container_width=True):
+                        from focus_timer import start_focus_session
+                        start_focus_session(45, 10)
+                        st.toast("Focus session started!")
+                        st.rerun()
+
+                elif action_type == "time_pick":
+                    if st.button(label, key=f"mr_dp_time_{idx}", use_container_width=True):
+                        st.session_state.time_available = action_data.get("minutes", 30)
+                        st.toast(f"Showing {action_data.get('minutes', 30)}-minute picks!")
+                        st.rerun()
+
+
+def render_mr_dp_movie_card(data: dict):
+    """Render a movie card from Mr.DP response"""
+    if not data or not data.get("title"):
+        return
+
+    title = data.get("title", "")
+    year = data.get("year", "")
+    rating = data.get("rating", 0)
+    poster = data.get("poster", "")
+    overview = data.get("overview", "")
+    why = data.get("why", "")
+    providers = data.get("providers", [])
+
+    st.markdown(f"""
+    <div style="
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 16px;
+        padding: 16px;
+        margin: 12px 0;
+        display: flex;
+        gap: 16px;
+    ">
+        <img src="{safe(poster)}" style="width: 100px; border-radius: 8px;" onerror="this.style.display='none'">
+        <div style="flex: 1;">
+            <div style="font-weight: 600; font-size: 1.1rem;">{safe(title)} {f'({year})' if year else ''}</div>
+            <div style="color: #ffd700; font-size: 0.85rem;">⭐ {rating}</div>
+            <div style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin: 8px 0;">{safe(overview[:150])}...</div>
+            {f'<div style="color: #8b5cf6; font-size: 0.85rem; font-style: italic;">💡 {safe(why)}</div>' if why else ''}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if providers:
+        cols = st.columns(min(len(providers) + 1, 5))
+        for idx, p in enumerate(providers[:4]):
+            with cols[idx]:
+                st.link_button(f"▶️ {p['name']}", p['link'], use_container_width=True)
+
+
+def render_mr_dp_music_card(data: dict):
+    """Render a music card with Spotify embed"""
+    if not data:
+        return
+
+    name = data.get("playlist_name", "Playlist")
+    description = data.get("description", "")
+    playlist_url = data.get("playlist_url", "")
+    embed_url = data.get("embed_url", "")
+
+    st.markdown(f"""
+    <div style="
+        background: linear-gradient(135deg, rgba(29,185,84,0.1), rgba(29,185,84,0.05));
+        border: 1px solid rgba(29,185,84,0.3);
+        border-radius: 16px;
+        padding: 16px;
+        margin: 12px 0;
+    ">
+        <div style="font-weight: 600; font-size: 1.1rem; color: #1DB954;">🎵 {safe(name)}</div>
+        <div style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin: 4px 0;">{safe(description)}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if embed_url:
+        components.html(f'''
+        <iframe style="border-radius:12px"
+            src="{embed_url}"
+            width="100%"
+            height="152"
+            frameBorder="0"
+            allowfullscreen=""
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy">
+        </iframe>
+        ''', height=160)
+
+    if playlist_url:
+        st.link_button("🎧 Open in Spotify", playlist_url, use_container_width=True)
+
+
+def ask_mr_dp_smart(user_prompt, chat_history=None, user_context=None):
+    """Smart router - uses v2 if enabled, falls back to v1"""
+    if st.session_state.get("use_mr_dp_v2", True):
+        return ask_mr_dp_v2(user_prompt, chat_history, user_context)
+    else:
+        return ask_mr_dp(user_prompt, chat_history)
+
+
+# --------------------------------------------------
 # 10. GAMIFICATION ENGINE
 # --------------------------------------------------
 def get_dopamine_points():
@@ -1864,6 +2448,8 @@ if "init" not in st.session_state:
         "mr_dp_chat_history": [],
         "mr_dp_open": False,
         "mr_dp_thinking": False,
+        "mr_dp_v2_response": None,  # Mr.DP 2.0 rich response storage
+        "use_mr_dp_v2": True,  # Feature flag for Mr.DP 2.0
         
         # Quick Hit
         "quick_hit": None,
@@ -3472,7 +4058,16 @@ def render_sidebar():
             st.session_state.desired_feeling = new_desired
             st.session_state.movies_feed = []
             add_dopamine_points(5, "Mood updated!")
-        
+            # Log mood selection to history
+            if st.session_state.get('db_user_id') and SUPABASE_ENABLED:
+                log_mood_selection(
+                    supabase,
+                    st.session_state.db_user_id,
+                    st.session_state.current_feeling,
+                    new_desired,
+                    source='manual'
+                )
+
         st.markdown("---")
         
         # QUICK HIT
@@ -3481,10 +4076,47 @@ def render_sidebar():
             st.session_state.nlp_results = []
             st.session_state.nlp_last_prompt = ""
             st.session_state.search_results = []
+            # Log behavior
+            if st.session_state.get('db_user_id') and SUPABASE_ENABLED:
+                log_user_action(supabase, st.session_state.db_user_id, 'quick_hit')
             st.rerun()
-        
+
         st.markdown("---")
-        
+
+        # SOS CALM MODE
+        render_sos_button()
+
+        st.markdown("---")
+
+        # FOCUS TIMER
+        render_focus_timer_sidebar()
+
+        st.markdown("---")
+
+        # WATCH QUEUE
+        st.markdown("#### 📋 Watch Queue")
+        if st.session_state.get('db_user_id') and SUPABASE_ENABLED:
+            queue = get_watch_queue(supabase, st.session_state.db_user_id, status='queued', limit=3)
+            if queue:
+                for item in queue:
+                    st.markdown(f"• {item.get('title', 'Unknown')[:30]}")
+                if st.button("View All Queue", key="view_queue_btn", use_container_width=True):
+                    st.session_state.show_queue_page = True
+                    st.rerun()
+            else:
+                st.caption("Your queue is empty")
+        else:
+            st.caption("Log in to save content")
+
+        st.markdown("---")
+
+        # TIME OF DAY SUGGESTION
+        time_suggestion = get_time_of_day_suggestions()
+        st.markdown(f"#### {time_suggestion['emoji']} {time_suggestion['period']}")
+        st.caption(time_suggestion['suggestion'])
+
+        st.markdown("---")
+
         # SHARE
         st.markdown("#### 📤 Share & Invite")
         ref_code = st.session_state.referral_code
@@ -3512,12 +4144,23 @@ def render_sidebar():
             st.session_state.do_logout = True
             st.rerun()
         
-        st.caption("v34.0 • Supabase Auth 🔐")
+        st.caption("v36.0 • Mr.DP 2.0 Intelligence")
 
 # --------------------------------------------------
 # 17. MAIN CONTENT
 # --------------------------------------------------
 def render_main():
+    # Initialize focus timer session state
+    init_focus_session_state()
+
+    # Check for SOS Calm Mode overlay (takes over entire screen)
+    if render_sos_overlay():
+        return  # SOS mode is active, skip normal content
+
+    # Check for break reminder overlay
+    if render_break_reminder_overlay():
+        return  # Break reminder showing, skip normal content
+
     # Check if we need to scroll to top (after Mr.DP response)
     if st.session_state.get("scroll_to_top"):
         # Use components.html with LONGER delays to beat Streamlit's scroll
@@ -3619,7 +4262,21 @@ def render_main():
                 render_movie_card(movie)
         st.markdown("---")
     
-    # MR.DP RESULTS - Show when there are results from chat
+    # MR.DP 2.0 CONTENT - Show rich content cards from v2 response
+    if st.session_state.get("mr_dp_v2_response") and st.session_state.mr_dp_v2_response.get("content"):
+        v2_response = st.session_state.mr_dp_v2_response
+        st.markdown("""
+        <div id="mr-dp-content"></div>
+        <div style="margin-top:20px;padding:20px;background:linear-gradient(135deg, rgba(139,92,246,0.08), rgba(6,182,212,0.05));border:1px solid rgba(139,92,246,0.2);border-radius:16px;">
+            <div style="font-size:1.3rem;font-weight:600;color:#a78bfa;margin-bottom:12px;">🧠 Mr.DP's Picks for You</div>
+        </div>
+        """, unsafe_allow_html=True)
+        render_mr_dp_response(v2_response)
+        # Clear after rendering to avoid showing stale content
+        st.session_state.mr_dp_v2_response = None
+        st.markdown("---")
+
+    # MR.DP RESULTS - Show when there are results from chat (v1 compatibility)
     if st.session_state.mr_dp_results:
         response = st.session_state.mr_dp_response or {}
         current_f = response.get("current_feeling", "")
@@ -4309,25 +4966,65 @@ else:
                 break
 
         if last_user_msg:
-            response = ask_mr_dp(last_user_msg, chat_history=st.session_state.mr_dp_chat_history)
+            # Get user context for Mr.DP 2.0 personalization
+            user_context = None
+            user_id = st.session_state.get("db_user_id")
+            if user_id and SUPABASE_ENABLED:
+                try:
+                    user_context = {
+                        "queue": get_watch_queue(supabase, user_id, status='queued', limit=5),
+                        "top_moods": get_top_moods(supabase, user_id, 'desired', days=30, limit=3)
+                    }
+                except:
+                    user_context = None
+
+            # Use Mr.DP 2.0 (smart router will fallback to v1 if needed)
+            response = ask_mr_dp_smart(last_user_msg, chat_history=st.session_state.mr_dp_chat_history, user_context=user_context)
 
             if response:
+                # Store the full v2 response for rendering
+                st.session_state.mr_dp_v2_response = response
+
                 st.session_state.mr_dp_chat_history.append({
                     "role": "assistant",
-                    "content": response["message"]
+                    "content": response.get("message", "Here's what I found!")
                 })
-                st.session_state.current_feeling = response.get("current_feeling")
-                st.session_state.desired_feeling = response.get("desired_feeling")
-                st.session_state.mr_dp_response = response
-                st.session_state.mr_dp_results = mr_dp_search(response)
+
+                # Update mood state from v2 response
+                mood_update = response.get("mood_update", {})
+                if mood_update.get("current"):
+                    st.session_state.current_feeling = mood_update["current"]
+                if mood_update.get("desired"):
+                    st.session_state.desired_feeling = mood_update["desired"]
+
+                # Also store for v1 compatibility
+                st.session_state.mr_dp_response = {
+                    "message": response.get("message", ""),
+                    "current_feeling": mood_update.get("current"),
+                    "desired_feeling": mood_update.get("desired"),
+                    "media_type": "movies",
+                    "mode": "discover",
+                    "search_query": "",
+                    "genres": ""
+                }
+                st.session_state.mr_dp_results = mr_dp_search(st.session_state.mr_dp_response)
+
                 add_dopamine_points(10, "Chatted with Mr.DP!")
+
+                # Log mood selection if detected
+                if user_id and SUPABASE_ENABLED and mood_update.get("current"):
+                    log_mood_selection(
+                        supabase, user_id,
+                        mood_update.get("current", ""),
+                        mood_update.get("desired", ""),
+                        source='mr_dp'
+                    )
 
                 # Increment Mr.DP usage counter for non-premium users
                 user = st.session_state.get("user", {})
-                user_id = user.get("id")
-                if user_id and supabase and not user.get("is_premium"):
-                    new_count = increment_mr_dp_usage(user_id)
-                    # Update session state with new count
+                uid = user.get("id")
+                if uid and supabase and not user.get("is_premium"):
+                    new_count = increment_mr_dp_usage(uid)
                     st.session_state.user["mr_dp_uses"] = new_count
             else:
                 st.session_state.mr_dp_chat_history.append({
