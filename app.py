@@ -42,6 +42,28 @@ from streamlit_javascript import st_javascript
 # Mr.DP Floating Chat Widget
 from mr_dp_floating import render_floating_mr_dp
 
+# Mr.DP Intelligence System
+from mr_dp_intelligence import (
+    # Conversational AI
+    chat_with_mr_dp, get_user_context, init_openai_client,
+    # Contextual Awareness
+    get_contextual_state, get_contextual_greeting, get_contextual_suggestion, get_contextual_expression,
+    # Behavioral Learning
+    init_behavior_tracking, track_scroll_event, track_recommendation_seen,
+    track_recommendation_clicked, track_quick_hit_use, detect_decision_fatigue,
+    get_browsing_duration_minutes, save_behavior_to_supabase, get_user_patterns,
+    # ADHD Coach
+    get_adhd_intervention, get_random_adhd_tip, get_encouragement,
+    # Gamification
+    init_gamification, add_xp, check_achievement, get_current_evolution,
+    get_next_evolution, get_available_accessories, equip_accessory,
+    save_gamification_to_supabase, load_gamification_from_supabase,
+    MR_DP_ACHIEVEMENTS, MR_DP_EVOLUTIONS, MR_DP_ACCESSORIES,
+    # UI Components
+    render_mr_dp_chat_interface, render_mr_dp_status_card,
+    render_achievements_display, render_intervention_popup
+)
+
 # Subscription utilities (NEW - added for premium features)
 from subscription_utils import check_can_use, increment_usage, is_premium, show_usage_sidebar
 from stripe_utils import render_pricing_page, create_checkout_url, SUBSCRIPTION_PLANS
@@ -4338,6 +4360,325 @@ def purchase_item(user_id: str, item_id: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
+# --------------------------------------------------
+# MR.DP COMPANION PAGE
+# --------------------------------------------------
+def render_mr_dp_companion_page():
+    """Render the full Mr.DP Companion page with chat, evolution, and achievements"""
+
+    st.markdown("""
+    <div class="section-header">
+        <span class="section-icon">🟣</span>
+        <h2 class="section-title">Mr.DP Companion</h2>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Get current state
+    init_gamification()
+    evolution = get_current_evolution()
+    next_evo = get_next_evolution()
+    xp = st.session_state.mr_dp_game.get("xp", 0)
+    accessory = st.session_state.mr_dp_game.get("accessory", "none")
+    achievements = st.session_state.mr_dp_game.get("achievements", [])
+
+    # Top section: Evolution Status + Mr.DP Display
+    col1, col2 = st.columns([1, 2])
+
+    with col1:
+        # Large Mr.DP display with current expression
+        expression = get_contextual_expression()
+        st.markdown(f"""
+        <div style="text-align: center; padding: 20px;">
+            <div style="animation: float 3s ease-in-out infinite;">
+                {get_mr_dp_svg(expression, 150)}
+            </div>
+            <style>
+                @keyframes float {{
+                    0%, 100% {{ transform: translateY(0); }}
+                    50% {{ transform: translateY(-10px); }}
+                }}
+            </style>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Accessory indicator
+        if accessory != "none":
+            acc_data = MR_DP_ACCESSORIES.get(accessory, {})
+            st.markdown(f"<p style='text-align: center; font-size: 0.9rem;'>Wearing: {acc_data.get('icon', '')} {acc_data.get('name', '')}</p>", unsafe_allow_html=True)
+
+    with col2:
+        # Evolution card
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, rgba(138, 86, 226, 0.2), rgba(0, 201, 167, 0.15));
+                    border-radius: 16px; padding: 20px; margin-bottom: 16px;
+                    border: 1px solid rgba(138, 86, 226, 0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div>
+                    <div style="font-size: 1.4rem; font-weight: 700;">{evolution['name']}</div>
+                    <div style="color: rgba(255,255,255,0.6); font-size: 0.9rem;">{evolution['description']}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 2rem; font-weight: 700; color: #00C9A7;">✨ {xp}</div>
+                    <div style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">Total XP</div>
+                </div>
+            </div>
+            {"<div style='margin-top: 16px;'><div style='color: rgba(255,255,255,0.6); font-size: 0.85rem; margin-bottom: 4px;'>Next Evolution: " + next_evo['name'] + " (" + str(next_evo['xp_needed']) + " XP to go)</div><div style='background: rgba(255,255,255,0.1); border-radius: 8px; height: 8px; overflow: hidden;'><div style='background: linear-gradient(90deg, #8A56E2, #00C9A7); height: 100%; width: " + str(min(100, (xp / next_evo['xp_required']) * 100)) + "%;'></div></div></div>" if next_evo else "<div style='color: gold; margin-top: 16px;'>🏆 Maximum Evolution Reached!</div>"}
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Quick stats
+        stat_cols = st.columns(3)
+        with stat_cols[0]:
+            st.metric("Achievements", f"{len(achievements)}/{len(MR_DP_ACHIEVEMENTS)}")
+        with stat_cols[1]:
+            st.metric("Conversations", st.session_state.mr_dp_game.get("conversations_count", 0))
+        with stat_cols[2]:
+            st.metric("Quick Hits", st.session_state.mr_dp_game.get("quick_hit_uses", 0))
+
+    st.markdown("---")
+
+    # Tabs for different sections
+    tab1, tab2, tab3, tab4 = st.tabs(["💬 Chat", "🏆 Achievements", "👕 Accessories", "📊 Insights"])
+
+    with tab1:
+        # Chat interface
+        st.markdown("### Talk to Mr.DP")
+        st.markdown("<p style='color: rgba(255,255,255,0.6);'>Ask for recommendations, get ADHD tips, or just chat!</p>", unsafe_allow_html=True)
+
+        # Contextual greeting
+        greeting, expr = get_contextual_greeting()
+        st.markdown(f"""
+        <div style="background: rgba(138, 86, 226, 0.15); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px;">
+            <span style="font-weight: 600;">🟣 Mr.DP:</span> {greeting}
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Chat history
+        if "mr_dp_companion_chat" not in st.session_state:
+            st.session_state.mr_dp_companion_chat = []
+
+        for msg in st.session_state.mr_dp_companion_chat[-8:]:
+            if msg["role"] == "assistant":
+                st.markdown(f"""
+                <div style="background: rgba(138, 86, 226, 0.15); border-radius: 12px; padding: 12px 16px; margin-bottom: 8px;">
+                    <span style="font-weight: 600;">🟣 Mr.DP:</span> {msg["content"]}
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                <div style="background: rgba(0, 201, 167, 0.15); border-radius: 12px; padding: 12px 16px; margin-bottom: 8px; text-align: right;">
+                    {msg["content"]}
+                </div>
+                """, unsafe_allow_html=True)
+
+        # Quick prompts
+        st.markdown("**Quick prompts:**")
+        prompt_cols = st.columns(4)
+        quick_prompts = [
+            "Can't decide what to watch",
+            "Need something short",
+            "Feeling overwhelmed",
+            "Give me an ADHD tip"
+        ]
+        for i, prompt in enumerate(quick_prompts):
+            with prompt_cols[i]:
+                if st.button(prompt, key=f"quick_prompt_{i}", use_container_width=True):
+                    st.session_state.mr_dp_companion_input = prompt
+                    st.rerun()
+
+        # Chat input
+        user_input = st.text_input(
+            "Message Mr.DP...",
+            key="mr_dp_companion_input_field",
+            value=st.session_state.get("mr_dp_companion_input", ""),
+            label_visibility="collapsed"
+        )
+
+        if st.button("Send", key="send_mr_dp_companion", type="primary"):
+            if user_input:
+                # Clear the stored quick prompt
+                st.session_state.mr_dp_companion_input = ""
+
+                # Add user message
+                st.session_state.mr_dp_companion_chat.append({
+                    "role": "user",
+                    "content": user_input
+                })
+
+                # Get user data for context
+                user_data = {
+                    "current_mood": st.session_state.get("current_feeling"),
+                    "desired_mood": st.session_state.get("desired_feeling"),
+                    "streak": st.session_state.get("streak_days", 0)
+                }
+
+                # Get response
+                response, expr = chat_with_mr_dp(
+                    user_input,
+                    st.session_state.mr_dp_companion_chat,
+                    user_data
+                )
+
+                # Add response
+                st.session_state.mr_dp_companion_chat.append({
+                    "role": "assistant",
+                    "content": response
+                })
+
+                # Award XP
+                add_xp(3, "Chat with Mr.DP")
+                st.session_state.mr_dp_game["conversations_count"] = st.session_state.mr_dp_game.get("conversations_count", 0) + 1
+
+                # Check chatty friend achievement
+                if st.session_state.mr_dp_game["conversations_count"] >= 20:
+                    check_achievement("chatty_friend")
+
+                st.rerun()
+
+        # ADHD Tip of the moment
+        st.markdown("---")
+        st.markdown("### 💡 ADHD Tip")
+        tip = get_random_adhd_tip()
+        st.info(tip)
+
+    with tab2:
+        # Achievements display
+        st.markdown("### Your Achievements")
+        st.markdown(f"<p style='color: rgba(255,255,255,0.6);'>Unlocked {len(achievements)} of {len(MR_DP_ACHIEVEMENTS)} achievements</p>", unsafe_allow_html=True)
+
+        # Grid of achievements
+        ach_cols = st.columns(3)
+        for i, (ach_id, ach_data) in enumerate(MR_DP_ACHIEVEMENTS.items()):
+            with ach_cols[i % 3]:
+                is_earned = ach_id in achievements
+                opacity = "1" if is_earned else "0.3"
+                border_color = "#00C9A7" if is_earned else "rgba(255,255,255,0.1)"
+
+                st.markdown(f"""
+                <div style="
+                    background: rgba(255,255,255,0.03);
+                    border: 2px solid {border_color};
+                    border-radius: 12px;
+                    padding: 16px;
+                    text-align: center;
+                    margin-bottom: 12px;
+                    opacity: {opacity};
+                ">
+                    <div style="font-size: 2.5rem; margin-bottom: 8px;">{ach_data['icon']}</div>
+                    <div style="font-weight: 600; margin-bottom: 4px;">{ach_data['name']}</div>
+                    <div style="color: rgba(255,255,255,0.5); font-size: 0.8rem; margin-bottom: 8px;">{ach_data['description']}</div>
+                    <div style="color: #00C9A7; font-size: 0.85rem;">+{ach_data['xp']} XP</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+    with tab3:
+        # Accessories
+        st.markdown("### Customize Mr.DP")
+        st.markdown("<p style='color: rgba(255,255,255,0.6);'>Unlock accessories by earning XP!</p>", unsafe_allow_html=True)
+
+        available = get_available_accessories()
+        current_accessory = st.session_state.mr_dp_game.get("accessory", "none")
+
+        acc_cols = st.columns(4)
+        for i, (acc_id, acc_data) in enumerate(MR_DP_ACCESSORIES.items()):
+            with acc_cols[i % 4]:
+                is_available = xp >= acc_data["xp_required"]
+                is_equipped = acc_id == current_accessory
+
+                bg_color = "rgba(0, 201, 167, 0.15)" if is_equipped else "rgba(255,255,255,0.03)"
+                border_color = "#00C9A7" if is_equipped else ("rgba(138, 86, 226, 0.3)" if is_available else "rgba(255,255,255,0.1)")
+                opacity = "1" if is_available else "0.4"
+
+                st.markdown(f"""
+                <div style="
+                    background: {bg_color};
+                    border: 2px solid {border_color};
+                    border-radius: 12px;
+                    padding: 12px;
+                    text-align: center;
+                    margin-bottom: 8px;
+                    opacity: {opacity};
+                ">
+                    <div style="font-size: 2rem; margin-bottom: 4px;">{acc_data.get('icon', '🟣')}</div>
+                    <div style="font-weight: 600; font-size: 0.85rem;">{acc_data['name']}</div>
+                    <div style="color: rgba(255,255,255,0.5); font-size: 0.75rem;">
+                        {f'Equipped' if is_equipped else (f'{acc_data["xp_required"]} XP' if not is_available else 'Available')}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                if is_available and not is_equipped and acc_id != "none":
+                    if st.button("Equip", key=f"equip_{acc_id}", use_container_width=True):
+                        equip_accessory(acc_id)
+                        st.rerun()
+                elif is_equipped and acc_id != "none":
+                    if st.button("Remove", key=f"remove_{acc_id}", use_container_width=True):
+                        equip_accessory("none")
+                        st.rerun()
+
+    with tab4:
+        # Insights from behavioral learning
+        st.markdown("### Your Watching Insights")
+
+        # Session stats
+        duration = get_browsing_duration_minutes()
+        st.markdown(f"""
+        <div style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+            <div style="font-weight: 600; margin-bottom: 12px;">Current Session</div>
+            <div style="display: flex; gap: 24px;">
+                <div>
+                    <div style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">Duration</div>
+                    <div style="font-size: 1.2rem; font-weight: 600;">{int(duration)} min</div>
+                </div>
+                <div>
+                    <div style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">Decision Fatigue</div>
+                    <div style="font-size: 1.2rem; font-weight: 600; color: {'#ef4444' if detect_decision_fatigue() else '#10b981'};">
+                        {'Detected' if detect_decision_fatigue() else 'None'}
+                    </div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Check for intervention
+        intervention = get_adhd_intervention()
+        if intervention:
+            st.warning(f"**Mr.DP noticed:** {intervention['message']}")
+            if st.button(intervention["action_label"], key="insight_intervention", type="primary"):
+                if intervention["action"] == "quick_hit":
+                    st.session_state.quick_hit = get_quick_hit()
+                st.rerun()
+
+        # Encouragement
+        encouragement, expr = get_encouragement()
+        st.success(f"💜 {encouragement}")
+
+        # Evolution roadmap
+        st.markdown("### Evolution Roadmap")
+        for evo_key, evo_data in MR_DP_EVOLUTIONS.items():
+            is_current = evo_key == evolution["key"]
+            is_achieved = xp >= evo_data["xp_required"]
+
+            status_color = "#00C9A7" if is_achieved else ("rgba(138, 86, 226, 0.8)" if is_current else "rgba(255,255,255,0.3)")
+            status_icon = "✓" if is_achieved else ("→" if is_current else "○")
+
+            st.markdown(f"""
+            <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-left: 3px solid {status_color}; padding-left: 12px; margin-bottom: 4px;">
+                <span style="color: {status_color}; font-weight: bold;">{status_icon}</span>
+                <div>
+                    <span style="font-weight: {'600' if is_current else '400'}; color: {status_color};">{evo_data['name']}</span>
+                    <span style="color: rgba(255,255,255,0.4); font-size: 0.8rem; margin-left: 8px;">{evo_data['xp_required']} XP</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # Save progress if logged in
+    user_id = st.session_state.get("db_user_id")
+    if user_id and SUPABASE_ENABLED:
+        save_gamification_to_supabase(supabase, user_id)
+        save_behavior_to_supabase(supabase, user_id)
+
+
 def render_rewards_shop():
     """Render the rewards shop"""
     user_id = st.session_state.get("db_user_id")
@@ -5036,6 +5377,10 @@ if "init" not in st.session_state:
 # Initialize analytics session
 init_analytics_session()
 
+# Initialize Mr.DP Intelligence Systems
+init_behavior_tracking()
+init_gamification()
+
 # Generate referral code (fallback)
 if not st.session_state.get("referral_code"):
     st.session_state.referral_code = hashlib.md5(str(random.random()).encode()).hexdigest()[:8].upper()
@@ -5123,6 +5468,9 @@ if not st.session_state.get("user"):
         }
         if user_id:
             st.session_state.db_user_id = user_id
+            # Load Mr.DP gamification progress
+            if SUPABASE_ENABLED:
+                load_gamification_from_supabase(supabase, user_id)
         st.query_params.clear()
         st.rerun()
 
@@ -5179,6 +5527,9 @@ if SUPABASE_ENABLED and not st.session_state.get("user"):
             if result.get("success"):
                 st.session_state.auth_success = result.get("message", "Welcome! Referral bonus applied!")
             st.session_state.pending_referral_code = None
+
+        # Load Mr.DP gamification progress
+        load_gamification_from_supabase(supabase, user.id)
 
         st.rerun()
 
@@ -8220,6 +8571,28 @@ def render_sidebar():
                 st.session_state.quick_hit = None
                 st.rerun()
 
+        # Mr.DP Companion
+        st.markdown("---")
+        st.markdown("#### 🟣 Mr.DP Companion")
+
+        # Show Mr.DP evolution status mini card
+        evo = get_current_evolution()
+        next_evo = get_next_evolution()
+        xp = st.session_state.get("mr_dp_game", {}).get("xp", 0)
+
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, rgba(138, 86, 226, 0.15), rgba(0, 201, 167, 0.1));
+                    border-radius: 12px; padding: 10px; margin-bottom: 8px;">
+            <div style="font-size: 0.85rem; font-weight: 600;">{evo['name']} <span style="color: #00C9A7;">✨ {xp} XP</span></div>
+            {f'<div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">Next: {next_evo["name"]} ({next_evo["xp_needed"]} XP)</div>' if next_evo else ''}
+        </div>
+        """, unsafe_allow_html=True)
+
+        if st.button("🟣 Chat with Mr.DP", use_container_width=True, key="nav_mr_dp",
+                    type="primary" if st.session_state.active_page == "🟣 Mr.DP" else "secondary"):
+            st.session_state.active_page = "🟣 Mr.DP"
+            st.rerun()
+
         # Phase 6: Gamification Pages
         st.markdown("---")
         st.markdown(f"#### 🎮 {t('gamification')}")
@@ -8304,9 +8677,18 @@ def render_sidebar():
                 )
             # Track for analytics
             track_mood_selection(st.session_state.current_feeling, new_desired, st.session_state.get("db_user_id"))
+            # Mr.DP Intelligence: Award XP for mood logging
+            add_xp(5, "Logged mood!")
+            # Track unique moods for achievement
+            if "mr_dp_game" in st.session_state:
+                st.session_state.mr_dp_game.setdefault("unique_moods", set())
+                st.session_state.mr_dp_game["unique_moods"].add(st.session_state.current_feeling)
+                st.session_state.mr_dp_game["unique_moods"].add(new_desired)
+                if len(st.session_state.mr_dp_game["unique_moods"]) >= 10:
+                    check_achievement("mood_master")
 
         st.markdown("---")
-        
+
         # QUICK HIT
         if st.button(f"⚡ {t('quick_dope_hit')}", use_container_width=True, key="quick_hit_sidebar", type="primary"):
             st.session_state.quick_hit = get_quick_hit()
@@ -8318,6 +8700,12 @@ def render_sidebar():
                 log_user_action(supabase, st.session_state.db_user_id, 'quick_hit')
             # Track feature usage
             track_feature_usage("quick_dope_hit", st.session_state.get("db_user_id"))
+            # Mr.DP Intelligence: Track quick hit and award XP
+            track_quick_hit_use()
+            add_xp(10, "Used Quick Hit!")
+            # Check quick picker achievement
+            if st.session_state.get("mr_dp_game", {}).get("quick_hit_uses", 0) >= 5:
+                check_achievement("quick_picker")
             st.rerun()
 
         st.markdown("---")
@@ -8493,7 +8881,49 @@ def render_main():
             st.rerun()
     
     st.markdown("---")
-    
+
+    # MR.DP ADHD INTERVENTION - Show when decision fatigue detected
+    intervention = get_adhd_intervention()
+    if intervention and not st.session_state.get("intervention_dismissed"):
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, rgba(138, 86, 226, 0.2), rgba(0, 201, 167, 0.15));
+                    border-radius: 16px; padding: 16px 20px; margin-bottom: 16px;
+                    border: 1px solid rgba(138, 86, 226, 0.3);
+                    animation: pulse-glow 2s ease-in-out infinite;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="font-size: 2rem;">🟣</div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; color: #a78bfa; margin-bottom: 4px;">Mr.DP noticed something...</div>
+                    <div style="color: rgba(255,255,255,0.9); font-size: 0.95rem;">{intervention['message']}</div>
+                </div>
+            </div>
+        </div>
+        <style>
+            @keyframes pulse-glow {{
+                0%, 100% {{ box-shadow: 0 0 10px rgba(138, 86, 226, 0.2); }}
+                50% {{ box-shadow: 0 0 20px rgba(138, 86, 226, 0.4); }}
+            }}
+        </style>
+        """, unsafe_allow_html=True)
+
+        int_col1, int_col2 = st.columns(2)
+        with int_col1:
+            if st.button(f"✨ {intervention['action_label']}", key="intervention_action", type="primary", use_container_width=True):
+                if intervention["action"] == "quick_hit":
+                    st.session_state.quick_hit = get_quick_hit()
+                    track_quick_hit_use()
+                    add_xp(15, "Accepted Mr.DP's help!")
+                elif intervention["action"] == "top_3":
+                    st.session_state.show_top_3 = True
+                st.session_state.intervention_dismissed = True
+                st.rerun()
+        with int_col2:
+            if st.button("Maybe later", key="intervention_dismiss", use_container_width=True):
+                st.session_state.intervention_dismissed = True
+                st.rerun()
+
+        st.markdown("---")
+
     # QUICK HIT
     if st.session_state.quick_hit:
         st.markdown("<div class='section-header'><span class='section-icon'>⚡</span><h2 class='section-title'>Your Perfect Match</h2></div>", unsafe_allow_html=True)
@@ -9146,6 +9576,9 @@ def render_main():
 
     elif page == "💎 Pricing":
         render_pricing_page()
+
+    elif page == "🟣 Mr.DP":
+        render_mr_dp_companion_page()
 
     # SHARE
     st.markdown("---")
