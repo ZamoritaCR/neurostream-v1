@@ -222,6 +222,55 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS daily_digest BOOLEAN DEFAULT false
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS onboarding_complete BOOLEAN DEFAULT false;
 
 -- ============================================
+-- 8. REFERRALS TABLE (Phase 5)
+-- Track referral relationships and rewards
+-- ============================================
+CREATE TABLE IF NOT EXISTS referrals (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    referrer_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    referred_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    referral_code TEXT NOT NULL,
+    status TEXT DEFAULT 'pending', -- 'pending', 'completed', 'rewarded'
+    reward_given BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    completed_at TIMESTAMPTZ,
+    UNIQUE(referred_id) -- Each user can only be referred once
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_referrals_referrer_id ON referrals(referrer_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_referred_id ON referrals(referred_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_code ON referrals(referral_code);
+
+-- RLS Policy (drop first to avoid conflicts)
+ALTER TABLE referrals ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own referrals" ON referrals;
+DROP POLICY IF EXISTS "Users can view referrals they made" ON referrals;
+DROP POLICY IF EXISTS "Users can insert referrals" ON referrals;
+
+CREATE POLICY "Users can view own referrals"
+    ON referrals FOR SELECT
+    USING (auth.uid() = referred_id);
+
+CREATE POLICY "Users can view referrals they made"
+    ON referrals FOR SELECT
+    USING (auth.uid() = referrer_id);
+
+CREATE POLICY "Users can insert referrals"
+    ON referrals FOR INSERT
+    WITH CHECK (auth.uid() = referred_id);
+
+-- ============================================
+-- 9. PROFILES TABLE ADDITIONS (Phase 5)
+-- Add referral and milestone tracking columns
+-- ============================================
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS referred_by UUID REFERENCES auth.users(id);
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS premium_trial_end TIMESTAMPTZ;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS achieved_milestones JSONB DEFAULT '[]';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS total_referrals INT DEFAULT 0;
+
+-- ============================================
 -- VERIFICATION QUERIES
 -- Run these to confirm tables were created
 -- ============================================
