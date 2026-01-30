@@ -7435,26 +7435,117 @@ def get_quick_hit():
 # 14. LANDING PAGE - Phase 7: Brand & Visual Overhaul
 # --------------------------------------------------
 def get_mr_dp_svg(expression="default", size=120):
-    """Get Mr.DP character SVG with different expressions"""
-    expressions = {
-        "default": {"eyes": "●", "mouth": "◡", "color": "#a855f7"},
-        "excited": {"eyes": "★", "mouth": "D", "color": "#f472b6"},
-        "thinking": {"eyes": "◔ ◔", "mouth": "〜", "color": "#60a5fa"},
-        "happy": {"eyes": "◠ ◠", "mouth": "◡", "color": "#4ade80"},
-        "wink": {"eyes": "◠ ●", "mouth": "◡", "color": "#facc15"}
+    """Get Mr.DP character SVG with different expressions
+
+    Expressions available:
+    - default: Normal happy face
+    - excited: Star eyes, big smile
+    - thinking: Looking up, thoughtful
+    - happy: Curved happy eyes, big smile
+    - wink: One eye closed
+    - sad: Droopy eyes, frown
+    - surprised: Wide eyes, O mouth
+    - love: Heart eyes
+    - sleepy: Closed eyes, yawn
+    - angry: Angry eyebrows, frown
+    - confused: Swirl eyes, wavy mouth
+    """
+
+    # Expression-specific SVG parts
+    expression_parts = {
+        "default": {
+            "left_eye": '<circle cx="42" cy="55" r="8" fill="white"/><circle cx="42" cy="55" r="4" fill="#1a1a2e"/><circle cx="44" cy="53" r="2" fill="white"/>',
+            "right_eye": '<circle cx="78" cy="55" r="8" fill="white"/><circle cx="78" cy="55" r="4" fill="#1a1a2e"/><circle cx="80" cy="53" r="2" fill="white"/>',
+            "mouth": '<path d="M 45 75 Q 60 90 75 75" stroke="#1a1a2e" stroke-width="3" fill="none" stroke-linecap="round"/>',
+            "extras": "",
+            "gradient_colors": ["#a855f7", "#ec4899", "#f97316"]
+        },
+        "excited": {
+            "left_eye": '<polygon points="42,47 47,57 37,57" fill="#FFD700"/><circle cx="42" cy="53" r="2" fill="white"/>',
+            "right_eye": '<polygon points="78,47 83,57 73,57" fill="#FFD700"/><circle cx="78" cy="53" r="2" fill="white"/>',
+            "mouth": '<path d="M 40 72 Q 60 95 80 72" stroke="#1a1a2e" stroke-width="3" fill="#FF6B6B" stroke-linecap="round"/>',
+            "extras": '<text x="95" y="25" font-size="16" fill="#FFD700">!</text><text x="100" y="35" font-size="12" fill="#FFD700">!</text>',
+            "gradient_colors": ["#f472b6", "#ec4899", "#FFD700"]
+        },
+        "thinking": {
+            "left_eye": '<circle cx="42" cy="52" r="8" fill="white"/><circle cx="44" cy="50" r="4" fill="#1a1a2e"/><circle cx="46" cy="48" r="2" fill="white"/>',
+            "right_eye": '<circle cx="78" cy="52" r="8" fill="white"/><circle cx="80" cy="50" r="4" fill="#1a1a2e"/><circle cx="82" cy="48" r="2" fill="white"/>',
+            "mouth": '<path d="M 50 78 Q 60 75 70 78" stroke="#1a1a2e" stroke-width="3" fill="none" stroke-linecap="round"/>',
+            "extras": '<circle cx="100" cy="20" r="8" fill="none" stroke="#60a5fa" stroke-width="2" opacity="0.8"><animate attributeName="r" dur="1.5s" repeatCount="indefinite" values="8;12;8"/></circle><circle cx="108" cy="12" r="5" fill="none" stroke="#60a5fa" stroke-width="2" opacity="0.6"/>',
+            "gradient_colors": ["#60a5fa", "#818cf8", "#a855f7"]
+        },
+        "happy": {
+            "left_eye": '<path d="M 35 55 Q 42 48 49 55" stroke="#1a1a2e" stroke-width="3" fill="none" stroke-linecap="round"/>',
+            "right_eye": '<path d="M 71 55 Q 78 48 85 55" stroke="#1a1a2e" stroke-width="3" fill="none" stroke-linecap="round"/>',
+            "mouth": '<path d="M 40 72 Q 60 95 80 72" stroke="#1a1a2e" stroke-width="3" fill="none" stroke-linecap="round"/>',
+            "extras": '<ellipse cx="30" cy="65" rx="8" ry="5" fill="#FF6B6B" opacity="0.5"/><ellipse cx="90" cy="65" rx="8" ry="5" fill="#FF6B6B" opacity="0.5"/>',
+            "gradient_colors": ["#4ade80", "#22c55e", "#10b981"]
+        },
+        "wink": {
+            "left_eye": '<path d="M 35 55 Q 42 48 49 55" stroke="#1a1a2e" stroke-width="3" fill="none" stroke-linecap="round"/>',
+            "right_eye": '<circle cx="78" cy="55" r="8" fill="white"/><circle cx="78" cy="55" r="4" fill="#1a1a2e"/><circle cx="80" cy="53" r="2" fill="white"/>',
+            "mouth": '<path d="M 45 75 Q 60 88 75 75" stroke="#1a1a2e" stroke-width="3" fill="none" stroke-linecap="round"/>',
+            "extras": '<text x="25" y="45" font-size="14" fill="#FFD700">✨</text>',
+            "gradient_colors": ["#facc15", "#fbbf24", "#f59e0b"]
+        },
+        "sad": {
+            "left_eye": '<circle cx="42" cy="55" r="8" fill="white"/><circle cx="40" cy="57" r="4" fill="#1a1a2e"/><path d="M 35 48 L 49 52" stroke="#1a1a2e" stroke-width="2"/>',
+            "right_eye": '<circle cx="78" cy="55" r="8" fill="white"/><circle cx="80" cy="57" r="4" fill="#1a1a2e"/><path d="M 85 48 L 71 52" stroke="#1a1a2e" stroke-width="2"/>',
+            "mouth": '<path d="M 45 82 Q 60 70 75 82" stroke="#1a1a2e" stroke-width="3" fill="none" stroke-linecap="round"/>',
+            "extras": '<ellipse cx="35" cy="70" rx="4" ry="6" fill="#60a5fa" opacity="0.6"><animate attributeName="cy" dur="2s" repeatCount="indefinite" values="70;85;70"/></ellipse>',
+            "gradient_colors": ["#6366f1", "#818cf8", "#a5b4fc"]
+        },
+        "surprised": {
+            "left_eye": '<circle cx="42" cy="55" r="10" fill="white"/><circle cx="42" cy="55" r="5" fill="#1a1a2e"/><circle cx="44" cy="53" r="2" fill="white"/>',
+            "right_eye": '<circle cx="78" cy="55" r="10" fill="white"/><circle cx="78" cy="55" r="5" fill="#1a1a2e"/><circle cx="80" cy="53" r="2" fill="white"/>',
+            "mouth": '<ellipse cx="60" cy="80" rx="10" ry="8" fill="#1a1a2e"/>',
+            "extras": '<text x="20" y="25" font-size="18" fill="#FFD700">!</text><text x="95" y="25" font-size="18" fill="#FFD700">?</text>',
+            "gradient_colors": ["#f97316", "#fb923c", "#fdba74"]
+        },
+        "love": {
+            "left_eye": '<path d="M 35 52 L 42 60 L 49 52 Q 42 45 35 52" fill="#FF6B6B"/>',
+            "right_eye": '<path d="M 71 52 L 78 60 L 85 52 Q 78 45 71 52" fill="#FF6B6B"/>',
+            "mouth": '<path d="M 45 75 Q 60 92 75 75" stroke="#1a1a2e" stroke-width="3" fill="none" stroke-linecap="round"/>',
+            "extras": '<text x="15" y="30" font-size="12" fill="#FF6B6B">❤</text><text x="100" y="40" font-size="10" fill="#FF6B6B">❤</text><text x="95" y="85" font-size="8" fill="#FF6B6B">❤</text>',
+            "gradient_colors": ["#f472b6", "#ec4899", "#db2777"]
+        },
+        "sleepy": {
+            "left_eye": '<path d="M 35 55 Q 42 58 49 55" stroke="#1a1a2e" stroke-width="3" fill="none" stroke-linecap="round"/>',
+            "right_eye": '<path d="M 71 55 Q 78 58 85 55" stroke="#1a1a2e" stroke-width="3" fill="none" stroke-linecap="round"/>',
+            "mouth": '<ellipse cx="60" cy="78" rx="8" ry="5" fill="#1a1a2e"/>',
+            "extras": '<text x="90" y="30" font-size="14" fill="white" opacity="0.8">z</text><text x="98" y="22" font-size="12" fill="white" opacity="0.6">z</text><text x="104" y="16" font-size="10" fill="white" opacity="0.4">z</text>',
+            "gradient_colors": ["#8b5cf6", "#a78bfa", "#c4b5fd"]
+        },
+        "angry": {
+            "left_eye": '<circle cx="42" cy="55" r="8" fill="white"/><circle cx="44" cy="57" r="4" fill="#1a1a2e"/><path d="M 33 48 L 51 54" stroke="#1a1a2e" stroke-width="3"/>',
+            "right_eye": '<circle cx="78" cy="55" r="8" fill="white"/><circle cx="76" cy="57" r="4" fill="#1a1a2e"/><path d="M 87 48 L 69 54" stroke="#1a1a2e" stroke-width="3"/>',
+            "mouth": '<path d="M 45 82 Q 60 72 75 82" stroke="#1a1a2e" stroke-width="3" fill="none" stroke-linecap="round"/>',
+            "extras": '<text x="55" y="25" font-size="16" fill="#ef4444">💢</text>',
+            "gradient_colors": ["#ef4444", "#f87171", "#fca5a5"]
+        },
+        "confused": {
+            "left_eye": '<circle cx="42" cy="55" r="8" fill="white"/><path d="M 38 52 Q 42 58 46 52 Q 42 46 38 52" stroke="#1a1a2e" stroke-width="2" fill="none"/>',
+            "right_eye": '<circle cx="78" cy="55" r="8" fill="white"/><path d="M 74 52 Q 78 58 82 52 Q 78 46 74 52" stroke="#1a1a2e" stroke-width="2" fill="none"/>',
+            "mouth": '<path d="M 45 78 Q 52 82 60 78 Q 68 74 75 78" stroke="#1a1a2e" stroke-width="3" fill="none" stroke-linecap="round"/>',
+            "extras": '<text x="95" y="30" font-size="16" fill="#818cf8">?</text>',
+            "gradient_colors": ["#818cf8", "#a78bfa", "#c4b5fd"]
+        }
     }
-    exp = expressions.get(expression, expressions["default"])
+
+    # Get expression parts, default to "default" if not found
+    exp = expression_parts.get(expression, expression_parts["default"])
+    colors = exp["gradient_colors"]
 
     return f'''
     <svg width="{size}" height="{size}" viewBox="0 0 120 120" class="mr-dp-character {expression}">
         <!-- Main head/body -->
         <defs>
-            <linearGradient id="dpGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#a855f7"/>
-                <stop offset="50%" style="stop-color:#ec4899"/>
-                <stop offset="100%" style="stop-color:#f97316"/>
+            <linearGradient id="dpGradient_{expression}" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:{colors[0]}"/>
+                <stop offset="50%" style="stop-color:{colors[1]}"/>
+                <stop offset="100%" style="stop-color:{colors[2]}"/>
             </linearGradient>
-            <filter id="dpGlow">
+            <filter id="dpGlow_{expression}">
                 <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
                 <feMerge>
                     <feMergeNode in="coloredBlur"/>
@@ -7464,29 +7555,26 @@ def get_mr_dp_svg(expression="default", size=120):
         </defs>
 
         <!-- Body glow -->
-        <circle cx="60" cy="60" r="50" fill="url(#dpGradient)" filter="url(#dpGlow)" opacity="0.3"/>
+        <circle cx="60" cy="60" r="50" fill="url(#dpGradient_{expression})" filter="url(#dpGlow_{expression})" opacity="0.3"/>
 
         <!-- Main body -->
-        <circle cx="60" cy="60" r="45" fill="url(#dpGradient)"/>
+        <circle cx="60" cy="60" r="45" fill="url(#dpGradient_{expression})"/>
 
         <!-- Highlight -->
         <ellipse cx="45" cy="40" rx="15" ry="10" fill="rgba(255,255,255,0.3)"/>
 
         <!-- Eyes -->
-        <circle cx="42" cy="55" r="8" fill="white"/>
-        <circle cx="78" cy="55" r="8" fill="white"/>
-        <circle cx="42" cy="55" r="4" fill="#1a1a2e"/>
-        <circle cx="78" cy="55" r="4" fill="#1a1a2e"/>
-
-        <!-- Eye sparkles -->
-        <circle cx="44" cy="53" r="2" fill="white"/>
-        <circle cx="80" cy="53" r="2" fill="white"/>
+        {exp["left_eye"]}
+        {exp["right_eye"]}
 
         <!-- Mouth -->
-        <path d="M 45 75 Q 60 90 75 75" stroke="#1a1a2e" stroke-width="3" fill="none" stroke-linecap="round"/>
+        {exp["mouth"]}
+
+        <!-- Expression extras -->
+        {exp["extras"]}
 
         <!-- Antenna/Brain waves -->
-        <path d="M 60 10 Q 55 0 60 -5 Q 65 0 60 10" stroke="url(#dpGradient)" stroke-width="3" fill="none">
+        <path d="M 60 10 Q 55 0 60 -5 Q 65 0 60 10" stroke="url(#dpGradient_{expression})" stroke-width="3" fill="none">
             <animate attributeName="d" dur="2s" repeatCount="indefinite"
                 values="M 60 10 Q 55 0 60 -5 Q 65 0 60 10;
                         M 60 10 Q 65 0 70 -5 Q 65 0 60 10;
@@ -7494,19 +7582,75 @@ def get_mr_dp_svg(expression="default", size=120):
         </path>
 
         <!-- Floating particles -->
-        <circle cx="20" cy="30" r="3" fill="#a855f7" opacity="0.6">
+        <circle cx="20" cy="30" r="3" fill="{colors[0]}" opacity="0.6">
             <animate attributeName="cy" dur="3s" repeatCount="indefinite" values="30;20;30"/>
             <animate attributeName="opacity" dur="3s" repeatCount="indefinite" values="0.6;1;0.6"/>
         </circle>
-        <circle cx="100" cy="40" r="2" fill="#ec4899" opacity="0.6">
+        <circle cx="100" cy="40" r="2" fill="{colors[1]}" opacity="0.6">
             <animate attributeName="cy" dur="2.5s" repeatCount="indefinite" values="40;25;40"/>
             <animate attributeName="opacity" dur="2.5s" repeatCount="indefinite" values="0.6;1;0.6"/>
         </circle>
-        <circle cx="15" cy="80" r="2" fill="#f97316" opacity="0.6">
+        <circle cx="15" cy="80" r="2" fill="{colors[2]}" opacity="0.6">
             <animate attributeName="cy" dur="3.5s" repeatCount="indefinite" values="80;65;80"/>
         </circle>
     </svg>
     '''
+
+def get_mr_dp_expression_for_mood(current_mood: str, desired_mood: str = None) -> str:
+    """Get the appropriate Mr.DP expression based on user's mood"""
+
+    # Mapping moods to expressions
+    mood_to_expression = {
+        # Current negative moods
+        "Sad": "sad",
+        "Lonely": "sad",
+        "Anxious": "thinking",
+        "Overwhelmed": "confused",
+        "Angry": "angry",
+        "Stressed": "thinking",
+        "Bored": "sleepy",
+        "Tired": "sleepy",
+        "Numb": "sad",
+        "Confused": "confused",
+        "Restless": "thinking",
+        "Frustrated": "angry",
+
+        # Positive/neutral moods
+        "Focused": "thinking",
+        "Calm": "happy",
+        "Happy": "happy",
+        "Excited": "excited",
+        "Curious": "surprised",
+        "Scared": "surprised",
+        "Nostalgic": "thinking",
+        "Romantic": "love",
+        "Adventurous": "excited",
+        "Hopeful": "happy",
+
+        # Desired moods (can override)
+        "Comforted": "love",
+        "Relaxed": "happy",
+        "Energized": "excited",
+        "Stimulated": "excited",
+        "Entertained": "happy",
+        "Inspired": "excited",
+        "Grounded": "happy",
+        "Sleepy": "sleepy",
+        "Connected": "love",
+        "Thrilled": "excited",
+        "Amused": "happy",
+        "Motivated": "excited"
+    }
+
+    # If desired mood is specified, use it (usually positive)
+    if desired_mood and desired_mood in mood_to_expression:
+        return mood_to_expression[desired_mood]
+
+    # Otherwise use current mood
+    if current_mood in mood_to_expression:
+        return mood_to_expression[current_mood]
+
+    return "default"
 
 def render_landing():
     # Confetti/celebration script for interactions
@@ -8106,6 +8250,17 @@ def render_sidebar():
 
         # MOOD SELECTORS
         st.markdown(f"#### 🎯 {t('your_mood')}")
+
+        # Mood-reactive Mr.DP
+        mr_dp_expression = get_mr_dp_expression_for_mood(
+            st.session_state.current_feeling,
+            st.session_state.desired_feeling
+        )
+        st.markdown(f"""
+        <div style="text-align: center; margin: 8px 0;">
+            {get_mr_dp_svg(mr_dp_expression, 60)}
+        </div>
+        """, unsafe_allow_html=True)
 
         current_options = [f"{MOOD_EMOJIS.get(f, '😊')} {f}" for f in CURRENT_FEELINGS]
         current_idx = CURRENT_FEELINGS.index(st.session_state.current_feeling) if st.session_state.current_feeling in CURRENT_FEELINGS else 6
