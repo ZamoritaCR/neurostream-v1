@@ -2360,6 +2360,7 @@ def ask_mr_dp_v2(user_prompt: str, chat_history: list = None, user_context: dict
         return None
 
     if not openai_client:
+        print(f"[Mr.DP] No OpenAI client! API key present: {bool(_openai_key)}")
         return fallback_mr_dp_v2(user_prompt)
 
     context_summary = ""
@@ -2407,7 +2408,7 @@ def ask_mr_dp_v2(user_prompt: str, chat_history: list = None, user_context: dict
         return result
 
     except Exception as e:
-        print(f"Mr.DP 2.0 error: {e}")
+        print(f"[Mr.DP] API Error: {type(e).__name__}: {e}")
         return fallback_mr_dp_v2(user_prompt)
 
 
@@ -2464,6 +2465,33 @@ def fallback_mr_dp_v2(user_prompt: str):
     is_stressed = any(k in t for k in ["stress", "anxious", "overwhelm", "calm", "relax"])
     is_greeting = any(k in t for k in ["hi", "hello", "hey", "howdy"])
 
+    # Genre detection - map keywords to moods that have those genres
+    genre_mood_map = {
+        "horror": ("Scared", "Time for some scares! 👻"),
+        "scary": ("Scared", "Let's get spooky! 👻"),
+        "thriller": ("Thrilled", "Edge of your seat time! 🎬"),
+        "comedy": ("Amused", "Let's get you laughing! 😂"),
+        "funny": ("Amused", "Comedy incoming! 😄"),
+        "action": ("Energized", "Action packed picks! 💥"),
+        "romance": ("Romantic", "Love is in the air! 💕"),
+        "romantic": ("Romantic", "Here's some romance! 💕"),
+        "sad": ("Comforted", "Sometimes we need a good cry 🥺"),
+        "drama": ("Inspired", "Drama for you! 🎭"),
+        "adventure": ("Adventurous", "Adventure awaits! 🏔️"),
+        "sci-fi": ("Curious", "Sci-fi exploration! 🚀"),
+        "scifi": ("Curious", "Science fiction picks! 🚀"),
+        "fantasy": ("Entertained", "Fantasy worlds await! ✨"),
+        "documentary": ("Curious", "Learn something new! 📚"),
+        "animation": ("Entertained", "Animated picks! 🎨"),
+        "anime": ("Entertained", "Anime time! 🎌"),
+    }
+
+    detected_genre = None
+    for keyword, (mood, msg) in genre_mood_map.items():
+        if keyword in t:
+            detected_genre = (mood, msg)
+            break
+
     content = []
     actions = []
     message = "Let me find something for you!"
@@ -2499,6 +2527,13 @@ def fallback_mr_dp_v2(user_prompt: str):
             message = "Here's some tunes for your vibe! 🎵"
             spotify = get_spotify_playlist_for_mood("Happy")
             content.append({"type": "music", "data": spotify})
+
+    elif detected_genre:
+        mood, message = detected_genre
+        mood_update = {"current": None, "desired": mood}
+        movies = search_movies_with_links(mood=mood, limit=3)
+        for m in movies:
+            content.append({"type": "movie", "data": m})
 
     else:
         movies = search_movies_with_links(limit=2)
