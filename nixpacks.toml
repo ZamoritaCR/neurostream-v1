@@ -2,17 +2,10 @@
 providers = ["python"]
 
 [phases.setup]
-nixPkgs = ["python311", "python311Packages.pip", "python311Packages.virtualenv"]
+nixPkgs = ["python311", "python311Packages.pip"]
 
 [phases.install]
-cmds = [
-    "python -m venv /opt/venv",
-    "/opt/venv/bin/pip install --upgrade pip",
-    "/opt/venv/bin/pip install -r requirements.txt"
-]
-
-[variables]
-PATH = "/opt/venv/bin:${PATH}"
+cmds = ["pip install -r requirements.txt"]
 
 [start]
 cmd = "bash start.sh"

@@ -27,4 +27,4 @@ echo "Supabase URL: ${SUPABASE_URL:0:30}..."
 echo "Supabase key length: ${#SUPABASE_ANON_KEY}"
 echo "Starting Streamlit..."
 
-/opt/venv/bin/python -m streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
+python -m streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
