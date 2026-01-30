@@ -5,7 +5,7 @@ providers = ["python"]
 nixPkgs = ["python311", "python311Packages.pip"]
 
 [phases.install]
-cmds = ["python -m pip install -r requirements.txt"]
+cmds = ["pip3 install -r requirements.txt"]
 
 [start]
 cmd = "bash start.sh"
