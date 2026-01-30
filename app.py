@@ -89,7 +89,7 @@ st.set_page_config(
     page_title="Dopamine.watch | Feel Better, Watch Better",
     page_icon="🧠",
     layout="wide",
-    initial_sidebar_state="collapsed"  # Collapsed by default for mobile-first experience
+    initial_sidebar_state="expanded"
 )
 
 # --------------------------------------------------
