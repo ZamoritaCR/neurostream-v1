@@ -19,16 +19,18 @@
             min-height: 100vh;
             min-height: -webkit-fill-available;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            text-align: center;
             padding: 20px;
             padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
         }
 
         .container {
-            max-width: 400px;
+            max-width: 500px;
+            width: 100%;
             animation: fadeIn 0.5s ease-out;
+            text-align: center;
         }
 
         @keyframes fadeIn {
@@ -37,9 +39,9 @@
         }
 
         .mr-dp {
-            width: 150px;
-            height: 150px;
-            margin: 0 auto 24px;
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
             animation: float 3s ease-in-out infinite;
         }
 
@@ -57,27 +59,55 @@
             font-size: 1.75rem;
             font-weight: 700;
             margin-bottom: 12px;
-            color: #8A56E2;
+            background: linear-gradient(135deg, #8A56E2, #00C9A7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        p {
+        .subtitle {
             color: rgba(255, 255, 255, 0.6);
             font-size: 1rem;
             line-height: 1.6;
-            margin-bottom: 32px;
+            margin-bottom: 24px;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 20px;
+            margin-bottom: 24px;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #FF6B6B;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
         .retry-btn {
             background: linear-gradient(135deg, #8A56E2, #00C9A7);
             border: none;
             padding: 16px 32px;
-            border-radius: 14px;
+            border-radius: 50px;
             color: white;
             font-weight: 600;
             font-size: 1rem;
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(138, 86, 226, 0.3);
+            margin-bottom: 32px;
         }
 
         .retry-btn:hover {
@@ -89,8 +119,87 @@
             transform: scale(0.98);
         }
 
+        /* Cached Recommendations Section */
+        .cached-section {
+            margin-top: 24px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            text-align: left;
+        }
+
+        .cached-section h3 {
+            font-size: 1rem;
+            color: #00C9A7;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cached-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .cached-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .cached-item:hover {
+            background: rgba(138, 86, 226, 0.1);
+        }
+
+        .cached-poster {
+            width: 50px;
+            height: 75px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #8A56E2, #00C9A7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .cached-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .cached-title {
+            font-weight: 600;
+            color: white;
+            font-size: 0.95rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .cached-type {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.8rem;
+            margin-top: 4px;
+        }
+
+        .no-cached {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* Tips Section */
         .tips {
-            margin-top: 40px;
+            margin-top: 24px;
             padding: 20px;
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -122,76 +231,233 @@
             position: absolute;
             left: 8px;
         }
+
+        /* Online notification */
+        .online-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: linear-gradient(135deg, #00C9A7, #4ade80);
+            color: #181825;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 600;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .online-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Dark mode scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(138, 86, 226, 0.3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(138, 86, 226, 0.5);
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Mr.DP Character (official design) -->
+        <!-- Mr.DP Character (sleepy/offline expression) -->
         <div class="mr-dp">
-            <svg viewBox="0 0 200 200">
-                <!-- Background -->
-                <rect width="200" height="200" fill="#181825"/>
+            <svg viewBox="0 0 120 120">
+                <!-- Gradient definitions -->
+                <defs>
+                    <linearGradient id="dpGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#8b5cf6"/>
+                        <stop offset="50%" style="stop-color:#a78bfa"/>
+                        <stop offset="100%" style="stop-color:#c4b5fd"/>
+                    </linearGradient>
+                    <filter id="dpGlow">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
 
-                <!-- Left antenna -->
-                <line x1="70" y1="55" x2="55" y2="35" stroke="#00C9A7" stroke-width="6" stroke-linecap="round"/>
-                <circle cx="55" cy="32" r="6" fill="#00C9A7"/>
+                <!-- Body glow -->
+                <circle cx="60" cy="60" r="50" fill="url(#dpGradient)" filter="url(#dpGlow)" opacity="0.3"/>
 
-                <!-- Right antenna -->
-                <line x1="130" y1="55" x2="145" y2="35" stroke="#00C9A7" stroke-width="6" stroke-linecap="round"/>
-                <circle cx="145" cy="32" r="6" fill="#00C9A7"/>
+                <!-- Main body -->
+                <circle cx="60" cy="60" r="45" fill="url(#dpGradient)"/>
 
-                <!-- Main body (purple circle) -->
-                <circle cx="100" cy="100" r="50" fill="#8A56E2"/>
+                <!-- Highlight -->
+                <ellipse cx="45" cy="40" rx="15" ry="10" fill="rgba(255,255,255,0.3)"/>
 
-                <!-- Eyes (^_^ style - sleeping) -->
-                <path d="M 80 95 Q 85 88 90 95" stroke="white" stroke-width="4" fill="none" stroke-linecap="round"/>
-                <path d="M 110 95 Q 115 88 120 95" stroke="white" stroke-width="4" fill="none" stroke-linecap="round"/>
+                <!-- Sleepy eyes (closed) -->
+                <path d="M 35 55 Q 42 58 49 55" stroke="#1a1a2e" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <path d="M 71 55 Q 78 58 85 55" stroke="#1a1a2e" stroke-width="3" fill="none" stroke-linecap="round"/>
 
-                <!-- Cheeks -->
-                <ellipse cx="70" cy="105" rx="8" ry="5" fill="#E065B5" opacity="0.8"/>
-                <ellipse cx="130" cy="105" rx="8" ry="5" fill="#E065B5" opacity="0.8"/>
+                <!-- Yawn mouth -->
+                <ellipse cx="60" cy="78" rx="8" ry="5" fill="#1a1a2e"/>
 
-                <!-- Smile (sleepy) -->
-                <ellipse cx="100" cy="115" rx="8" ry="5" fill="#FF5858" opacity="0.7"/>
+                <!-- Zzz animation -->
+                <text x="90" y="30" font-size="14" fill="white" opacity="0.8">z</text>
+                <text x="98" y="22" font-size="12" fill="white" opacity="0.6">z</text>
+                <text x="104" y="16" font-size="10" fill="white" opacity="0.4">z</text>
 
-                <!-- Zzz -->
-                <text x="145" y="60" fill="white" font-size="16" font-weight="bold" opacity="0.7">z</text>
-                <text x="155" y="50" fill="white" font-size="14" font-weight="bold" opacity="0.5">z</text>
-                <text x="163" y="42" fill="white" font-size="12" font-weight="bold" opacity="0.3">z</text>
+                <!-- Antenna -->
+                <path d="M 60 10 Q 55 0 60 -5 Q 65 0 60 10" stroke="url(#dpGradient)" stroke-width="3" fill="none">
+                    <animate attributeName="d" dur="3s" repeatCount="indefinite"
+                        values="M 60 10 Q 55 0 60 -5 Q 65 0 60 10;
+                                M 60 10 Q 65 0 70 -5 Q 65 0 60 10;
+                                M 60 10 Q 55 0 60 -5 Q 65 0 60 10"/>
+                </path>
 
-                <!-- Left arm -->
-                <line x1="50" y1="100" x2="35" y2="90" stroke="#00C9A7" stroke-width="6" stroke-linecap="round"/>
-
-                <!-- Right arm -->
-                <line x1="150" y1="100" x2="165" y2="90" stroke="#00C9A7" stroke-width="6" stroke-linecap="round"/>
-
-                <!-- Leg -->
-                <line x1="100" y1="150" x2="100" y2="170" stroke="#00C9A7" stroke-width="6" stroke-linecap="round"/>
+                <!-- Floating particles (slower for sleepy mood) -->
+                <circle cx="20" cy="30" r="3" fill="#8b5cf6" opacity="0.4">
+                    <animate attributeName="cy" dur="4s" repeatCount="indefinite" values="30;20;30"/>
+                    <animate attributeName="opacity" dur="4s" repeatCount="indefinite" values="0.4;0.6;0.4"/>
+                </circle>
+                <circle cx="100" cy="40" r="2" fill="#a78bfa" opacity="0.4">
+                    <animate attributeName="cy" dur="3.5s" repeatCount="indefinite" values="40;28;40"/>
+                </circle>
             </svg>
         </div>
 
         <h1>You're Offline</h1>
-        <p>No worries! Mr.DP is taking a quick nap while we wait for your connection to come back.</p>
+
+        <div class="status-indicator">
+            <span class="status-dot"></span>
+            <span>No internet connection</span>
+        </div>
+
+        <p class="subtitle">
+            Mr.DP is taking a quick nap while we wait for your connection to come back.
+        </p>
 
         <button class="retry-btn" onclick="location.reload()">
             Try Again
         </button>
 
+        <!-- Cached Recommendations -->
+        <div class="cached-section" id="cachedSection" style="display: none;">
+            <h3>
+                <span>📚</span>
+                Your Saved Picks
+            </h3>
+            <div class="cached-list" id="cachedList">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Tips -->
         <div class="tips">
             <h3>Quick fixes:</h3>
             <ul>
                 <li>Check your Wi-Fi or mobile data</li>
                 <li>Try moving to a better signal area</li>
                 <li>Toggle airplane mode on and off</li>
+                <li>Restart your router</li>
             </ul>
         </div>
+    </div>
+
+    <!-- Online Toast -->
+    <div class="online-toast" id="onlineToast">
+        You're back online! Refreshing...
     </div>
 
     <script>
         // Auto-retry when back online
         window.addEventListener('online', () => {
-            location.reload();
+            const toast = document.getElementById('onlineToast');
+            toast.classList.add('show');
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
         });
+
+        // Load cached recommendations from IndexedDB
+        async function loadCachedRecommendations() {
+            try {
+                const db = await openDB();
+                const tx = db.transaction('recommendations', 'readonly');
+                const store = tx.objectStore('recommendations');
+
+                const request = store.getAll();
+                request.onsuccess = () => {
+                    const recommendations = request.result;
+                    if (recommendations && recommendations.length > 0) {
+                        displayCachedRecommendations(recommendations);
+                    }
+                };
+            } catch (err) {
+                console.log('Could not load cached recommendations:', err);
+            }
+        }
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('DopamineDB', 1);
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => resolve(request.result);
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('recommendations')) {
+                        db.createObjectStore('recommendations', { keyPath: 'id', autoIncrement: true });
+                    }
+                };
+            });
+        }
+
+        function displayCachedRecommendations(recommendations) {
+            const section = document.getElementById('cachedSection');
+            const list = document.getElementById('cachedList');
+
+            const typeEmojis = {
+                'movie': '🎬',
+                'tv': '📺',
+                'music': '🎵',
+                'podcast': '🎙️',
+                'audiobook': '📚'
+            };
+
+            let html = '';
+            recommendations.slice(0, 5).forEach(rec => {
+                const emoji = typeEmojis[rec.type] || '🎬';
+                html += `
+                    <div class="cached-item">
+                        <div class="cached-poster">${emoji}</div>
+                        <div class="cached-info">
+                            <div class="cached-title">${rec.title || 'Unknown'}</div>
+                            <div class="cached-type">${rec.type || 'Movie'} - Saved for later</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (html) {
+                list.innerHTML = html;
+                section.style.display = 'block';
+            }
+        }
+
+        // Load cached content on page load
+        loadCachedRecommendations();
+
+        // Check if we're actually online (sometimes the event fires late)
+        if (navigator.onLine) {
+            location.reload();
+        }
     </script>
 </body>
 </html>
