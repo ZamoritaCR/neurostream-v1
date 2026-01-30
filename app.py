@@ -97,6 +97,389 @@ def inject_pwa_head():
 inject_pwa_head()
 
 APP_NAME = "Dopamine.watch"
+
+# --------------------------------------------------
+# INTERNATIONALIZATION (i18n) - English & Spanish
+# --------------------------------------------------
+TRANSLATIONS = {
+    "en": {
+        # App
+        "app_tagline": "Feel Better, Watch Better",
+        "welcome_back": "Welcome Back",
+        "get_started": "Get Started Free",
+        "log_in": "Log In",
+        "sign_up": "Sign Up",
+        "log_out": "Log Out",
+        "continue_guest": "Continue as Guest",
+
+        # Navigation
+        "home": "Home",
+        "discover": "Discover",
+        "my_queue": "My Queue",
+        "profile": "Profile",
+        "settings": "Settings",
+        "challenges": "Challenges",
+        "shop": "Shop",
+        "leaderboards": "Leaderboards",
+        "admin": "Admin",
+
+        # Moods - Current
+        "current_mood": "How are you feeling right now?",
+        "desired_mood": "How do you want to feel?",
+        "stressed": "Stressed",
+        "anxious": "Anxious",
+        "bored": "Bored",
+        "sad": "Sad",
+        "tired": "Tired",
+        "overwhelmed": "Overwhelmed",
+        "restless": "Restless",
+        "unmotivated": "Unmotivated",
+        "lonely": "Lonely",
+        "frustrated": "Frustrated",
+        "numb": "Numb",
+        "scattered": "Scattered",
+
+        # Moods - Desired
+        "relaxed": "Relaxed",
+        "calm": "Calm",
+        "entertained": "Entertained",
+        "happy": "Happy",
+        "energized": "Energized",
+        "focused": "Focused",
+        "inspired": "Inspired",
+        "motivated": "Motivated",
+        "connected": "Connected",
+        "peaceful": "Peaceful",
+        "excited": "Excited",
+        "grounded": "Grounded",
+
+        # Actions
+        "get_recommendations": "Get Recommendations",
+        "quick_dope_hit": "Quick Dope Hit",
+        "add_to_queue": "Add to Queue",
+        "remove_from_queue": "Remove",
+        "watch_now": "Watch Now",
+        "more_info": "More Info",
+        "share": "Share",
+        "search": "Search",
+        "search_placeholder": "Search movies, shows, music...",
+
+        # Mr.DP
+        "mr_dp_greeting": "Hey! I'm Mr.DP, your dopamine curator. Tell me how you're feeling and I'll find the perfect content for you!",
+        "mr_dp_placeholder": "Tell Mr.DP how you're feeling...",
+        "mr_dp_thinking": "Mr.DP is thinking...",
+        "mr_dp_limit_reached": "You've used all your free Mr.DP chats today. Upgrade to Premium for unlimited!",
+
+        # Stats
+        "streak": "Streak",
+        "day_streak": "day streak",
+        "dopamine_points": "Dopamine Points",
+        "level": "Level",
+        "total_watches": "Total Watches",
+        "mood_logs": "Mood Logs",
+
+        # Content Types
+        "movies": "Movies",
+        "tv_shows": "TV Shows",
+        "music": "Music",
+        "podcasts": "Podcasts",
+        "audiobooks": "Audiobooks",
+
+        # Gamification
+        "daily_challenges": "Daily Challenges",
+        "weekly_challenges": "Weekly Challenges",
+        "claim_reward": "Claim Reward",
+        "completed": "Completed",
+        "in_progress": "In Progress",
+        "reward": "Reward",
+
+        # Premium
+        "upgrade_to_premium": "Upgrade to Premium",
+        "premium_features": "Premium Features",
+        "unlimited_mr_dp": "Unlimited Mr.DP chats",
+        "advanced_analytics": "Advanced mood analytics",
+        "no_ads": "No ads",
+        "priority_support": "Priority support",
+
+        # Messages
+        "loading": "Loading...",
+        "no_results": "No results found",
+        "error_occurred": "Something went wrong. Please try again.",
+        "saved_to_queue": "Added to your queue!",
+        "removed_from_queue": "Removed from queue",
+        "streak_broken": "Your streak was broken!",
+        "new_achievement": "New Achievement!",
+
+        # Landing Page
+        "hero_subtitle": "The first streaming guide designed for ADHD & neurodivergent brains.",
+        "hero_tagline": "Tell us how you feel. We'll find the perfect content to match your mood.",
+        "feature_mood_title": "Mood-Driven Discovery",
+        "feature_mood_desc": "Select how you feel now and how you want to feel. We'll curate content that takes you there.",
+        "feature_mr_dp_title": "Mr.DP - AI Curator",
+        "feature_mr_dp_desc": "Meet your personal dopamine buddy! Just tell him how you feel and he'll find the perfect content.",
+        "feature_quick_title": "Quick Dope Hit",
+        "feature_quick_desc": "Can't decide? One button gives you the perfect match. No scrolling required.",
+        "testimonials_title": "What People Are Saying",
+        "pricing_title": "Simple Pricing",
+        "about_title": "About Dopamine.watch",
+        "ready_to_feel_better": "Ready to feel better?",
+
+        # SOS Mode
+        "sos_calm_mode": "SOS Calm Mode",
+        "sos_description": "Take a moment to breathe. You're safe here.",
+        "exit_sos": "I'm feeling better",
+
+        # Landing Page Extended
+        "happy_users": "Happy Users",
+        "moods_matched": "Moods Matched",
+        "user_rating": "User Rating",
+        "start_free": "Start Free",
+        "guest_mode": "Guest Mode",
+        "back_to_home": "Back to Home",
+        "create_account": "Create Account",
+        "forgot_password": "Forgot Password?",
+        "login_subtitle": "Log in to your dopamine engine",
+        "signup_subtitle": "Join the dopamine revolution",
+        "mood_driven_title": "Mood-Driven Discovery",
+        "mood_driven_desc": "Revolutionary AI that understands not just what you want to watch, but how you want to FEEL. Select your current mood and desired state - we handle the rest.",
+        "mr_dp_curator_title": "Mr.DP AI Curator",
+        "mr_dp_curator_desc": "Your personal dopamine buddy who actually gets ADHD. Chat naturally about how you feel.",
+        "quick_hit_title": "Quick Dope Hit",
+        "quick_hit_desc": "Decision fatigue? One button. Perfect match. No scrolling.",
+        "movies_tv_title": "Movies & TV",
+        "movies_tv_desc": "20+ streaming services, emotion-filtered just for you.",
+        "music_playlists_title": "Music & Playlists",
+        "music_playlists_desc": "Mood-matched music from Spotify, Apple Music & more.",
+        "podcasts_more_title": "Podcasts, Audiobooks & More",
+        "podcasts_more_desc": "Whatever your brain craves - we've got curated content across every format to match your current headspace.",
+        "science_title": "Built on Science, Designed for You",
+        "science_subtitle": "Our mood-matching algorithm is grounded in research on emotional regulation and ADHD.",
+        "community_title": "What the Community Says",
+        "pricing_simple": "Simple, Transparent Pricing",
+        "about_built_title": "Built for Brains Like Yours",
+        "about_mission": "help you feel better, faster",
+        "about_signature": "Built with 💜 for ADHD brains, by ADHD brains.",
+        "join_thousands": "Join thousands who've escaped the scroll trap.",
+        "free_plan": "Free",
+        "forever_free": "forever free",
+        "plus_plan": "Plus",
+        "pro_plan": "Pro",
+        "most_popular": "MOST POPULAR",
+        "have_account": "Have Account? Log In",
+        "start_journey": "Start your dopamine journey",
+
+        # Sidebar & Navigation
+        "your_mood": "Your Mood",
+        "i_feel": "I feel...",
+        "i_want": "I want...",
+        "quick_dope_hit": "QUICK DOPE HIT",
+        "watch_queue": "Watch Queue",
+        "view_all_queue": "View All Queue",
+        "queue_empty": "Your queue is empty",
+        "log_in_to_save": "Log in to save content",
+        "gamification": "Gamification",
+        "shorts": "Shorts",
+    },
+    "es": {
+        # App
+        "app_tagline": "Siéntete Mejor, Mira Mejor",
+        "welcome_back": "Bienvenido de Nuevo",
+        "get_started": "Comenzar Gratis",
+        "log_in": "Iniciar Sesión",
+        "sign_up": "Registrarse",
+        "log_out": "Cerrar Sesión",
+        "continue_guest": "Continuar como Invitado",
+
+        # Navigation
+        "home": "Inicio",
+        "discover": "Descubrir",
+        "my_queue": "Mi Lista",
+        "profile": "Perfil",
+        "settings": "Ajustes",
+        "challenges": "Desafíos",
+        "shop": "Tienda",
+        "leaderboards": "Clasificación",
+        "admin": "Admin",
+
+        # Moods - Current
+        "current_mood": "¿Cómo te sientes ahora mismo?",
+        "desired_mood": "¿Cómo quieres sentirte?",
+        "stressed": "Estresado",
+        "anxious": "Ansioso",
+        "bored": "Aburrido",
+        "sad": "Triste",
+        "tired": "Cansado",
+        "overwhelmed": "Abrumado",
+        "restless": "Inquieto",
+        "unmotivated": "Desmotivado",
+        "lonely": "Solo",
+        "frustrated": "Frustrado",
+        "numb": "Adormecido",
+        "scattered": "Disperso",
+
+        # Moods - Desired
+        "relaxed": "Relajado",
+        "calm": "Tranquilo",
+        "entertained": "Entretenido",
+        "happy": "Feliz",
+        "energized": "Energético",
+        "focused": "Concentrado",
+        "inspired": "Inspirado",
+        "motivated": "Motivado",
+        "connected": "Conectado",
+        "peaceful": "En Paz",
+        "excited": "Emocionado",
+        "grounded": "Centrado",
+
+        # Actions
+        "get_recommendations": "Obtener Recomendaciones",
+        "quick_dope_hit": "Dosis Rápida",
+        "add_to_queue": "Agregar a Lista",
+        "remove_from_queue": "Eliminar",
+        "watch_now": "Ver Ahora",
+        "more_info": "Más Info",
+        "share": "Compartir",
+        "search": "Buscar",
+        "search_placeholder": "Buscar películas, series, música...",
+
+        # Mr.DP
+        "mr_dp_greeting": "¡Hola! Soy Mr.DP, tu curador de dopamina. ¡Cuéntame cómo te sientes y encontraré el contenido perfecto para ti!",
+        "mr_dp_placeholder": "Cuéntale a Mr.DP cómo te sientes...",
+        "mr_dp_thinking": "Mr.DP está pensando...",
+        "mr_dp_limit_reached": "Has usado todos tus chats gratuitos de Mr.DP hoy. ¡Actualiza a Premium para ilimitados!",
+
+        # Stats
+        "streak": "Racha",
+        "day_streak": "días de racha",
+        "dopamine_points": "Puntos de Dopamina",
+        "level": "Nivel",
+        "total_watches": "Vistas Totales",
+        "mood_logs": "Registros de Ánimo",
+
+        # Content Types
+        "movies": "Películas",
+        "tv_shows": "Series",
+        "music": "Música",
+        "podcasts": "Podcasts",
+        "audiobooks": "Audiolibros",
+
+        # Gamification
+        "daily_challenges": "Desafíos Diarios",
+        "weekly_challenges": "Desafíos Semanales",
+        "claim_reward": "Reclamar Premio",
+        "completed": "Completado",
+        "in_progress": "En Progreso",
+        "reward": "Premio",
+
+        # Premium
+        "upgrade_to_premium": "Actualizar a Premium",
+        "premium_features": "Funciones Premium",
+        "unlimited_mr_dp": "Chats ilimitados con Mr.DP",
+        "advanced_analytics": "Análisis avanzado de ánimo",
+        "no_ads": "Sin anuncios",
+        "priority_support": "Soporte prioritario",
+
+        # Messages
+        "loading": "Cargando...",
+        "no_results": "No se encontraron resultados",
+        "error_occurred": "Algo salió mal. Por favor, intenta de nuevo.",
+        "saved_to_queue": "¡Agregado a tu lista!",
+        "removed_from_queue": "Eliminado de la lista",
+        "streak_broken": "¡Tu racha se rompió!",
+        "new_achievement": "¡Nuevo Logro!",
+
+        # Landing Page
+        "hero_subtitle": "La primera guía de streaming diseñada para cerebros con TDAH y neurodivergentes.",
+        "hero_tagline": "Cuéntanos cómo te sientes. Encontraremos el contenido perfecto para tu estado de ánimo.",
+        "feature_mood_title": "Descubrimiento por Ánimo",
+        "feature_mood_desc": "Selecciona cómo te sientes ahora y cómo quieres sentirte. Te curaremos contenido que te lleve allí.",
+        "feature_mr_dp_title": "Mr.DP - Curador IA",
+        "feature_mr_dp_desc": "¡Conoce a tu compañero de dopamina! Solo cuéntale cómo te sientes y encontrará el contenido perfecto.",
+        "feature_quick_title": "Dosis Rápida",
+        "feature_quick_desc": "¿No puedes decidir? Un botón te da la combinación perfecta. Sin scrollear.",
+        "testimonials_title": "Lo Que Dice la Gente",
+        "pricing_title": "Precios Simples",
+        "about_title": "Acerca de Dopamine.watch",
+        "ready_to_feel_better": "¿Listo para sentirte mejor?",
+
+        # SOS Mode
+        "sos_calm_mode": "Modo SOS Calma",
+        "sos_description": "Toma un momento para respirar. Estás seguro aquí.",
+        "exit_sos": "Me siento mejor",
+
+        # Landing Page Extended
+        "happy_users": "Usuarios Felices",
+        "moods_matched": "Estados Combinados",
+        "user_rating": "Calificación",
+        "start_free": "Comenzar Gratis",
+        "guest_mode": "Modo Invitado",
+        "back_to_home": "Volver al Inicio",
+        "create_account": "Crear Cuenta",
+        "forgot_password": "¿Olvidaste tu Contraseña?",
+        "login_subtitle": "Inicia sesión en tu motor de dopamina",
+        "signup_subtitle": "Únete a la revolución de dopamina",
+        "mood_driven_title": "Descubrimiento por Estado de Ánimo",
+        "mood_driven_desc": "IA revolucionaria que entiende no solo qué quieres ver, sino cómo quieres SENTIRTE. Selecciona tu estado actual y deseado - nosotros nos encargamos del resto.",
+        "mr_dp_curator_title": "Mr.DP Curador IA",
+        "mr_dp_curator_desc": "Tu compañero personal de dopamina que realmente entiende el TDAH. Chatea naturalmente sobre cómo te sientes.",
+        "quick_hit_title": "Dosis Rápida",
+        "quick_hit_desc": "¿Fatiga de decisión? Un botón. Combinación perfecta. Sin scrollear.",
+        "movies_tv_title": "Películas y Series",
+        "movies_tv_desc": "20+ servicios de streaming, filtrados por emoción solo para ti.",
+        "music_playlists_title": "Música y Playlists",
+        "music_playlists_desc": "Música combinada con tu ánimo de Spotify, Apple Music y más.",
+        "podcasts_more_title": "Podcasts, Audiolibros y Más",
+        "podcasts_more_desc": "Lo que tu cerebro desee - tenemos contenido curado en cada formato para tu estado mental actual.",
+        "science_title": "Construido con Ciencia, Diseñado para Ti",
+        "science_subtitle": "Nuestro algoritmo de combinación de ánimo está basado en investigación sobre regulación emocional y TDAH.",
+        "community_title": "Lo Que Dice la Comunidad",
+        "pricing_simple": "Precios Simples y Transparentes",
+        "about_built_title": "Hecho para Cerebros como el Tuyo",
+        "about_mission": "ayudarte a sentirte mejor, más rápido",
+        "about_signature": "Hecho con 💜 para cerebros con TDAH, por cerebros con TDAH.",
+        "join_thousands": "Únete a miles que escaparon de la trampa del scroll.",
+        "free_plan": "Gratis",
+        "forever_free": "gratis para siempre",
+        "plus_plan": "Plus",
+        "pro_plan": "Pro",
+        "most_popular": "MÁS POPULAR",
+        "have_account": "¿Tienes cuenta? Iniciar Sesión",
+        "start_journey": "Comienza tu viaje de dopamina",
+
+        # Sidebar & Navigation
+        "your_mood": "Tu Estado de Ánimo",
+        "i_feel": "Me siento...",
+        "i_want": "Quiero...",
+        "quick_dope_hit": "DOSIS RÁPIDA",
+        "watch_queue": "Lista de Reproducción",
+        "view_all_queue": "Ver Toda la Lista",
+        "queue_empty": "Tu lista está vacía",
+        "log_in_to_save": "Inicia sesión para guardar contenido",
+        "gamification": "Gamificación",
+        "shorts": "Shorts",
+    }
+}
+
+def get_text(key: str, lang: str = None) -> str:
+    """Get translated text for a key. Falls back to English if not found."""
+    if lang is None:
+        lang = st.session_state.get("lang", "en")
+
+    # Try to get from selected language
+    if lang in TRANSLATIONS and key in TRANSLATIONS[lang]:
+        return TRANSLATIONS[lang][key]
+
+    # Fallback to English
+    if key in TRANSLATIONS["en"]:
+        return TRANSLATIONS["en"][key]
+
+    # Return key itself if not found
+    return key
+
+def t(key: str) -> str:
+    """Shorthand for get_text()"""
+    return get_text(key)
+
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 TMDB_IMAGE_URL = "https://image.tmdb.org/t/p/w500"
 TMDB_BACKDROP_URL = "https://image.tmdb.org/t/p/original"
@@ -4560,7 +4943,10 @@ if "init" not in st.session_state:
         "is_premium": False,
         "auth_error": None,
         "auth_success": None,
-        
+
+        # Language (i18n)
+        "lang": "en",  # "en" or "es"
+
         # Mood
         "current_feeling": "Bored",
         "desired_feeling": "Entertained",
@@ -7147,21 +7533,21 @@ def render_landing():
                 {get_mr_dp_svg("excited", 150)}
             </div>
             <h1 class="landing-title gradient-text">Dopamine.watch</h1>
-            <p class="landing-subtitle">The first streaming guide designed for <strong>ADHD & neurodivergent brains</strong>.</p>
-            <p class="landing-tagline">Tell us how you feel. We'll find the perfect content to match your mood.</p>
+            <p class="landing-subtitle">{t("hero_subtitle")}</p>
+            <p class="landing-tagline">{t("hero_tagline")}</p>
 
             <div class="hero-stats">
                 <div class="stat-item">
                     <span class="stat-number">50K+</span>
-                    <span class="stat-label">Happy Users</span>
+                    <span class="stat-label">{t("happy_users")}</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-number">2M+</span>
-                    <span class="stat-label">Moods Matched</span>
+                    <span class="stat-label">{t("moods_matched")}</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-number">4.9★</span>
-                    <span class="stat-label">User Rating</span>
+                    <span class="stat-label">{t("user_rating")}</span>
                 </div>
             </div>
         </div>
@@ -7173,60 +7559,60 @@ def render_landing():
     with col2:
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("🚀 Get Started Free", use_container_width=True, key="cta_signup", type="primary"):
+            if st.button(f"🚀 {t('get_started')}", use_container_width=True, key="cta_signup", type="primary"):
                 st.session_state.auth_step = "signup"
                 st.rerun()
         with c2:
-            if st.button("🔑 Log In", use_container_width=True, key="cta_login"):
+            if st.button(f"🔑 {t('log_in')}", use_container_width=True, key="cta_login"):
                 st.session_state.auth_step = "login"
                 st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
 
     # BENTO GRID FEATURES - Apple-style layout
-    st.markdown("""
+    st.markdown(f"""
     <div class="bento-grid fade-in-up">
         <div class="bento-item bento-large bento-primary">
             <div class="bento-icon">🎯</div>
-            <h3 class="bento-title">Mood-Driven Discovery</h3>
-            <p class="bento-desc">Revolutionary AI that understands not just what you want to watch, but how you want to FEEL. Select your current mood and desired state - we handle the rest.</p>
+            <h3 class="bento-title">{t("mood_driven_title")}</h3>
+            <p class="bento-desc">{t("mood_driven_desc")}</p>
             <div class="bento-visual">
                 <div class="mood-flow">
-                    <span class="mood-tag current">😫 Stressed</span>
+                    <span class="mood-tag current">😫 {t("stressed")}</span>
                     <span class="mood-arrow">→</span>
-                    <span class="mood-tag desired">😌 Relaxed</span>
+                    <span class="mood-tag desired">😌 {t("relaxed")}</span>
                 </div>
             </div>
         </div>
 
         <div class="bento-item bento-accent">
             <div class="bento-icon">🤖</div>
-            <h3 class="bento-title">Mr.DP AI Curator</h3>
-            <p class="bento-desc">Your personal dopamine buddy who actually gets ADHD. Chat naturally about how you feel.</p>
+            <h3 class="bento-title">{t("mr_dp_curator_title")}</h3>
+            <p class="bento-desc">{t("mr_dp_curator_desc")}</p>
         </div>
 
         <div class="bento-item">
             <div class="bento-icon">⚡</div>
-            <h3 class="bento-title">Quick Dope Hit</h3>
-            <p class="bento-desc">Decision fatigue? One button. Perfect match. No scrolling.</p>
+            <h3 class="bento-title">{t("quick_hit_title")}</h3>
+            <p class="bento-desc">{t("quick_hit_desc")}</p>
         </div>
 
         <div class="bento-item">
             <div class="bento-icon">🎬</div>
-            <h3 class="bento-title">Movies & TV</h3>
-            <p class="bento-desc">20+ streaming services, emotion-filtered just for you.</p>
+            <h3 class="bento-title">{t("movies_tv_title")}</h3>
+            <p class="bento-desc">{t("movies_tv_desc")}</p>
         </div>
 
         <div class="bento-item">
             <div class="bento-icon">🎵</div>
-            <h3 class="bento-title">Music & Playlists</h3>
-            <p class="bento-desc">Mood-matched music from Spotify, Apple Music & more.</p>
+            <h3 class="bento-title">{t("music_playlists_title")}</h3>
+            <p class="bento-desc">{t("music_playlists_desc")}</p>
         </div>
 
         <div class="bento-item bento-wide">
             <div class="bento-icon">🎙️</div>
-            <h3 class="bento-title">Podcasts, Audiobooks & More</h3>
-            <p class="bento-desc">Whatever your brain craves - we've got curated content across every format to match your current headspace.</p>
+            <h3 class="bento-title">{t("podcasts_more_title")}</h3>
+            <p class="bento-desc">{t("podcasts_more_desc")}</p>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -7234,10 +7620,10 @@ def render_landing():
     st.markdown("<br><br>", unsafe_allow_html=True)
 
     # CREDIBILITY / RESEARCH SECTION
-    st.markdown("""
+    st.markdown(f"""
     <div class="credibility-section fade-in-up">
-        <h2 class="section-title-center">Built on Science, Designed for You</h2>
-        <p class="section-subtitle">Our mood-matching algorithm is grounded in research on emotional regulation and ADHD.</p>
+        <h2 class="section-title-center">{t("science_title")}</h2>
+        <p class="section-subtitle">{t("science_subtitle")}</p>
 
         <div class="research-grid">
             <div class="research-card">
@@ -7273,7 +7659,7 @@ def render_landing():
     st.markdown("<br><br>", unsafe_allow_html=True)
 
     # TESTIMONIALS with better styling
-    st.markdown("<div class='section-header'><span class='section-icon'>💬</span><h2 class='section-title'>What the Community Says</h2></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='section-header'><span class='section-icon'>💬</span><h2 class='section-title'>{t('community_title')}</h2></div>", unsafe_allow_html=True)
 
     st.markdown("""
     <div class="testimonial-grid fade-in-up">
@@ -7316,7 +7702,7 @@ def render_landing():
     st.markdown("<br><br>", unsafe_allow_html=True)
 
     # PRICING with enhanced styling
-    st.markdown("<div class='section-header'><span class='section-icon'>💎</span><h2 class='section-title'>Simple, Transparent Pricing</h2></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='section-header'><span class='section-icon'>💎</span><h2 class='section-title'>{t('pricing_simple')}</h2></div>", unsafe_allow_html=True)
 
     st.markdown("""
     <div class="pricing-grid fade-in-up">
@@ -7377,17 +7763,17 @@ def render_landing():
         <div class="about-mr-dp">
             {get_mr_dp_svg("happy", 100)}
         </div>
-        <h2 style="text-align: center; margin-bottom: 16px; background: linear-gradient(135deg, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Built for Brains Like Yours</h2>
+        <h2 style="text-align: center; margin-bottom: 16px; background: linear-gradient(135deg, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{t("about_built_title")}</h2>
         <p style="color: var(--text-secondary); text-align: center; max-width: 700px; margin: 0 auto 24px; line-height: 1.8;">
             We built Dopamine.watch because we know the struggle. Spending 45 minutes scrolling through Netflix,
             only to give up and rewatch The Office again. Decision fatigue is real, especially for neurodivergent brains.
         </p>
         <p style="color: var(--text-secondary); text-align: center; max-width: 700px; margin: 0 auto; line-height: 1.8;">
-            Our mission is simple: <strong style="color: var(--text-primary);">help you feel better, faster</strong>. By understanding your current emotional
+            Our mission is simple: <strong style="color: var(--text-primary);">{t("about_mission")}</strong>. By understanding your current emotional
             state and where you want to be, we cut through the noise and deliver exactly what you need.
         </p>
         <div class="about-signature">
-            Built with 💜 for ADHD brains, by ADHD brains.
+            {t("about_signature")}
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -7400,8 +7786,8 @@ def render_landing():
         <div class="cta-mr-dp">
             {get_mr_dp_svg("excited", 80)}
         </div>
-        <h2 style="text-align: center; margin-bottom: 8px;">Ready to feel better?</h2>
-        <p style="text-align: center; color: var(--text-secondary); margin-bottom: 24px;">Join thousands who've escaped the scroll trap.</p>
+        <h2 style="text-align: center; margin-bottom: 8px;">{t("ready_to_feel_better")}</h2>
+        <p style="text-align: center; color: var(--text-secondary); margin-bottom: 24px;">{t("join_thousands")}</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -7409,11 +7795,11 @@ def render_landing():
     with col2:
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("🚀 Start Free", use_container_width=True, key="footer_cta", type="primary"):
+            if st.button(f"🚀 {t('start_free')}", use_container_width=True, key="footer_cta", type="primary"):
                 st.session_state.auth_step = "signup"
                 st.rerun()
         with c2:
-            if st.button("👤 Continue as Guest", use_container_width=True, key="guest_landing"):
+            if st.button(f"👤 {t('continue_guest')}", use_container_width=True, key="guest_landing"):
                 st.session_state.user = {"email": "guest", "name": "Guest"}
                 update_streak()
                 st.rerun()
@@ -7441,11 +7827,11 @@ def render_landing():
 def render_login():
     col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
-        st.markdown("""
+        st.markdown(f"""
         <div class="auth-card">
             <h1 style="text-align: center; font-size: 2rem; margin-bottom: 8px;">🧠</h1>
-            <div class="auth-title">Welcome Back</div>
-            <div class="auth-subtitle">Log in to your dopamine engine</div>
+            <div class="auth-title">{t("welcome_back")}</div>
+            <div class="auth-subtitle">{t("login_subtitle")}</div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -7460,7 +7846,7 @@ def render_login():
         email = st.text_input("Email", key="login_email", placeholder="your@email.com")
         password = st.text_input("Password", type="password", key="login_pass", placeholder="••••••••")
         
-        if st.button("🔑 Log In", use_container_width=True, key="login_btn", type="primary"):
+        if st.button(f"🔑 {t('log_in')}", use_container_width=True, key="login_btn", type="primary"):
             if email and password:
                 # Frontend-only login - just validate and let them in
                 if len(password) >= 6:
@@ -7475,37 +7861,37 @@ def render_login():
             else:
                 st.session_state.auth_error = "Please enter email and password"
                 st.rerun()
-        
+
         # Forgot password - always show
-        if st.button("Forgot Password?", use_container_width=True, key="forgot_pass"):
+        if st.button(t("forgot_password"), use_container_width=True, key="forgot_pass"):
             st.session_state.auth_step = "reset"
             st.rerun()
-        
+
         st.markdown("---")
-        
+
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("Create Account", use_container_width=True, key="to_signup"):
+            if st.button(t("create_account"), use_container_width=True, key="to_signup"):
                 st.session_state.auth_step = "signup"
                 st.rerun()
         with c2:
-            if st.button("👤 Guest Mode", use_container_width=True, key="guest_login"):
+            if st.button(f"👤 {t('guest_mode')}", use_container_width=True, key="guest_login"):
                 st.session_state.user = {"email": "guest", "name": "Guest"}
                 update_streak()
                 st.rerun()
-        
-        if st.button("← Back to Home", key="back_login"):
+
+        if st.button(f"← {t('back_to_home')}", key="back_login"):
             st.session_state.auth_step = "landing"
             st.rerun()
 
 def render_signup():
     col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
-        st.markdown("""
+        st.markdown(f"""
         <div class="auth-card">
             <h1 style="text-align: center; font-size: 2rem; margin-bottom: 8px;">🧠</h1>
-            <div class="auth-title">Create Account</div>
-            <div class="auth-subtitle">Start your dopamine journey</div>
+            <div class="auth-title">{t("create_account")}</div>
+            <div class="auth-subtitle">{t("start_journey")}</div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -7519,7 +7905,7 @@ def render_signup():
         password = st.text_input("Password", type="password", key="signup_pass", placeholder="••••••••  (min 6 chars)")
         confirm_password = st.text_input("Confirm Password", type="password", key="signup_confirm", placeholder="••••••••")
         
-        if st.button("🚀 Create Account", use_container_width=True, key="signup_btn", type="primary"):
+        if st.button(f"🚀 {t('create_account')}", use_container_width=True, key="signup_btn", type="primary"):
             if email and name and password:
                 if len(password) < 6:
                     st.session_state.auth_error = "Password must be at least 6 characters"
@@ -7544,19 +7930,19 @@ def render_signup():
                 st.rerun()
         
         st.markdown("---")
-        
+
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("Have Account? Log In", use_container_width=True, key="to_login"):
+            if st.button(t("have_account"), use_container_width=True, key="to_login"):
                 st.session_state.auth_step = "login"
                 st.rerun()
         with c2:
-            if st.button("👤 Guest Mode", use_container_width=True, key="guest_signup"):
+            if st.button(f"👤 {t('guest_mode')}", use_container_width=True, key="guest_signup"):
                 st.session_state.user = {"email": "guest", "name": "Guest"}
                 update_streak()
                 st.rerun()
-        
-        if st.button("← Back to Home", key="back_signup"):
+
+        if st.button(f"← {t('back_to_home')}", key="back_signup"):
             st.session_state.auth_step = "landing"
             st.rerun()
 
@@ -7629,10 +8015,23 @@ def render_sidebar():
                 mr_dp_uses = st.session_state.user.get("mr_dp_uses", 0)
                 st.progress(min(mr_dp_uses / FREE_MR_DP_LIMIT, 1.0), text=f"Mr.DP: {mr_dp_uses}/{FREE_MR_DP_LIMIT}")
 
+        # Language Selector
+        lang_col1, lang_col2 = st.columns(2)
+        with lang_col1:
+            if st.button("🇺🇸 EN", use_container_width=True, key="lang_en",
+                        type="primary" if st.session_state.get("lang", "en") == "en" else "secondary"):
+                st.session_state.lang = "en"
+                st.rerun()
+        with lang_col2:
+            if st.button("🇪🇸 ES", use_container_width=True, key="lang_es",
+                        type="primary" if st.session_state.get("lang", "en") == "es" else "secondary"):
+                st.session_state.lang = "es"
+                st.rerun()
+
         st.markdown("---")
 
         # NAVIGATION MENU
-        st.markdown("#### 📍 Navigate")
+        st.markdown(f"#### 📍 {t('home')}")
 
         menu_items = [
             ("🎬", "Movies"),
@@ -7657,7 +8056,7 @@ def render_sidebar():
 
         # Phase 6: Gamification Pages
         st.markdown("---")
-        st.markdown("#### 🎮 Gamification")
+        st.markdown(f"#### 🎮 {t('gamification')}")
 
         gamification_items = [
             ("🎯", "Challenges"),
@@ -7680,14 +8079,14 @@ def render_sidebar():
                 st.rerun()
         
         st.markdown("---")
-        
+
         # MOOD SELECTORS
-        st.markdown("#### 🎯 Your Mood")
-        
+        st.markdown(f"#### 🎯 {t('your_mood')}")
+
         current_options = [f"{MOOD_EMOJIS.get(f, '😊')} {f}" for f in CURRENT_FEELINGS]
         current_idx = CURRENT_FEELINGS.index(st.session_state.current_feeling) if st.session_state.current_feeling in CURRENT_FEELINGS else 6
         current_choice = st.selectbox(
-            "I feel...",
+            t("i_feel"),
             options=current_options,
             index=current_idx,
             key="current_select"
@@ -7701,7 +8100,7 @@ def render_sidebar():
         desired_options = [f"{MOOD_EMOJIS.get(f, '✨')} {f}" for f in DESIRED_FEELINGS]
         desired_idx = DESIRED_FEELINGS.index(st.session_state.desired_feeling) if st.session_state.desired_feeling in DESIRED_FEELINGS else 7
         desired_choice = st.selectbox(
-            "I want...",
+            t("i_want"),
             options=desired_options,
             index=desired_idx,
             key="desired_select"
@@ -7724,7 +8123,7 @@ def render_sidebar():
         st.markdown("---")
         
         # QUICK HIT
-        if st.button("⚡ QUICK DOPE HIT", use_container_width=True, key="quick_hit_sidebar", type="primary"):
+        if st.button(f"⚡ {t('quick_dope_hit')}", use_container_width=True, key="quick_hit_sidebar", type="primary"):
             st.session_state.quick_hit = get_quick_hit()
             st.session_state.nlp_results = []
             st.session_state.nlp_last_prompt = ""
@@ -7747,19 +8146,19 @@ def render_sidebar():
         st.markdown("---")
 
         # WATCH QUEUE
-        st.markdown("#### 📋 Watch Queue")
+        st.markdown(f"#### 📋 {t('watch_queue')}")
         if st.session_state.get('db_user_id') and SUPABASE_ENABLED:
             queue = get_watch_queue(supabase, st.session_state.db_user_id, status='queued', limit=3)
             if queue:
                 for item in queue:
                     st.markdown(f"• {item.get('title', 'Unknown')[:30]}")
-                if st.button("View All Queue", key="view_queue_btn", use_container_width=True):
+                if st.button(t("view_all_queue"), key="view_queue_btn", use_container_width=True):
                     st.session_state.show_queue_page = True
                     st.rerun()
             else:
-                st.caption("Your queue is empty")
+                st.caption(t("queue_empty"))
         else:
-            st.caption("Log in to save content")
+            st.caption(t("log_in_to_save"))
 
         st.markdown("---")
 
