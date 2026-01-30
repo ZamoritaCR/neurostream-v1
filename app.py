@@ -50,6 +50,7 @@ from analytics_utils import (
     track_mood_selection, track_content_interaction, track_feature_usage,
     get_session_stats, render_analytics_dashboard
 )
+from email_utils import send_welcome_email, send_milestone_email, check_and_send_milestone_email
 
 # Phase 1 & 2 Features
 from mood_utils import log_mood_selection, get_mood_history, get_top_moods, get_mood_patterns
@@ -8086,6 +8087,9 @@ def render_signup():
                     update_streak()
                     st.balloons()
                     st.toast("🎉 Welcome to Dopamine.watch! +50 DP", icon="⚡")
+                    # Send welcome email (async, non-blocking)
+                    if email != "guest":
+                        send_welcome_email(email, name)
                     st.rerun()
             else:
                 st.session_state.auth_error = "Please fill in all fields"
