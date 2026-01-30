@@ -750,6 +750,10 @@ if not _openai_key:
 
 openai_client = OpenAI(api_key=_openai_key) if _openai_key else None
 
+# Debug: Log OpenAI client status at startup
+print(f"[STARTUP] OpenAI key present: {bool(_openai_key)}, length: {len(_openai_key) if _openai_key else 0}")
+print(f"[STARTUP] OpenAI client created: {openai_client is not None}")
+
 # --------------------------------------------------
 # 7. EMOTION MAPPINGS - COMPLETE
 # --------------------------------------------------
@@ -2394,6 +2398,7 @@ def ask_mr_dp_v2(user_prompt: str, chat_history: list = None, user_context: dict
     messages.append({"role": "user", "content": user_prompt})
 
     try:
+        print(f"[Mr.DP] Calling OpenAI API with prompt: {user_prompt[:50]}...")
         response = openai_client.chat.completions.create(
             model="gpt-4o",
             messages=messages,
@@ -2401,6 +2406,7 @@ def ask_mr_dp_v2(user_prompt: str, chat_history: list = None, user_context: dict
             max_tokens=1000,
             response_format={"type": "json_object"}
         )
+        print(f"[Mr.DP] API call successful!")
 
         content = response.choices[0].message.content.strip()
         result = json.loads(content)
@@ -2408,7 +2414,9 @@ def ask_mr_dp_v2(user_prompt: str, chat_history: list = None, user_context: dict
         return result
 
     except Exception as e:
+        import traceback
         print(f"[Mr.DP] API Error: {type(e).__name__}: {e}")
+        print(f"[Mr.DP] Traceback: {traceback.format_exc()}")
         return fallback_mr_dp_v2(user_prompt)
 
 
@@ -5598,9 +5606,19 @@ button[data-testid="collapsedControl"] {
     display: flex !important;
 }
 
+/* Force sidebar to be visible and expanded */
 section[data-testid="stSidebar"] {
     background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%) !important;
     border-right: 1px solid var(--glass-border) !important;
+    min-width: 280px !important;
+    width: 280px !important;
+}
+
+section[data-testid="stSidebar"][aria-expanded="false"] {
+    min-width: 280px !important;
+    width: 280px !important;
+    margin-left: 0 !important;
+    transform: none !important;
 }
 
 section[data-testid="stSidebar"] .stSelectbox > div > div {
