@@ -5557,12 +5557,10 @@ h1, h2, h3, .stat-value, .hero-title { font-family: 'Space Grotesk', sans-serif;
 #MainMenu, footer {visibility: hidden;}
 .stDeployButton {display: none;}
 div[data-testid="stToolbar"] {display: none;}
-/* Keep sidebar toggle button visible */
+/* Keep sidebar toggle visible */
 button[data-testid="collapsedControl"] {
     visibility: visible !important;
-    background: var(--glass) !important;
-    border: 1px solid var(--glass-border) !important;
-    border-radius: 8px !important;
+    display: flex !important;
 }
 
 section[data-testid="stSidebar"] {
@@ -7147,90 +7145,30 @@ section[data-testid="stSidebar"] .stTextArea textarea {
    MOBILE-FIRST PWA RESPONSIVE STYLES
    ============================================ */
 
-/* Global touch targets - always accessible */
-button, a, .stButton, [data-testid="stButton"], .stSelectbox, .stCheckbox {
-    min-height: 44px !important;
-}
-
 /* Base mobile adjustments */
 @media (max-width: 768px) {
-    /* App container - full width, no overflow */
-    .stApp {
-        padding: 0 !important;
-        overflow-x: hidden !important;
-    }
-
     /* Reduce padding on mobile */
     .main .block-container {
-        padding: 0.75rem !important;
+        padding: 1rem 0.75rem !important;
         max-width: 100% !important;
-        overflow-x: hidden !important;
-    }
-
-    /* Typography - responsive sizing */
-    h1, .landing-title {
-        font-size: 2rem !important;
-        line-height: 1.2 !important;
-    }
-
-    h2, .auth-title {
-        font-size: 1.5rem !important;
-    }
-
-    h3 {
-        font-size: 1.2rem !important;
-    }
-
-    p, .stMarkdown p {
-        font-size: 0.95rem !important;
-        line-height: 1.5 !important;
-    }
-
-    .landing-subtitle {
-        font-size: 1.1rem !important;
     }
 
     /* Larger touch targets */
     button, .stButton > button {
         min-height: 48px !important;
         font-size: 1rem !important;
-        width: 100% !important;
-        padding: 12px 16px !important;
     }
 
     /* Better input fields - prevent iOS zoom */
-    input, textarea, select, .stTextInput input, .stSelectbox select, .stTextArea textarea {
+    input, textarea, select, .stTextInput input, .stSelectbox select {
         font-size: 16px !important;
         min-height: 48px !important;
-        border-radius: 12px !important;
     }
 
-    /* Forms - full width */
-    .stTextInput, .stSelectbox, .stTextArea, .stNumberInput {
-        width: 100% !important;
-        margin-bottom: 0.75rem !important;
-    }
-
-    /* Stack columns on mobile - force vertical layout */
+    /* Stack columns on mobile */
     [data-testid="column"] {
         width: 100% !important;
         flex: 1 1 100% !important;
-        min-width: 100% !important;
-    }
-
-    .row-widget.stHorizontal {
-        flex-direction: column !important;
-        gap: 0.5rem !important;
-    }
-
-    [data-testid="stHorizontalBlock"] {
-        flex-wrap: wrap !important;
-        gap: 0.5rem !important;
-    }
-
-    [data-testid="stHorizontalBlock"] > div {
-        flex: 1 1 100% !important;
-        min-width: 100% !important;
     }
 
     /* Movie cards - 2 per row on mobile */
@@ -7250,121 +7188,14 @@ button, a, .stButton, [data-testid="stButton"], .stSelectbox, .stCheckbox {
         font-size: 1.3rem !important;
     }
 
-    /* Feature grid - single column */
-    .feature-grid {
-        grid-template-columns: 1fr !important;
-        gap: 16px !important;
-    }
-
-    /* Feature cards - more compact */
-    .feature-card {
-        padding: 20px !important;
-    }
-
-    /* Auth card - full width on mobile */
-    .auth-card {
-        padding: 24px 20px !important;
-        max-width: 100% !important;
-        margin: 0 !important;
-        border-radius: 16px !important;
-    }
-
-    /* Bento grid - single column */
-    .bento-grid {
-        grid-template-columns: 1fr !important;
-        gap: 12px !important;
-    }
-
-    /* Images - responsive */
-    img {
-        max-width: 100% !important;
-        height: auto !important;
-    }
-
-    /* Sidebar adjustments */
-    section[data-testid="stSidebar"] {
-        width: 85vw !important;
-        max-width: 300px !important;
-    }
-
-    section[data-testid="stSidebar"] > div {
-        padding: 1rem !important;
-    }
-
-    /* Stats bar - scrollable on mobile */
-    .stats-bar {
-        overflow-x: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-        scrollbar-width: none !important;
-    }
-
-    .stats-bar::-webkit-scrollbar {
-        display: none !important;
-    }
-
-    /* Expander headers */
-    .streamlit-expanderHeader {
-        font-size: 1rem !important;
-        padding: 12px !important;
-    }
-
-    /* Tabs - scrollable */
-    .stTabs [data-baseweb="tab-list"] {
-        overflow-x: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-        gap: 0 !important;
-    }
-
-    .stTabs [data-baseweb="tab"] {
-        padding: 8px 16px !important;
-        white-space: nowrap !important;
-    }
-
-    /* Mr.DP floating button - adjust position */
-    #mrdp-avatar {
-        width: 56px !important;
-        height: 56px !important;
-        bottom: 16px !important;
-        right: 16px !important;
-    }
-
-    #mrdp-popup {
-        width: calc(100vw - 16px) !important;
-        max-width: none !important;
-        right: 8px !important;
-        bottom: 80px !important;
-        height: 60vh !important;
-        max-height: 400px !important;
-    }
-
-    /* Hide unnecessary elements on mobile */
-    .desktop-only {
-        display: none !important;
-    }
-
-    /* Spacing adjustments */
-    .stMarkdown {
-        margin-bottom: 0.5rem !important;
-    }
-
-    hr {
-        margin: 1rem 0 !important;
-    }
-
-    /* Prevent horizontal scroll */
-    .element-container {
-        max-width: 100% !important;
-        overflow-x: hidden !important;
+    /* Mr.DP chat - fixed at bottom on mobile */
+    .mr-dp-chat-container {
+        position: relative;
     }
 }
 
-/* Small phones (iPhone SE, etc.) */
+/* Small phones */
 @media (max-width: 480px) {
-    /* Even smaller padding */
-    .main .block-container {
-        padding: 0.5rem !important;
-    }
-
     /* Single column movie cards */
     .movie-card {
         width: 100% !important;
@@ -7375,45 +7206,15 @@ button, a, .stButton, [data-testid="stButton"], .stSelectbox, .stCheckbox {
         font-size: 1.1rem !important;
     }
 
-    h1, .landing-title {
-        font-size: 1.75rem !important;
-    }
-
-    h2 {
-        font-size: 1.3rem !important;
-    }
-
     /* Compact mood selector */
     .mood-grid {
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 8px !important;
     }
 
-    /* Auth card - tighter padding */
-    .auth-card {
-        padding: 20px 16px !important;
-    }
-
-    /* Smaller landing subtitle */
-    .landing-subtitle {
-        font-size: 1rem !important;
-    }
-
-    /* Stack language buttons */
-    [data-testid="stHorizontalBlock"] {
-        gap: 0.25rem !important;
-    }
-
-    /* Compact expanders */
-    .streamlit-expanderHeader {
-        padding: 10px !important;
-        font-size: 0.9rem !important;
-    }
-
-    /* Mr.DP popup - full width */
-    #mrdp-popup {
-        height: 50vh !important;
-        max-height: 350px !important;
+    /* Smaller landing title */
+    .landing-title {
+        font-size: 2rem !important;
     }
 }
 
@@ -7429,9 +7230,8 @@ button, a, .stButton, [data-testid="stButton"], .stSelectbox, .stCheckbox {
 /* Touch-friendly interactions */
 @media (hover: none) and (pointer: coarse) {
     /* Remove hover effects on touch devices */
-    .movie-card:hover, .feature-card:hover, .bento-item:hover {
+    .movie-card:hover {
         transform: none !important;
-        border-color: inherit !important;
     }
 
     /* Add active states instead */
@@ -7442,30 +7242,11 @@ button, a, .stButton, [data-testid="stButton"], .stSelectbox, .stCheckbox {
 
     button:active, .stButton > button:active {
         transform: scale(0.95) !important;
-        opacity: 0.9 !important;
     }
 
     /* Bento items - touch feedback */
-    .bento-item:active, .feature-card:active {
+    .bento-item:active {
         transform: scale(0.98) !important;
-        opacity: 0.9 !important;
-    }
-
-    /* Larger touch targets for links */
-    a {
-        padding: 4px !important;
-        margin: -4px !important;
-    }
-
-    /* Better scrolling on touch */
-    .stApp, .main, [data-testid="stVerticalBlock"] {
-        -webkit-overflow-scrolling: touch !important;
-    }
-
-    /* Disable text selection on buttons for cleaner touch */
-    button, .stButton > button {
-        -webkit-user-select: none !important;
-        user-select: none !important;
     }
 }
 
@@ -7510,43 +7291,6 @@ button, a, .stButton, [data-testid="stButton"], .stSelectbox, .stCheckbox {
 # --------------------------------------------------
 def safe(s):
     return html_lib.escape(s or "")
-
-
-def is_mobile():
-    """
-    Detect if user is likely on a mobile device.
-    Uses JavaScript to detect screen width and stores in session state.
-    Returns True if screen width < 768px.
-    """
-    # Inject JS to detect screen width (runs once per session)
-    if "mobile_detected" not in st.session_state:
-        st.session_state.mobile_detected = False
-        st.session_state.screen_width = 1024  # Default to desktop
-
-        # JavaScript to detect and store screen width
-        st.markdown("""
-        <script>
-        (function() {
-            const width = window.innerWidth;
-            // Store in sessionStorage for Streamlit to potentially read
-            sessionStorage.setItem('screen_width', width);
-            sessionStorage.setItem('is_mobile', width < 768);
-        })();
-        </script>
-        """, unsafe_allow_html=True)
-
-    # Heuristic: if sidebar is collapsed by default, assume mobile-friendly needed
-    return st.session_state.get("mobile_view", False)
-
-
-def get_responsive_columns(desktop_count, tablet_count=None, mobile_count=1):
-    """
-    Return appropriate column count based on likely screen size.
-    For now, returns desktop_count since true detection requires JS round-trip.
-    CSS handles the actual responsive layout.
-    """
-    return desktop_count
-
 
 # --------------------------------------------------
 # MOBILE APP INSTALL BANNER (PWA)

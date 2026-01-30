@@ -356,7 +356,7 @@ def render_floating_mr_dp():
 
     # Hidden Streamlit form - used as bridge for message submission
     with st.container():
-        with st.form("mr_dp_form", clear_on_submit=True):
+        with st.form("mr_dp_form", clear_on_submit=True, border=False):
             user_input = st.text_input(
                 "Message",
                 placeholder="How are you feeling?",
