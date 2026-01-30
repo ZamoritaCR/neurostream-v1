@@ -271,6 +271,97 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS achieved_milestones JSONB DEFAULT 
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS total_referrals INT DEFAULT 0;
 
 -- ============================================
+-- 10. CHALLENGES TABLE (Phase 6)
+-- Daily/Weekly challenges for gamification
+-- ============================================
+CREATE TABLE IF NOT EXISTS challenges (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    challenge_type TEXT NOT NULL, -- 'daily', 'weekly'
+    requirement_type TEXT NOT NULL, -- 'mood_logs', 'streak', 'content_clicks', 'queue_adds', 'mr_dp_chats'
+    requirement_count INTEGER NOT NULL,
+    reward_dp INTEGER NOT NULL,
+    reward_badge TEXT,
+    active BOOLEAN DEFAULT TRUE,
+    start_date DATE,
+    end_date DATE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_challenges_active ON challenges(active, challenge_type);
+CREATE INDEX IF NOT EXISTS idx_challenges_dates ON challenges(start_date, end_date);
+
+-- ============================================
+-- 11. USER CHALLENGES TABLE (Phase 6)
+-- Track user progress on challenges
+-- ============================================
+CREATE TABLE IF NOT EXISTS user_challenges (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    challenge_id TEXT NOT NULL,
+    progress INTEGER DEFAULT 0,
+    completed BOOLEAN DEFAULT FALSE,
+    completed_at TIMESTAMPTZ,
+    reward_claimed BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, challenge_id)
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_user_challenges_user ON user_challenges(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_challenges_challenge ON user_challenges(challenge_id);
+
+-- RLS Policy
+ALTER TABLE user_challenges ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own challenge progress" ON user_challenges;
+DROP POLICY IF EXISTS "Users can insert own challenge progress" ON user_challenges;
+DROP POLICY IF EXISTS "Users can update own challenge progress" ON user_challenges;
+
+CREATE POLICY "Users can view own challenge progress"
+    ON user_challenges FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own challenge progress"
+    ON user_challenges FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own challenge progress"
+    ON user_challenges FOR UPDATE
+    USING (auth.uid() = user_id);
+
+-- ============================================
+-- 12. USER INVENTORY TABLE (Phase 6)
+-- Track purchased shop items
+-- ============================================
+CREATE TABLE IF NOT EXISTS user_inventory (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    item_id TEXT NOT NULL,
+    purchased_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, item_id)
+);
+
+-- Index
+CREATE INDEX IF NOT EXISTS idx_user_inventory_user ON user_inventory(user_id);
+
+-- RLS Policy
+ALTER TABLE user_inventory ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own inventory" ON user_inventory;
+DROP POLICY IF EXISTS "Users can insert to own inventory" ON user_inventory;
+
+CREATE POLICY "Users can view own inventory"
+    ON user_inventory FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert to own inventory"
+    ON user_inventory FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+-- ============================================
 -- VERIFICATION QUERIES
 -- Run these to confirm tables were created
 -- ============================================

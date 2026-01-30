@@ -1,16 +1,18 @@
 # FILE: app.py
 # --------------------------------------------------
-# DOPAMINE.WATCH v38.0 - VIRAL & GROWTH ENGINE
-# Mother Code v37.0 + Phase 5 Features
+# DOPAMINE.WATCH v39.0 - COMMUNITY & GAMIFICATION
+# Mother Code v38.0 + Phase 6 Features
 # --------------------------------------------------
-# NEW IN v38:
-# ✅ Shareable Mood Cards - SVG generation for social sharing
-# ✅ Referral System - 100 DP + 7-day trial rewards
-# ✅ Social Proof Banner - Live activity stats
-# ✅ Milestone Celebrations - Achievement sharing
+# NEW IN v39:
+# ✅ "Others Like You" - Community-based recommendations
+# ✅ Mood Buddies - Anonymous support system
+# ✅ Daily/Weekly Challenges - Gamification rewards
+# ✅ Rewards Shop - Spend DP on themes, badges, features
+# ✅ Leaderboards - Compete with other users
+# ✅ Admin Dashboard - Analytics & management
+# ✅ Phase 5: Viral & Growth (Referrals, Share Cards)
 # ✅ Phase 4: Personalization + Monetization
 # ✅ Phase 3: Mr.DP 2.0 (GPT-4o, Spotify, Rich Cards)
-# ✅ Phase 1 & 2: (Mood, Behavior, Queue, SOS, Timer)
 # --------------------------------------------------
 
 import os
@@ -3379,6 +3381,931 @@ def render_apply_referral_code():
 
 
 # --------------------------------------------------
+# 9.11 COMMUNITY, GAMIFICATION & ADMIN (PHASE 6)
+# --------------------------------------------------
+
+# Admin emails for dashboard access
+ADMIN_EMAILS = ["johan@dopamine.watch", "admin@dopamine.watch"]
+
+def is_admin(user_id: str = None) -> bool:
+    """Check if current user is admin"""
+    if not user_id:
+        user_id = st.session_state.get("db_user_id")
+
+    if not user_id:
+        return False
+
+    user = st.session_state.get("user", {})
+    email = user.get("email", "")
+
+    return email.lower() in [e.lower() for e in ADMIN_EMAILS]
+
+
+# --------------------------------------------------
+# COMMUNITY RECOMMENDATIONS ("Others Like You")
+# --------------------------------------------------
+def get_similar_users(user_id: str, limit: int = 20) -> list:
+    """Find users with similar mood patterns"""
+    if not user_id or not supabase:
+        return []
+
+    try:
+        # Get user's mood history
+        user_moods = get_mood_history(supabase, user_id, limit=50)
+        if not user_moods:
+            return []
+
+        from collections import Counter
+        user_mood_counts = Counter(m["desired_feeling"] for m in user_moods if m.get("desired_feeling"))
+        user_top_moods = set(m for m, _ in user_mood_counts.most_common(3))
+
+        # Get other users with similar moods (aggregated, not individual data)
+        recent_cutoff = (datetime.now() - timedelta(days=14)).isoformat()
+
+        result = supabase.table("mood_history")\
+            .select("user_id, desired_feeling")\
+            .gte("created_at", recent_cutoff)\
+            .neq("user_id", user_id)\
+            .limit(500)\
+            .execute()
+
+        if not result.data:
+            return []
+
+        # Group by user and calculate similarity
+        user_moods_map = {}
+        for r in result.data:
+            uid = r["user_id"]
+            if uid not in user_moods_map:
+                user_moods_map[uid] = []
+            user_moods_map[uid].append(r["desired_feeling"])
+
+        # Calculate similarity scores
+        similar_users = []
+        for uid, moods in user_moods_map.items():
+            other_top = set(Counter(moods).most_common(3))
+            overlap = len(user_top_moods.intersection(set(m for m, _ in other_top)))
+            if overlap >= 2:
+                similar_users.append(uid)
+
+        return similar_users[:limit]
+    except:
+        return []
+
+
+def get_community_recommendations(user_id: str, limit: int = 8) -> list:
+    """Get movies that similar users liked"""
+    if not user_id or not supabase:
+        return []
+
+    try:
+        similar_users = get_similar_users(user_id)
+        if not similar_users:
+            return []
+
+        # Get content that similar users clicked/saved
+        result = supabase.table("user_behavior")\
+            .select("content_id, metadata")\
+            .in_("user_id", similar_users)\
+            .eq("content_type", "movie")\
+            .order("created_at", desc=True)\
+            .limit(50)\
+            .execute()
+
+        if not result.data:
+            return []
+
+        # Deduplicate and count
+        from collections import Counter
+        content_counts = Counter()
+        content_data = {}
+
+        for r in result.data:
+            cid = r.get("content_id")
+            if not cid:
+                continue
+            content_counts[cid] += 1
+            metadata = r.get("metadata", {}) or {}
+            if cid not in content_data:
+                content_data[cid] = {
+                    "id": cid,
+                    "title": metadata.get("title", "Unknown"),
+                    "mood": metadata.get("desired_feeling")
+                }
+
+        # Get top content
+        recommendations = []
+        for cid, count in content_counts.most_common(limit):
+            if cid in content_data:
+                data = content_data[cid]
+                data["similar_count"] = count
+                recommendations.append(data)
+
+        # Enrich with TMDB data
+        enriched = []
+        for rec in recommendations:
+            try:
+                movie = get_movie_details(rec["id"])
+                if movie:
+                    movie["similar_count"] = rec["similar_count"]
+                    movie["helped_mood"] = rec.get("mood")
+                    enriched.append(movie)
+            except:
+                continue
+
+        return enriched
+    except:
+        return []
+
+
+def render_community_recommendations():
+    """Render 'Others Like You' section"""
+    user_id = st.session_state.get("db_user_id")
+
+    if not user_id:
+        return
+
+    recs = get_community_recommendations(user_id, limit=4)
+
+    if not recs:
+        return
+
+    st.markdown("""
+    <div class="section-header">
+        <span class="section-icon">👥</span>
+        <h2 class="section-title">People Like You Watched</h2>
+    </div>
+    <p style="color: var(--text-secondary); margin-bottom: 16px;">
+        Based on users with similar mood patterns
+    </p>
+    """, unsafe_allow_html=True)
+
+    cols = st.columns(4)
+    for idx, movie in enumerate(recs[:4]):
+        with cols[idx]:
+            similar_count = movie.get("similar_count", 0)
+            helped_mood = movie.get("helped_mood")
+
+            st.markdown(f"""
+            <div style="
+                background: rgba(16,185,129,0.15);
+                border: 1px solid rgba(16,185,129,0.3);
+                border-radius: 8px;
+                padding: 6px 10px;
+                font-size: 0.75rem;
+                color: #10b981;
+                margin-bottom: 8px;
+            ">
+                👥 {similar_count} similar users watched
+                {f'<br>💚 Helped with {helped_mood.lower()}' if helped_mood else ''}
+            </div>
+            """, unsafe_allow_html=True)
+
+            render_movie_card(movie)
+
+
+# --------------------------------------------------
+# MOOD BUDDIES - ANONYMOUS SUPPORT
+# --------------------------------------------------
+def get_mood_buddy_message(current_feeling: str) -> dict:
+    """Get anonymous message from someone who felt the same way"""
+    if not supabase:
+        return None
+
+    try:
+        result = supabase.table("mood_history")\
+            .select("desired_feeling")\
+            .eq("current_feeling", current_feeling)\
+            .gte("created_at", (datetime.now() - timedelta(days=7)).isoformat())\
+            .limit(20)\
+            .execute()
+
+        if not result.data:
+            return None
+
+        entry = random.choice(result.data)
+
+        return {
+            "message": f"Someone who also felt {current_feeling.lower()} found content to feel {entry.get('desired_feeling', 'better').lower()}.",
+            "desired": entry.get("desired_feeling")
+        }
+    except:
+        return None
+
+
+def get_live_mood_count(feeling: str) -> int:
+    """Get count of users currently feeling this way"""
+    if not supabase:
+        return 0
+
+    try:
+        cutoff = (datetime.now() - timedelta(hours=1)).isoformat()
+        result = supabase.table("mood_history")\
+            .select("id", count="exact")\
+            .eq("current_feeling", feeling)\
+            .gte("created_at", cutoff)\
+            .execute()
+
+        return result.count if result.count else 0
+    except:
+        return 0
+
+
+def render_mood_buddy_support():
+    """Render mood buddy support message"""
+    current = st.session_state.get("current_feeling")
+    if not current:
+        return
+
+    count = get_live_mood_count(current)
+    buddy = get_mood_buddy_message(current)
+
+    if count > 0 or buddy:
+        emoji = MOOD_EMOJIS.get(current, "😊")
+
+        buddy_msg = f'<div style="color: rgba(255,255,255,0.6); font-size: 0.9rem; margin-left: 42px;">{buddy["message"]}</div>' if buddy else ''
+
+        st.markdown(f"""
+        <div style="
+            background: linear-gradient(135deg, rgba(139,92,246,0.1), rgba(168,85,247,0.1));
+            border: 1px solid rgba(139,92,246,0.2);
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin: 16px 0;
+        ">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                <span style="font-size: 1.5rem;">{emoji}</span>
+                <span style="color: rgba(255,255,255,0.9);">
+                    <strong>{count if count > 0 else 'Others'}</strong> people
+                    {f'felt {current.lower()} in the last hour' if count > 0 else f'know how {current.lower()} feels'}
+                </span>
+            </div>
+            {buddy_msg}
+            <div style="color: #8b5cf6; font-size: 0.85rem; margin-left: 42px; margin-top: 8px;">
+                You're not alone 💜
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+# --------------------------------------------------
+# DAILY/WEEKLY CHALLENGES
+# --------------------------------------------------
+DEFAULT_CHALLENGES = {
+    "daily": [
+        {"id": "mood_check", "title": "Mood Check", "desc": "Log your mood 3 times", "req_type": "mood_logs", "req_count": 3, "reward": 25},
+        {"id": "explorer", "title": "Explorer", "desc": "Click on 5 different movies", "req_type": "content_clicks", "req_count": 5, "reward": 30},
+        {"id": "queue_builder", "title": "Queue Builder", "desc": "Add 2 items to your queue", "req_type": "queue_adds", "req_count": 2, "reward": 20},
+        {"id": "chat_mr_dp", "title": "Chat with Mr.DP", "desc": "Have 3 conversations with Mr.DP", "req_type": "mr_dp_chats", "req_count": 3, "reward": 25},
+    ],
+    "weekly": [
+        {"id": "streak_keeper", "title": "Streak Keeper", "desc": "Maintain a 7-day streak", "req_type": "streak", "req_count": 7, "reward": 100},
+        {"id": "mood_master", "title": "Mood Master", "desc": "Log your mood 20 times", "req_type": "mood_logs", "req_count": 20, "reward": 75},
+        {"id": "content_king", "title": "Content King", "desc": "Explore 30 pieces of content", "req_type": "content_clicks", "req_count": 30, "reward": 100},
+        {"id": "queue_champion", "title": "Queue Champion", "desc": "Build a queue of 10 items", "req_type": "queue_adds", "req_count": 10, "reward": 75},
+    ]
+}
+
+
+def get_active_challenges(challenge_type: str = "daily") -> list:
+    """Get active challenges for today/this week"""
+    if not supabase:
+        return DEFAULT_CHALLENGES.get(challenge_type, [])
+
+    try:
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        result = supabase.table("challenges")\
+            .select("*")\
+            .eq("challenge_type", challenge_type)\
+            .eq("active", True)\
+            .lte("start_date", today)\
+            .gte("end_date", today)\
+            .execute()
+
+        if result.data:
+            return result.data
+
+        return DEFAULT_CHALLENGES.get(challenge_type, [])
+    except:
+        return DEFAULT_CHALLENGES.get(challenge_type, [])
+
+
+def get_user_challenge_progress(user_id: str) -> dict:
+    """Get user's progress on challenges"""
+    if not user_id:
+        return st.session_state.get("challenge_progress", {})
+
+    if not supabase:
+        return st.session_state.get("challenge_progress", {})
+
+    try:
+        result = supabase.table("user_challenges")\
+            .select("*")\
+            .eq("user_id", user_id)\
+            .execute()
+
+        return {r["challenge_id"]: r for r in result.data} if result.data else {}
+    except:
+        return st.session_state.get("challenge_progress", {})
+
+
+def update_challenge_progress(user_id: str, action_type: str, increment: int = 1):
+    """Update progress on challenges when user performs actions"""
+    if not user_id:
+        return
+
+    action_to_req = {
+        "mood_log": "mood_logs",
+        "content_click": "content_clicks",
+        "queue_add": "queue_adds",
+        "mr_dp_chat": "mr_dp_chats"
+    }
+
+    req_type = action_to_req.get(action_type)
+    if not req_type:
+        return
+
+    # Update local state for immediate feedback
+    progress = st.session_state.get("challenge_progress", {})
+
+    challenges = get_active_challenges("daily") + get_active_challenges("weekly")
+    matching = [c for c in challenges if c.get("req_type") == req_type]
+
+    for challenge in matching:
+        cid = challenge.get("id")
+        if not cid:
+            continue
+
+        if cid not in progress:
+            progress[cid] = {"progress": 0, "completed": False}
+
+        if not progress[cid].get("completed"):
+            progress[cid]["progress"] = progress[cid].get("progress", 0) + increment
+
+            req_count = challenge.get("req_count", 999)
+            if progress[cid]["progress"] >= req_count:
+                progress[cid]["completed"] = True
+                reward = challenge.get("reward", 0)
+                add_dopamine_points(reward, f"Completed: {challenge.get('title', 'Challenge')}!")
+                st.toast(f"🎯 Challenge Complete: {challenge.get('title')}! +{reward} DP", icon="🏆")
+
+    st.session_state.challenge_progress = progress
+
+    # Also update database if available
+    if supabase:
+        try:
+            for cid, prog in progress.items():
+                supabase.table("user_challenges").upsert({
+                    "user_id": user_id,
+                    "challenge_id": cid,
+                    "progress": prog.get("progress", 0),
+                    "completed": prog.get("completed", False),
+                    "completed_at": datetime.now().isoformat() if prog.get("completed") else None
+                }).execute()
+        except:
+            pass
+
+
+def render_challenges_section():
+    """Render challenges UI"""
+    user_id = st.session_state.get("db_user_id")
+
+    st.markdown("""
+    <div class="section-header">
+        <span class="section-icon">🎯</span>
+        <h2 class="section-title">Daily Challenges</h2>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if not user_id:
+        st.info("Log in to participate in challenges!")
+        return
+
+    tab1, tab2 = st.tabs(["📅 Daily", "📆 Weekly"])
+
+    with tab1:
+        render_challenge_list(user_id, "daily")
+
+    with tab2:
+        render_challenge_list(user_id, "weekly")
+
+
+def render_challenge_list(user_id: str, challenge_type: str):
+    """Render list of challenges"""
+    challenges = get_active_challenges(challenge_type)
+    progress_map = get_user_challenge_progress(user_id)
+
+    for challenge in challenges:
+        cid = challenge.get("id")
+        progress = progress_map.get(cid, {})
+
+        current = progress.get("progress", 0)
+        total = challenge.get("req_count", 1)
+        completed = progress.get("completed", False) or current >= total
+        reward = challenge.get("reward", 0)
+
+        pct = min(100, int((current / total) * 100))
+
+        status_color = "#10b981" if completed else "#8b5cf6"
+        status_icon = "✅" if completed else "🎯"
+
+        st.markdown(f"""
+        <div style="
+            background: rgba(255,255,255,0.03);
+            border: 1px solid {'rgba(16,185,129,0.3)' if completed else 'rgba(255,255,255,0.1)'};
+            border-radius: 12px;
+            padding: 16px;
+            margin: 8px 0;
+        ">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <span style="font-size: 1.2rem; margin-right: 8px;">{status_icon}</span>
+                    <strong>{challenge.get('title', 'Challenge')}</strong>
+                </div>
+                <div style="color: {status_color}; font-weight: 600;">+{reward} DP</div>
+            </div>
+            <div style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin: 8px 0 12px 32px;">
+                {challenge.get('desc', '')}
+            </div>
+            <div style="margin-left: 32px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span style="font-size: 0.8rem; color: rgba(255,255,255,0.5);">Progress</span>
+                    <span style="font-size: 0.8rem; color: {status_color};">{current}/{total}</span>
+                </div>
+                <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                    <div style="width: {pct}%; height: 100%; background: {status_color}; border-radius: 3px;"></div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+# --------------------------------------------------
+# REWARDS SHOP
+# --------------------------------------------------
+SHOP_ITEMS = [
+    {"id": "theme_ocean", "name": "Ocean Theme", "description": "Calming blue color palette", "category": "theme", "price": 500, "icon": "🌊"},
+    {"id": "theme_forest", "name": "Forest Theme", "description": "Soothing green vibes", "category": "theme", "price": 500, "icon": "🌲"},
+    {"id": "theme_sunset", "name": "Sunset Theme", "description": "Warm orange gradients", "category": "theme", "price": 500, "icon": "🌅"},
+    {"id": "badge_crown", "name": "Crown Badge", "description": "Show off your royalty", "category": "badge", "price": 1000, "icon": "👑"},
+    {"id": "badge_star", "name": "Star Badge", "description": "You're a star!", "category": "badge", "price": 750, "icon": "⭐"},
+    {"id": "badge_diamond", "name": "Diamond Badge", "description": "Rare and precious", "category": "badge", "price": 2000, "icon": "💎"},
+    {"id": "extra_mr_dp", "name": "+5 Mr.DP Chats", "description": "5 extra daily Mr.DP conversations", "category": "feature", "price": 200, "icon": "🧠"},
+    {"id": "premium_day", "name": "1-Day Premium", "description": "All premium features for 24 hours", "category": "feature", "price": 300, "icon": "🌟"},
+]
+
+
+def get_user_inventory(user_id: str) -> list:
+    """Get items user has purchased"""
+    if not user_id:
+        return st.session_state.get("user_inventory", [])
+
+    if not supabase:
+        return st.session_state.get("user_inventory", [])
+
+    try:
+        result = supabase.table("user_inventory")\
+            .select("item_id")\
+            .eq("user_id", user_id)\
+            .execute()
+
+        return [r["item_id"] for r in result.data] if result.data else []
+    except:
+        return st.session_state.get("user_inventory", [])
+
+
+def purchase_item(user_id: str, item_id: str) -> dict:
+    """Purchase an item from the shop"""
+    if not user_id:
+        return {"success": False, "error": "Not logged in"}
+
+    item = next((i for i in SHOP_ITEMS if i["id"] == item_id), None)
+    if not item:
+        return {"success": False, "error": "Item not found"}
+
+    inventory = get_user_inventory(user_id)
+    if item_id in inventory:
+        return {"success": False, "error": "Already owned"}
+
+    points = get_dopamine_points()
+    if points < item["price"]:
+        return {"success": False, "error": f"Need {item['price'] - points} more DP"}
+
+    try:
+        new_points = points - item["price"]
+
+        if supabase:
+            supabase.table("profiles").update({"dopamine_points": new_points}).eq("id", user_id).execute()
+            supabase.table("user_inventory").insert({
+                "user_id": user_id,
+                "item_id": item_id,
+                "purchased_at": datetime.now().isoformat()
+            }).execute()
+
+        st.session_state.dopamine_points = new_points
+
+        # Update local inventory
+        inv = st.session_state.get("user_inventory", [])
+        inv.append(item_id)
+        st.session_state.user_inventory = inv
+
+        return {"success": True, "message": f"Purchased {item['name']}!"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def render_rewards_shop():
+    """Render the rewards shop"""
+    user_id = st.session_state.get("db_user_id")
+
+    st.markdown("""
+    <div class="section-header">
+        <span class="section-icon">🛍</span>
+        <h2 class="section-title">Rewards Shop</h2>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if not user_id:
+        st.info("Log in to visit the shop!")
+        return
+
+    points = get_dopamine_points()
+    inventory = get_user_inventory(user_id)
+
+    st.markdown(f"""
+    <div style="
+        background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(6,182,212,0.2));
+        border-radius: 16px;
+        padding: 16px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    ">
+        <div>
+            <div style="color: rgba(255,255,255,0.7);">Your Balance</div>
+            <div style="font-size: 1.5rem; font-weight: 700;">⚡ {points:,} DP</div>
+        </div>
+        <div>
+            <div style="color: rgba(255,255,255,0.7);">Items Owned</div>
+            <div style="font-size: 1.5rem; font-weight: 700;">{len(inventory)}</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    categories = {"theme": "🎨 Themes", "badge": "🏅 Badges", "feature": "✨ Features"}
+
+    for cat_id, cat_name in categories.items():
+        cat_items = [i for i in SHOP_ITEMS if i["category"] == cat_id]
+        if not cat_items:
+            continue
+
+        st.markdown(f"### {cat_name}")
+
+        cols = st.columns(3)
+        for idx, item in enumerate(cat_items):
+            with cols[idx % 3]:
+                owned = item["id"] in inventory
+                affordable = points >= item["price"]
+
+                st.markdown(f"""
+                <div style="
+                    background: {'rgba(16,185,129,0.1)' if owned else 'rgba(255,255,255,0.03)'};
+                    border: 1px solid {'rgba(16,185,129,0.3)' if owned else 'rgba(255,255,255,0.1)'};
+                    border-radius: 12px;
+                    padding: 16px;
+                    text-align: center;
+                    margin-bottom: 12px;
+                ">
+                    <div style="font-size: 2.5rem; margin-bottom: 8px;">{item['icon']}</div>
+                    <div style="font-weight: 600; margin-bottom: 4px;">{item['name']}</div>
+                    <div style="color: rgba(255,255,255,0.5); font-size: 0.8rem; margin-bottom: 12px;">{item['description']}</div>
+                    <div style="color: {'#10b981' if owned else '#f59e0b'}; font-weight: 600;">
+                        {'✓ Owned' if owned else f'⚡ {item["price"]} DP'}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                if not owned:
+                    btn_type = "primary" if affordable else "secondary"
+                    if st.button(
+                        "Buy" if affordable else f"Need {item['price'] - points} more",
+                        key=f"buy_{item['id']}",
+                        use_container_width=True,
+                        disabled=not affordable,
+                        type=btn_type
+                    ):
+                        result = purchase_item(user_id, item["id"])
+                        if result["success"]:
+                            st.success(result["message"])
+                            st.balloons()
+                            st.rerun()
+                        else:
+                            st.error(result["error"])
+
+
+# --------------------------------------------------
+# LEADERBOARDS
+# --------------------------------------------------
+def get_leaderboard(board_type: str = "points", limit: int = 10) -> list:
+    """Get leaderboard data"""
+    if not supabase:
+        return []
+
+    try:
+        if board_type == "points":
+            result = supabase.table("profiles")\
+                .select("name, dopamine_points")\
+                .order("dopamine_points", desc=True)\
+                .limit(limit)\
+                .execute()
+
+            return [{"name": r.get("name", "Anonymous")[:12], "value": r.get("dopamine_points", 0), "icon": "⚡"} for r in result.data] if result.data else []
+
+        elif board_type == "streak":
+            result = supabase.table("profiles")\
+                .select("name, streak_days")\
+                .order("streak_days", desc=True)\
+                .limit(limit)\
+                .execute()
+
+            return [{"name": r.get("name", "Anonymous")[:12], "value": r.get("streak_days", 0), "icon": "🔥"} for r in result.data] if result.data else []
+
+        elif board_type == "referrals":
+            result = supabase.table("profiles")\
+                .select("name, total_referrals")\
+                .gt("total_referrals", 0)\
+                .order("total_referrals", desc=True)\
+                .limit(limit)\
+                .execute()
+
+            return [{"name": r.get("name", "Anonymous")[:12], "value": r.get("total_referrals", 0), "icon": "👥"} for r in result.data] if result.data else []
+
+        return []
+    except:
+        return []
+
+
+def get_user_rank(user_id: str, board_type: str = "points") -> int:
+    """Get user's rank on a leaderboard"""
+    if not user_id or not supabase:
+        return 0
+
+    try:
+        field = {"points": "dopamine_points", "streak": "streak_days", "referrals": "total_referrals"}.get(board_type, "dopamine_points")
+
+        profile = get_user_profile(user_id)
+        user_value = profile.get(field, 0)
+
+        result = supabase.table("profiles")\
+            .select("id", count="exact")\
+            .gt(field, user_value)\
+            .execute()
+
+        return (result.count or 0) + 1
+    except:
+        return 0
+
+
+def render_leaderboards():
+    """Render leaderboards page"""
+    user_id = st.session_state.get("db_user_id")
+
+    st.markdown("""
+    <div class="section-header">
+        <span class="section-icon">🏆</span>
+        <h2 class="section-title">Leaderboards</h2>
+    </div>
+    """, unsafe_allow_html=True)
+
+    tab1, tab2, tab3 = st.tabs(["⚡ Top Points", "🔥 Top Streaks", "👥 Top Referrers"])
+
+    with tab1:
+        render_leaderboard_tab("points", user_id)
+
+    with tab2:
+        render_leaderboard_tab("streak", user_id)
+
+    with tab3:
+        render_leaderboard_tab("referrals", user_id)
+
+
+def render_leaderboard_tab(board_type: str, user_id: str = None):
+    """Render a single leaderboard tab"""
+    data = get_leaderboard(board_type, limit=10)
+
+    if not data:
+        st.info("No data yet - be the first!")
+        return
+
+    if user_id:
+        rank = get_user_rank(user_id, board_type)
+        st.markdown(f"""
+        <div style="
+            background: rgba(139,92,246,0.15);
+            border: 1px solid rgba(139,92,246,0.3);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            text-align: center;
+        ">
+            Your Rank: <strong>#{rank}</strong>
+        </div>
+        """, unsafe_allow_html=True)
+
+    for idx, entry in enumerate(data):
+        medal = "🥇" if idx == 0 else "🥈" if idx == 1 else "🥉" if idx == 2 else f"#{idx+1}"
+
+        st.markdown(f"""
+        <div style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(255,255,255,{'0.05' if idx < 3 else '0.02'});
+            border-radius: 8px;
+            margin: 4px 0;
+            {'border: 1px solid rgba(255,215,0,0.3);' if idx == 0 else ''}
+        ">
+            <span>{medal} {entry['name']}</span>
+            <span style="font-weight: 600;">{entry['icon']} {entry['value']:,}</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+# --------------------------------------------------
+# ADMIN DASHBOARD
+# --------------------------------------------------
+def get_admin_stats() -> dict:
+    """Get admin dashboard statistics"""
+    if not supabase:
+        return {}
+
+    try:
+        stats = {}
+
+        # Total users
+        result = supabase.table("profiles").select("id", count="exact").execute()
+        stats["total_users"] = result.count or 0
+
+        # Active users (last 7 days)
+        cutoff = (datetime.now() - timedelta(days=7)).isoformat()
+        result = supabase.table("mood_history").select("user_id").gte("created_at", cutoff).execute()
+        stats["active_users_7d"] = len(set(r["user_id"] for r in result.data)) if result.data else 0
+
+        # Premium users
+        result = supabase.table("profiles").select("id", count="exact").eq("is_premium", True).execute()
+        stats["premium_users"] = result.count or 0
+
+        # Total mood logs
+        result = supabase.table("mood_history").select("id", count="exact").execute()
+        stats["total_mood_logs"] = result.count or 0
+
+        # Mood logs today
+        today = datetime.now().strftime("%Y-%m-%d")
+        result = supabase.table("mood_history").select("id", count="exact").gte("created_at", f"{today}T00:00:00").execute()
+        stats["mood_logs_today"] = result.count or 0
+
+        # Mr.DP chats today
+        result = supabase.table("user_behavior").select("id", count="exact").eq("action_type", "mr_dp_chat").gte("created_at", f"{today}T00:00:00").execute()
+        stats["mr_dp_chats_today"] = result.count or 0
+
+        # Total referrals
+        result = supabase.table("referrals").select("id", count="exact").execute()
+        stats["total_referrals"] = result.count or 0
+
+        return stats
+    except Exception as e:
+        print(f"Admin stats error: {e}")
+        return {}
+
+
+def get_mood_trends(days: int = 7) -> dict:
+    """Get mood trends for chart"""
+    if not supabase:
+        return {}
+
+    try:
+        cutoff = (datetime.now() - timedelta(days=days)).isoformat()
+
+        result = supabase.table("mood_history")\
+            .select("current_feeling, desired_feeling, created_at")\
+            .gte("created_at", cutoff)\
+            .execute()
+
+        if not result.data:
+            return {}
+
+        from collections import Counter
+
+        current_counts = Counter(r["current_feeling"] for r in result.data if r.get("current_feeling"))
+        desired_counts = Counter(r["desired_feeling"] for r in result.data if r.get("desired_feeling"))
+
+        daily_counts = {}
+        for r in result.data:
+            day = r["created_at"][:10]
+            if day not in daily_counts:
+                daily_counts[day] = 0
+            daily_counts[day] += 1
+
+        return {
+            "top_current": dict(current_counts.most_common(5)),
+            "top_desired": dict(desired_counts.most_common(5)),
+            "daily_activity": dict(sorted(daily_counts.items()))
+        }
+    except:
+        return {}
+
+
+def render_admin_dashboard():
+    """Render admin dashboard"""
+    if not is_admin():
+        st.error("Access denied. Admin only.")
+        return
+
+    st.markdown("""
+    <div class="section-header">
+        <span class="section-icon">⚙️</span>
+        <h2 class="section-title">Admin Dashboard</h2>
+    </div>
+    """, unsafe_allow_html=True)
+
+    stats = get_admin_stats()
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.metric("Total Users", f"{stats.get('total_users', 0):,}")
+    with col2:
+        st.metric("Active (7d)", f"{stats.get('active_users_7d', 0):,}")
+    with col3:
+        st.metric("Premium", f"{stats.get('premium_users', 0):,}")
+    with col4:
+        conversion = (stats.get('premium_users', 0) / max(1, stats.get('total_users', 1))) * 100
+        st.metric("Conversion", f"{conversion:.1f}%")
+
+    st.markdown("---")
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.metric("Mood Logs Today", f"{stats.get('mood_logs_today', 0):,}")
+    with col2:
+        st.metric("Total Mood Logs", f"{stats.get('total_mood_logs', 0):,}")
+    with col3:
+        st.metric("Mr.DP Chats Today", f"{stats.get('mr_dp_chats_today', 0):,}")
+    with col4:
+        st.metric("Total Referrals", f"{stats.get('total_referrals', 0):,}")
+
+    st.markdown("---")
+
+    st.markdown("### 📊 Mood Trends (7 days)")
+
+    trends = get_mood_trends(7)
+
+    if trends:
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown("**Top Current Feelings**")
+            for mood, count in trends.get("top_current", {}).items():
+                emoji = MOOD_EMOJIS.get(mood, "😊")
+                st.markdown(f"{emoji} {mood}: **{count}**")
+
+        with col2:
+            st.markdown("**Top Desired Feelings**")
+            for mood, count in trends.get("top_desired", {}).items():
+                emoji = MOOD_EMOJIS.get(mood, "😊")
+                st.markdown(f"{emoji} {mood}: **{count}**")
+
+        st.markdown("### 📈 Daily Activity")
+        daily = trends.get("daily_activity", {})
+        if daily:
+            import pandas as pd
+            df = pd.DataFrame([{"Date": k, "Mood Logs": v} for k, v in daily.items()])
+            st.bar_chart(df.set_index("Date"))
+
+    st.markdown("---")
+
+    st.markdown("### 🛠️ Quick Actions")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        if st.button("🔄 Refresh Stats", use_container_width=True):
+            st.rerun()
+
+    with col2:
+        if st.button("📧 Export Users (CSV)", use_container_width=True):
+            st.info("Export feature coming soon!")
+
+    with col3:
+        if st.button("📢 Send Push Notification", use_container_width=True):
+            st.info("Push notification feature coming soon!")
+
+
+# --------------------------------------------------
 # 10. GAMIFICATION ENGINE
 # --------------------------------------------------
 def get_dopamine_points():
@@ -3646,6 +4573,10 @@ if "init" not in st.session_state:
         "current_milestone": None,
         "show_share_card": False,
         "pending_referral_code": None,
+
+        # Phase 6: Community & Gamification
+        "challenge_progress": {},
+        "user_inventory": [],
 
         # Quick Hit
         "quick_hit": None,
@@ -5214,7 +6145,7 @@ def render_sidebar():
 
         # NAVIGATION MENU
         st.markdown("#### 📍 Navigate")
-        
+
         menu_items = [
             ("🎬", "Movies"),
             ("🎵", "Music"),
@@ -5222,7 +6153,7 @@ def render_sidebar():
             ("📚", "Audiobooks"),
             ("⚡", "Shorts"),
         ]
-        
+
         for icon, label in menu_items:
             full_label = f"{icon} {label}"
             is_active = st.session_state.active_page == full_label
@@ -5234,6 +6165,30 @@ def render_sidebar():
                 st.session_state.mr_dp_results = []
                 st.session_state.mr_dp_response = None
                 st.session_state.quick_hit = None
+                st.rerun()
+
+        # Phase 6: Gamification Pages
+        st.markdown("---")
+        st.markdown("#### 🎮 Gamification")
+
+        gamification_items = [
+            ("🎯", "Challenges"),
+            ("🛍", "Shop"),
+            ("🏆", "Leaderboards"),
+        ]
+
+        for icon, label in gamification_items:
+            full_label = f"{icon} {label}"
+            is_active = st.session_state.active_page == full_label
+            btn_type = "primary" if is_active else "secondary"
+            if st.button(full_label, use_container_width=True, key=f"nav_{label}", type=btn_type):
+                st.session_state.active_page = full_label
+                st.rerun()
+
+        # Admin (only for admins)
+        if is_admin():
+            if st.button("⚙️ Admin", use_container_width=True, key="nav_admin", type="primary" if st.session_state.active_page == "⚙️ Admin" else "secondary"):
+                st.session_state.active_page = "⚙️ Admin"
                 st.rerun()
         
         st.markdown("---")
@@ -5360,7 +6315,7 @@ def render_sidebar():
             st.session_state.do_logout = True
             st.rerun()
 
-        st.caption("v38.0 • Viral & Growth Engine")
+        st.caption("v39.0 • Community & Gamification")
 
 # --------------------------------------------------
 # 17. MAIN CONTENT
@@ -5423,6 +6378,15 @@ def render_main():
     if st.session_state.get("db_user_id"):
         with st.expander("🎯 **For You** - Personalized Picks", expanded=False):
             render_personalized_feed()
+        st.markdown("---")
+
+    # MOOD BUDDY SUPPORT (Phase 6)
+    render_mood_buddy_support()
+
+    # COMMUNITY RECOMMENDATIONS (Phase 6)
+    if st.session_state.get("db_user_id"):
+        with st.expander("👥 **Others Like You** - Community Picks", expanded=False):
+            render_community_recommendations()
         st.markdown("---")
 
     # GLOBAL SEARCH
@@ -6086,7 +7050,20 @@ def render_main():
                 <a href="{ig2}" target="_blank" class="custom-btn" style="background:linear-gradient(135deg,#833AB4,#FD1D1D);">📸 Instagram</a>
             </div>
             ''', height=80)
-    
+
+    # PHASE 6: GAMIFICATION PAGES
+    elif page == "🎯 Challenges":
+        render_challenges_section()
+
+    elif page == "🛍 Shop":
+        render_rewards_shop()
+
+    elif page == "🏆 Leaderboards":
+        render_leaderboards()
+
+    elif page == "⚙️ Admin":
+        render_admin_dashboard()
+
     # SHARE
     st.markdown("---")
     st.markdown("<div class='section-header'><span class='section-icon'>📤</span><h2 class='section-title'>Share Your Vibe</h2></div>", unsafe_allow_html=True)
