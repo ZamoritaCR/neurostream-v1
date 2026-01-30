@@ -9630,12 +9630,8 @@ else:
         st.session_state.mr_dp_open = True
         st.rerun()
 
-    # Check for onboarding (new users)
-    if should_show_onboarding():
-        render_onboarding()
-    else:
-        # Main content
-        render_main()
+    # Skip onboarding - Mr.DP is the curator now
+    render_main()
 
     # Phase 2: Process pending Mr.DP message (runs after page renders)
     if st.session_state.get("mr_dp_thinking"):
