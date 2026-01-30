@@ -2568,25 +2568,18 @@ def render_mr_dp_movie_card(data: dict):
     why = data.get("why", "")
     providers = data.get("providers", [])
 
-    st.markdown(f"""
-    <div style="
-        background: rgba(255,255,255,0.03);
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 16px;
-        padding: 16px;
-        margin: 12px 0;
-        display: flex;
-        gap: 16px;
-    ">
-        <img src="{safe(poster)}" style="width: 100px; border-radius: 8px;" onerror="this.style.display='none'">
-        <div style="flex: 1;">
-            <div style="font-weight: 600; font-size: 1.1rem;">{safe(title)} {f'({year})' if year else ''}</div>
-            <div style="color: #ffd700; font-size: 0.85rem;">⭐ {rating}</div>
-            <div style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin: 8px 0;">{safe(overview[:150])}...</div>
-            {f'<div style="color: #8b5cf6; font-size: 0.85rem; font-style: italic;">💡 {safe(why)}</div>' if why else ''}
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    # Build the why section if present
+    why_html = f'<div style="color: #8b5cf6; font-size: 0.85rem; font-style: italic;">💡 {safe(why)}</div>' if why else ''
+
+    st.markdown(f"""<div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 16px; margin: 12px 0; display: flex; gap: 16px;">
+<img src="{safe(poster)}" style="width: 100px; border-radius: 8px;" onerror="this.style.display='none'">
+<div style="flex: 1;">
+<div style="font-weight: 600; font-size: 1.1rem;">{safe(title)} {f'({year})' if year else ''}</div>
+<div style="color: #ffd700; font-size: 0.85rem;">⭐ {rating}</div>
+<div style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin: 8px 0;">{safe(overview[:150])}...</div>
+{why_html}
+</div>
+</div>""", unsafe_allow_html=True)
 
     if providers:
         cols = st.columns(min(len(providers) + 1, 5))
@@ -2605,18 +2598,10 @@ def render_mr_dp_music_card(data: dict):
     playlist_url = data.get("playlist_url", "")
     embed_url = data.get("embed_url", "")
 
-    st.markdown(f"""
-    <div style="
-        background: linear-gradient(135deg, rgba(29,185,84,0.1), rgba(29,185,84,0.05));
-        border: 1px solid rgba(29,185,84,0.3);
-        border-radius: 16px;
-        padding: 16px;
-        margin: 12px 0;
-    ">
-        <div style="font-weight: 600; font-size: 1.1rem; color: #1DB954;">🎵 {safe(name)}</div>
-        <div style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin: 4px 0;">{safe(description)}</div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(f"""<div style="background: linear-gradient(135deg, rgba(29,185,84,0.1), rgba(29,185,84,0.05)); border: 1px solid rgba(29,185,84,0.3); border-radius: 16px; padding: 16px; margin: 12px 0;">
+<div style="font-weight: 600; font-size: 1.1rem; color: #1DB954;">🎵 {safe(name)}</div>
+<div style="color: rgba(255,255,255,0.6); font-size: 0.85rem; margin: 4px 0;">{safe(description)}</div>
+</div>""", unsafe_allow_html=True)
 
     if embed_url:
         components.html(f'''
@@ -8971,12 +8956,10 @@ def render_main():
     # MR.DP 2.0 CONTENT - Show rich content cards from v2 response
     if st.session_state.get("mr_dp_v2_response") and st.session_state.mr_dp_v2_response.get("content"):
         v2_response = st.session_state.mr_dp_v2_response
-        st.markdown("""
-        <div id="mr-dp-content"></div>
-        <div style="margin-top:20px;padding:20px;background:linear-gradient(135deg, rgba(139,92,246,0.08), rgba(6,182,212,0.05));border:1px solid rgba(139,92,246,0.2);border-radius:16px;">
-            <div style="font-size:1.3rem;font-weight:600;color:#a78bfa;margin-bottom:12px;">🧠 Mr.DP's Picks for You</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown("""<div id="mr-dp-content"></div>
+<div style="margin-top:20px;padding:20px;background:linear-gradient(135deg, rgba(139,92,246,0.08), rgba(6,182,212,0.05));border:1px solid rgba(139,92,246,0.2);border-radius:16px;">
+<div style="font-size:1.3rem;font-weight:600;color:#a78bfa;margin-bottom:12px;">🧠 Mr.DP's Picks for You</div>
+</div>""", unsafe_allow_html=True)
         render_mr_dp_response(v2_response)
         # Clear after rendering to avoid showing stale content
         st.session_state.mr_dp_v2_response = None
@@ -9017,16 +9000,14 @@ def render_main():
             mood_tags += f'<span style="padding:6px 14px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:20px;font-size:0.85rem;color:white;">{config["icon"]} {genres}</span>'
         
         # Anchor + Header with mood info
-        st.markdown(f"""
-        <div id="mr-dp-results"></div>
-        <div class="section-header" style="margin-bottom: 8px;">
-            <span class="section-icon">{config['icon']}</span>
-            <h2 class="section-title">{config['title']}</h2>
-        </div>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
-            {mood_tags}
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f"""<div id="mr-dp-results"></div>
+<div class="section-header" style="margin-bottom: 8px;">
+<span class="section-icon">{config['icon']}</span>
+<h2 class="section-title">{config['title']}</h2>
+</div>
+<div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
+{mood_tags}
+</div>""", unsafe_allow_html=True)
         
         # ===================== ARTIST RESULTS =====================
         if result_type == "artist":
@@ -9034,29 +9015,17 @@ def render_main():
             artist_query = quote_plus(artist_name)
             
             # Big artist card
-            st.markdown(f"""
-            <div style="text-align:center;padding:40px;background:linear-gradient(135deg,rgba(139,92,246,0.2),rgba(6,182,212,0.2));border-radius:24px;border:1px solid rgba(139,92,246,0.3);margin-bottom:24px;">
-                <div style="font-size:4rem;margin-bottom:16px;">🎤</div>
-                <div style="font-size:2rem;font-weight:700;background:linear-gradient(135deg,#8b5cf6,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">{artist_name}</div>
-                <div style="color:var(--text-secondary);margin-top:8px;">Click below to listen</div>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown(f"""<div style="text-align:center;padding:40px;background:linear-gradient(135deg,rgba(139,92,246,0.2),rgba(6,182,212,0.2));border-radius:24px;border:1px solid rgba(139,92,246,0.3);margin-bottom:24px;">
+<div style="font-size:4rem;margin-bottom:16px;">🎤</div>
+<div style="font-size:2rem;font-weight:700;background:linear-gradient(135deg,#8b5cf6,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">{artist_name}</div>
+<div style="color:var(--text-secondary);margin-top:8px;">Click below to listen</div>
+</div>""", unsafe_allow_html=True)
             
             # Big buttons to music services
-            st.markdown(f"""
-            <a href="https://open.spotify.com/search/{artist_query}" target="_blank" style="display:block;text-align:center;padding:20px;background:#1DB954;border-radius:16px;color:white;text-decoration:none;font-weight:700;font-size:1.1rem;margin-bottom:12px;box-shadow:0 8px 32px rgba(29,185,84,0.3);">
-                🎵 Play {artist_name} on Spotify →
-            </a>
-            <a href="https://music.apple.com/search?term={artist_query}" target="_blank" style="display:block;text-align:center;padding:20px;background:linear-gradient(135deg,#fc3c44,#fc9a9a);border-radius:16px;color:white;text-decoration:none;font-weight:700;font-size:1.1rem;margin-bottom:12px;box-shadow:0 8px 32px rgba(252,60,68,0.3);">
-                🍎 Play on Apple Music →
-            </a>
-            <a href="https://music.youtube.com/search?q={artist_query}" target="_blank" style="display:block;text-align:center;padding:20px;background:#FF0000;border-radius:16px;color:white;text-decoration:none;font-weight:700;font-size:1.1rem;margin-bottom:12px;box-shadow:0 8px 32px rgba(255,0,0,0.3);">
-                ▶️ Play on YouTube Music →
-            </a>
-            <a href="https://www.youtube.com/results?search_query={artist_query}" target="_blank" style="display:block;text-align:center;padding:20px;background:linear-gradient(135deg,#333,#666);border-radius:16px;color:white;text-decoration:none;font-weight:700;font-size:1.1rem;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
-                📺 Watch Music Videos on YouTube →
-            </a>
-            """, unsafe_allow_html=True)
+            st.markdown(f"""<a href="https://open.spotify.com/search/{artist_query}" target="_blank" style="display:block;text-align:center;padding:20px;background:#1DB954;border-radius:16px;color:white;text-decoration:none;font-weight:700;font-size:1.1rem;margin-bottom:12px;box-shadow:0 8px 32px rgba(29,185,84,0.3);">🎵 Play {artist_name} on Spotify →</a>
+<a href="https://music.apple.com/search?term={artist_query}" target="_blank" style="display:block;text-align:center;padding:20px;background:linear-gradient(135deg,#fc3c44,#fc9a9a);border-radius:16px;color:white;text-decoration:none;font-weight:700;font-size:1.1rem;margin-bottom:12px;box-shadow:0 8px 32px rgba(252,60,68,0.3);">🍎 Play on Apple Music →</a>
+<a href="https://music.youtube.com/search?q={artist_query}" target="_blank" style="display:block;text-align:center;padding:20px;background:#FF0000;border-radius:16px;color:white;text-decoration:none;font-weight:700;font-size:1.1rem;margin-bottom:12px;box-shadow:0 8px 32px rgba(255,0,0,0.3);">▶️ Play on YouTube Music →</a>
+<a href="https://www.youtube.com/results?search_query={artist_query}" target="_blank" style="display:block;text-align:center;padding:20px;background:linear-gradient(135deg,#333,#666);border-radius:16px;color:white;text-decoration:none;font-weight:700;font-size:1.1rem;box-shadow:0 8px 32px rgba(0,0,0,0.3);">📺 Watch Music Videos on YouTube →</a>""", unsafe_allow_html=True)
             
             # Action buttons
             btn_cols = st.columns([1, 1])
@@ -9112,16 +9081,14 @@ def render_main():
             st.markdown("##### ⭐ Recommended Shows")
             for show, desc in pod_shows:
                 show_query = quote_plus(show)
-                st.markdown(f"""
-                <div class="glass-card" style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
-                    <div style="font-size:2.5rem;">🎙️</div>
-                    <div style="flex:1;">
-                        <div style="font-weight:600;font-size:1.1rem;">{show}</div>
-                        <div style="color:var(--text-secondary);font-size:0.85rem;">{desc}</div>
-                    </div>
-                    <a href="https://open.spotify.com/search/{show_query}" target="_blank" style="padding:10px 20px;background:#1DB954;border-radius:20px;color:white;text-decoration:none;font-size:0.85rem;font-weight:600;">▶️ Play</a>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"""<div class="glass-card" style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
+<div style="font-size:2.5rem;">🎙️</div>
+<div style="flex:1;">
+<div style="font-weight:600;font-size:1.1rem;">{show}</div>
+<div style="color:var(--text-secondary);font-size:0.85rem;">{desc}</div>
+</div>
+<a href="https://open.spotify.com/search/{show_query}" target="_blank" style="padding:10px 20px;background:#1DB954;border-radius:20px;color:white;text-decoration:none;font-size:0.85rem;font-weight:600;">▶️ Play</a>
+</div>""", unsafe_allow_html=True)
             
             # Podcast service links
             st.markdown("##### 🔍 Find on Podcast Apps")
@@ -9157,13 +9124,11 @@ def render_main():
             cols = st.columns(min(len(book_picks), 3))
             for i, (title, author) in enumerate(book_picks[:3]):
                 with cols[i]:
-                    st.markdown(f"""
-                    <div class="glass-card" style="text-align:center;padding:24px;height:200px;display:flex;flex-direction:column;justify-content:center;">
-                        <div style="font-size:3rem;margin-bottom:12px;">📖</div>
-                        <div style="font-weight:600;font-size:0.95rem;margin-bottom:4px;">{title}</div>
-                        <div style="color:var(--text-secondary);font-size:0.8rem;">{author}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    st.markdown(f"""<div class="glass-card" style="text-align:center;padding:24px;height:200px;display:flex;flex-direction:column;justify-content:center;">
+<div style="font-size:3rem;margin-bottom:12px;">📖</div>
+<div style="font-weight:600;font-size:0.95rem;margin-bottom:4px;">{title}</div>
+<div style="color:var(--text-secondary);font-size:0.8rem;">{author}</div>
+</div>""", unsafe_allow_html=True)
             
             # Audiobook service links
             st.markdown("##### 🔍 Find Audiobooks")
@@ -9217,23 +9182,11 @@ def render_main():
             
             c1, c2, c3 = st.columns(3)
             with c1:
-                st.markdown(f"""
-                <a href="{yt_url}" target="_blank" style="display:block;text-align:center;padding:20px;background:linear-gradient(135deg, #FF0000, #CC0000);border-radius:16px;color:white;text-decoration:none;font-weight:700;font-size:1rem;box-shadow:0 8px 32px rgba(255,0,0,0.3);">
-                    ▶️ YouTube Shorts
-                </a>
-                """, unsafe_allow_html=True)
+                st.markdown(f"""<a href="{yt_url}" target="_blank" style="display:block;text-align:center;padding:20px;background:linear-gradient(135deg, #FF0000, #CC0000);border-radius:16px;color:white;text-decoration:none;font-weight:700;font-size:1rem;box-shadow:0 8px 32px rgba(255,0,0,0.3);">▶️ YouTube Shorts</a>""", unsafe_allow_html=True)
             with c2:
-                st.markdown(f"""
-                <a href="{tt_url}" target="_blank" style="display:block;text-align:center;padding:20px;background:linear-gradient(135deg,#ff0050,#00f2ea);border-radius:16px;color:white;text-decoration:none;font-weight:700;font-size:1rem;box-shadow:0 8px 32px rgba(255,0,80,0.3);">
-                    📱 TikTok
-                </a>
-                """, unsafe_allow_html=True)
+                st.markdown(f"""<a href="{tt_url}" target="_blank" style="display:block;text-align:center;padding:20px;background:linear-gradient(135deg,#ff0050,#00f2ea);border-radius:16px;color:white;text-decoration:none;font-weight:700;font-size:1rem;box-shadow:0 8px 32px rgba(255,0,80,0.3);">📱 TikTok</a>""", unsafe_allow_html=True)
             with c3:
-                st.markdown(f"""
-                <a href="{ig_url}" target="_blank" style="display:block;text-align:center;padding:20px;background:linear-gradient(135deg,#833AB4,#FD1D1D,#F77737);border-radius:16px;color:white;text-decoration:none;font-weight:700;font-size:1rem;box-shadow:0 8px 32px rgba(131,58,180,0.3);">
-                    📸 Reels
-                </a>
-                """, unsafe_allow_html=True)
+                st.markdown(f"""<a href="{ig_url}" target="_blank" style="display:block;text-align:center;padding:20px;background:linear-gradient(135deg,#833AB4,#FD1D1D,#F77737);border-radius:16px;color:white;text-decoration:none;font-weight:700;font-size:1rem;box-shadow:0 8px 32px rgba(131,58,180,0.3);">📸 Reels</a>""", unsafe_allow_html=True)
             
             # Custom search
             st.markdown("##### 🔍 Custom Search")
@@ -9241,12 +9194,10 @@ def render_main():
             if shorts_custom:
                 yt2 = f"https://www.youtube.com/results?search_query={quote_plus(shorts_custom)}+shorts"
                 tt2 = f"https://www.tiktok.com/search?q={quote_plus(shorts_custom)}"
-                st.markdown(f"""
-                <div style="display:flex;gap:12px;margin-top:12px;">
-                    <a href="{yt2}" target="_blank" style="flex:1;text-align:center;padding:16px;background:#FF0000;border-radius:12px;color:white;text-decoration:none;font-weight:600;">YouTube</a>
-                    <a href="{tt2}" target="_blank" style="flex:1;text-align:center;padding:16px;background:linear-gradient(135deg,#ff0050,#00f2ea);border-radius:12px;color:white;text-decoration:none;font-weight:600;">TikTok</a>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"""<div style="display:flex;gap:12px;margin-top:12px;">
+<a href="{yt2}" target="_blank" style="flex:1;text-align:center;padding:16px;background:#FF0000;border-radius:12px;color:white;text-decoration:none;font-weight:600;">YouTube</a>
+<a href="{tt2}" target="_blank" style="flex:1;text-align:center;padding:16px;background:linear-gradient(135deg,#ff0050,#00f2ea);border-radius:12px;color:white;text-decoration:none;font-weight:600;">TikTok</a>
+</div>""", unsafe_allow_html=True)
             
             # Action buttons
             btn_cols = st.columns([1, 1])
