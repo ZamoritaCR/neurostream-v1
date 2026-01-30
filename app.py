@@ -5554,9 +5554,16 @@ h1, h2, h3, .stat-value, .hero-title { font-family: 'Space Grotesk', sans-serif;
         radial-gradient(ellipse 40% 30% at 0% 100%, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
 }
 
-#MainMenu, footer, header {visibility: hidden;}
+#MainMenu, footer {visibility: hidden;}
 .stDeployButton {display: none;}
 div[data-testid="stToolbar"] {display: none;}
+/* Keep sidebar toggle button visible */
+button[data-testid="collapsedControl"] {
+    visibility: visible !important;
+    background: var(--glass) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 8px !important;
+}
 
 section[data-testid="stSidebar"] {
     background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%) !important;
