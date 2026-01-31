@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Dopamine.watch Blog</title>
+    <link>https://dopamine.watch/blog/</link>
+    <description>ADHD-friendly insights on streaming, content discovery, and neurodivergent minds. Research-backed articles on how to find what you actually want to watch.</description>
+    <language>en-us</language>
+    <lastBuildDate>Fri, 31 Jan 2026 12:00:00 GMT</lastBuildDate>
+    <atom:link href="https://dopamine.watch/blog/feed.xml" rel="self" type="application/rss+xml"/>
+
+    <item>
+      <title>Why ADHD Makes Choosing Content Impossible (The Science)</title>
+      <link>https://dopamine.watch/blog/posts/adhd-decision-paralysis-science.html</link>
+      <description>Decision paralysis isn't laziness - it's neuroscience. Learn why your ADHD brain struggles to choose what to watch and what actually helps.</description>
+      <pubDate>Fri, 31 Jan 2026 12:00:00 GMT</pubDate>
+      <guid>https://dopamine.watch/blog/posts/adhd-decision-paralysis-science.html</guid>
+      <category>ADHD</category>
+    </item>
+
+    <item>
+      <title>The Netflix Algorithm Wasn't Built for Your Brain</title>
+      <link>https://dopamine.watch/blog/posts/netflix-algorithm-not-built-for-adhd.html</link>
+      <description>Streaming algorithms are designed for engagement, not your wellbeing. Here's why their recommendations make ADHD worse and what you can do about it.</description>
+      <pubDate>Fri, 31 Jan 2026 12:00:00 GMT</pubDate>
+      <guid>https://dopamine.watch/blog/posts/netflix-algorithm-not-built-for-adhd.html</guid>
+      <category>Streaming</category>
+    </item>
+
+    <item>
+      <title>10 Shows That Actually Help With Anxiety (Research-Backed)</title>
+      <link>https://dopamine.watch/blog/posts/shows-that-help-anxiety.html</link>
+      <description>Not all TV is created equal. Research shows certain types of content can reduce anxiety. Here are 10 shows backed by psychology that actually help.</description>
+      <pubDate>Fri, 31 Jan 2026 12:00:00 GMT</pubDate>
+      <guid>https://dopamine.watch/blog/posts/shows-that-help-anxiety.html</guid>
+      <category>Psychology</category>
+    </item>
+
+  </channel>
+</rss>
