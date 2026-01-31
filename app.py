@@ -164,6 +164,25 @@ st.set_page_config(
 )
 
 # --------------------------------------------------
+# GOOGLE ANALYTICS - Tracking & Analytics
+# --------------------------------------------------
+def inject_google_analytics():
+    """Inject Google Analytics tracking code"""
+    st.markdown("""
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-34Q0KMXDQF"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-34Q0KMXDQF');
+    </script>
+    """, unsafe_allow_html=True)
+
+# Initialize Google Analytics
+inject_google_analytics()
+
+# --------------------------------------------------
 # PWA SETUP - Progressive Web App Support
 # --------------------------------------------------
 def inject_pwa_head():
