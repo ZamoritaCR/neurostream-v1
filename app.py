@@ -9430,71 +9430,7 @@ def render_sidebar():
         
         st.markdown("---")
 
-        # MOOD SELECTORS
-        st.markdown(f"#### 🎯 {t('your_mood')}")
-
-        # Mood-reactive Mr.DP
-        mr_dp_expression = get_mr_dp_expression_for_mood(
-            st.session_state.current_feeling,
-            st.session_state.desired_feeling
-        )
-        st.markdown(f"""
-        <div style="text-align: center; margin: 8px 0;">
-            {get_mr_dp_svg(mr_dp_expression, 60)}
-        </div>
-        """, unsafe_allow_html=True)
-
-        current_options = [f"{MOOD_EMOJIS.get(f, '😊')} {f}" for f in CURRENT_FEELINGS]
-        current_idx = CURRENT_FEELINGS.index(st.session_state.current_feeling) if st.session_state.current_feeling in CURRENT_FEELINGS else 6
-        current_choice = st.selectbox(
-            t("i_feel"),
-            options=current_options,
-            index=current_idx,
-            key="current_select"
-        )
-        new_current = current_choice.split(" ", 1)[1] if " " in current_choice else current_choice
-        if new_current != st.session_state.current_feeling:
-            st.session_state.current_feeling = new_current
-            st.session_state.movies_feed = []
-            add_dopamine_points(5, "Mood check!")
-        
-        desired_options = [f"{MOOD_EMOJIS.get(f, '✨')} {f}" for f in DESIRED_FEELINGS]
-        desired_idx = DESIRED_FEELINGS.index(st.session_state.desired_feeling) if st.session_state.desired_feeling in DESIRED_FEELINGS else 7
-        desired_choice = st.selectbox(
-            t("i_want"),
-            options=desired_options,
-            index=desired_idx,
-            key="desired_select"
-        )
-        new_desired = desired_choice.split(" ", 1)[1] if " " in desired_choice else desired_choice
-        if new_desired != st.session_state.desired_feeling:
-            st.session_state.desired_feeling = new_desired
-            st.session_state.movies_feed = []
-            add_dopamine_points(5, "Mood updated!")
-            # Log mood selection to history
-            if st.session_state.get('db_user_id') and SUPABASE_ENABLED:
-                log_mood_selection(
-                    supabase,
-                    st.session_state.db_user_id,
-                    st.session_state.current_feeling,
-                    new_desired,
-                    source='manual'
-                )
-            # Track for analytics
-            track_mood_selection(st.session_state.current_feeling, new_desired, st.session_state.get("db_user_id"))
-            # Mr.DP Intelligence: Award XP for mood logging
-            add_xp(5, "Logged mood!")
-            # Track unique moods for achievement
-            if "mr_dp_game" in st.session_state:
-                st.session_state.mr_dp_game.setdefault("unique_moods", set())
-                st.session_state.mr_dp_game["unique_moods"].add(st.session_state.current_feeling)
-                st.session_state.mr_dp_game["unique_moods"].add(new_desired)
-                if len(st.session_state.mr_dp_game["unique_moods"]) >= 10:
-                    check_achievement("mood_master")
-
-        st.markdown("---")
-
-        # QUICK HIT
+        # QUICK HIT (Mr.DP handles mood selection now via chat)
         if st.button(f"⚡ {t('quick_dope_hit')}", use_container_width=True, key="quick_hit_sidebar", type="primary"):
             st.session_state.quick_hit = get_quick_hit()
             st.session_state.nlp_results = []
