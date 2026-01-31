@@ -5146,6 +5146,18 @@ def render_leaderboard_tab(board_type: str, user_id: str = None):
 # --------------------------------------------------
 # PHASE 3: SOCIAL FEATURES PAGES
 # --------------------------------------------------
+def get_user_id_for_social():
+    """Get user ID for social features, with fallback to guest ID"""
+    user_id = st.session_state.get("db_user_id")
+    if not user_id:
+        user = st.session_state.get("user", {})
+        user_id = user.get("id") if user else None
+    if not user_id:
+        # Generate guest ID
+        user_id = f"guest_{id(st.session_state) % 10000}"
+    return user_id
+
+
 def render_messages_page():
     """Render direct messages page"""
     st.markdown("""
@@ -5155,10 +5167,10 @@ def render_messages_page():
     </div>
     """, unsafe_allow_html=True)
 
-    user_id = st.session_state.get("db_user_id")
-    if not user_id:
-        st.warning("Please log in to view your messages.")
-        return
+    user_id = get_user_id_for_social()
+    is_guest = user_id.startswith("guest_")
+    if is_guest:
+        st.info("You're browsing as a guest. Log in to save your messages!")
 
     # Show messages sidebar widget
     if SOCIAL_FEATURES_AVAILABLE:
@@ -5176,10 +5188,10 @@ def render_watch_parties_page():
     </div>
     """, unsafe_allow_html=True)
 
-    user_id = st.session_state.get("db_user_id")
-    if not user_id:
-        st.warning("Please log in to join or create watch parties.")
-        return
+    user_id = get_user_id_for_social()
+    is_guest = user_id.startswith("guest_")
+    if is_guest:
+        st.info("You're browsing as a guest. Log in to save your watch parties!")
 
     tab1, tab2 = st.tabs(["🎬 Create Party", "🔗 Join Party"])
 
@@ -5241,10 +5253,10 @@ def render_friends_page():
     </div>
     """, unsafe_allow_html=True)
 
-    user_id = st.session_state.get("db_user_id")
-    if not user_id:
-        st.warning("Please log in to manage friends.")
-        return
+    user_id = get_user_id_for_social()
+    is_guest = user_id.startswith("guest_")
+    if is_guest:
+        st.info("You're browsing as a guest. Log in to save your friends and referrals!")
 
     tab1, tab2, tab3 = st.tabs(["👥 My Friends", "📨 Requests", "🎁 Referrals"])
 

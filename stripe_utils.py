@@ -95,29 +95,6 @@ SUBSCRIPTION_PLANS = {
         "recommendations_limit": -1,
         "quick_hits_limit": -1
     },
-    "pro": {
-        "name": "Pro",
-        "name_es": "Pro",
-        "price": 9.99,
-        "price_id": os.environ.get("STRIPE_PRO_PRICE_ID", "price_pro_monthly"),
-        "features": [
-            "Everything in Plus",
-            "Custom mood triggers",
-            "API access",
-            "Early feature access",
-            "1-on-1 onboarding"
-        ],
-        "features_es": [
-            "Todo lo de Plus",
-            "Disparadores de animo personalizados",
-            "Acceso API",
-            "Acceso anticipado a funciones",
-            "Onboarding 1-a-1"
-        ],
-        "mr_dp_limit": -1,
-        "recommendations_limit": -1,
-        "quick_hits_limit": -1
-    }
 }
 
 def create_checkout_url(user_id: str, user_email: str, plan: str = "plus") -> str:
@@ -477,8 +454,8 @@ def render_pricing_page():
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # CTA Buttons
-    col1, col2, col3 = st.columns(3)
+    # CTA Buttons - Only Free and Plus ($4.99)
+    col1, col2 = st.columns(2)
 
     with col1:
         if st.button("Stay Free", use_container_width=True, key="plan_free"):
@@ -490,19 +467,6 @@ def render_pricing_page():
             user_email = st.session_state.get("user", {}).get("email", "")
             if user_id and user_email:
                 checkout_url = create_checkout_url(user_id, user_email, "plus")
-                if checkout_url:
-                    st.markdown(f'<meta http-equiv="refresh" content="0;url={checkout_url}">', unsafe_allow_html=True)
-                else:
-                    st.error("Payment system not configured. Please contact support.")
-            else:
-                st.warning("Please log in to upgrade.")
-
-    with col3:
-        if st.button("Get Pro - $9.99/mo", use_container_width=True, key="plan_pro"):
-            user_id = st.session_state.get("db_user_id")
-            user_email = st.session_state.get("user", {}).get("email", "")
-            if user_id and user_email:
-                checkout_url = create_checkout_url(user_id, user_email, "pro")
                 if checkout_url:
                     st.markdown(f'<meta http-equiv="refresh" content="0;url={checkout_url}">', unsafe_allow_html=True)
                 else:
@@ -527,7 +491,7 @@ def render_pricing_page():
 
         <div class="faq-item">
             <div class="faq-question">Is there a free trial?</div>
-            <div class="faq-answer">Our Free plan lets you try all the core features! When you're ready for unlimited access, upgrade to Plus or Pro.</div>
+            <div class="faq-answer">Our Free plan lets you try all the core features! When you're ready for unlimited access, upgrade to Plus for just $4.99/month.</div>
         </div>
 
         <div class="faq-item">
