@@ -1,84 +1,128 @@
-# .claude.md - Project Instructions for AI Assistants
+# CLAUDE.md - Project Instructions for AI Assistants
 
 > **Purpose**: This file tells Claude (and other AI assistants) how to work with this project effectively.
-> 
-> **Location**: Place this file in your project root directory as `.claude.md`
+>
+> **Location**: Project root directory
 
 ---
 
-## 🎯 PROJECT OVERVIEW
+## PROJECT OVERVIEW
 
-**Project Name**: dopamine.watch  
-**Description**: ADHD-friendly streaming recommendation app that helps neurodivergent users find content based on emotional state transitions  
-**Repository**: https://github.com/ZamoritaCR/neurostream-v1  
-**Live URL**: https://dopamine.watch
+**Project Name**: dopamine.watch
+**Description**: ADHD-friendly streaming recommendation app that helps neurodivergent users find content based on emotional state transitions
+**Repository**: https://github.com/ZamoritaCR/neurostream-v1
+**Live URLs**:
+- App: https://app.dopamine.watch (Railway)
+- Landing: https://www.dopamine.watch (GreenGeeks)
+- Landing ES: https://www.dopamine.watch/index_es.html
 
 ### Core Purpose
-[2-3 sentence elevator pitch of what this project does and why it exists]
+Media as medicine for ADHD brains. Users tell the app how they feel NOW and how they WANT to feel, and the app finds content (movies, music, podcasts, audiobooks, shorts) to bridge that emotional gap. Built on 45+ years of ADHD and neuroscience research.
 
 ### Target Users
-- [Primary user type]
-- [Secondary user type]
-- [User pain point this solves]
+- Primary: Adults with ADHD experiencing decision fatigue
+- Secondary: Neurodivergent individuals (autism, anxiety, depression)
+- Pain point: Spending 45+ minutes scrolling unable to pick what to watch
 
 ---
 
-## 💻 TECH STACK
+## TECH STACK
 
 ### Frontend
 - **Framework**: Streamlit (Python)
-- **Styling**: Custom CSS with ADHD-optimized design
-- **Typography**: Lexend font (dyslexia-friendly)
+- **Styling**: Custom CSS with ADHD-optimized design (softer colors, larger touch targets)
+- **Typography**: Inter font family
+- **PWA**: Progressive Web App with service worker
 
 ### Backend
 - **Database**: Supabase Pro (PostgreSQL)
 - **Authentication**: Supabase Auth + Google OAuth
-- **APIs**: TMDB, OpenAI, Stripe
+- **Edge Functions**: Supabase Edge Functions (Deno)
+- **APIs**: TMDB, OpenAI (GPT-4), Stripe, Spotify
 
 ### Hosting & Deployment
-- **Main App**: Railway
-- **Landing Pages**: GreenGeeks
+- **Main App**: Railway (auto-deploys from GitHub main branch)
+- **Landing Pages**: GreenGeeks (FTP upload)
+- **Edge Functions**: Supabase
 - **Version Control**: GitHub
 
-### Development Environment
-- **OS**: macOS
-- **Editor**: VS Code
-- **Python Version**: 3.11+
-- **Package Manager**: pip
+### Payments
+- **Provider**: Stripe
+- **Plans**: Free (5 Mr.DP chats/day) + Premium ($4.99/month unlimited)
+- **Webhooks**: Supabase Edge Function for subscription lifecycle
 
 ---
 
-## 📁 FILE STRUCTURE
+## FILE STRUCTURE
 
 ```
 project-root/
-├── .claude.md                 # This file
-├── app.py                     # Main Streamlit application
-├── requirements.txt           # Python dependencies
+├── CLAUDE.md                    # This file - AI assistant instructions
+├── app.py                       # Main Streamlit app (~10,000 lines)
+├── requirements.txt             # Python dependencies
+│
+├── # Core Feature Modules
+├── mr_dp_intelligence.py        # Mr.DP AI chatbot logic, gamification
+├── mr_dp_floating.py            # Floating chat widget UI
+├── mood_utils.py                # Mood logging and history
+├── behavior_tracking.py         # User engagement tracking
+├── watch_queue.py               # Save for later functionality
+├── sos_calm_mode.py             # Crisis/calm mode features
+├── time_aware_picks.py          # Time-of-day recommendations
+├── focus_timer.py               # Pomodoro-style focus sessions
+│
+├── # Phase 3 Enhanced Features (dopamine_2027 integration)
+├── gamification_enhanced.py     # Points, streaks, leaderboards, 30 achievements
+├── user_learning.py             # Pattern detection, personalization
+├── wellness_enhanced.py         # Breathing exercises, grounding, affirmations
+├── search_aggregator.py         # Multi-platform search (TMDB, Spotify, YouTube)
+├── social_features.py           # Watch parties, messaging, friends
+│
+├── # Monetization
+├── subscription_utils.py        # Usage limits, premium checks
+├── stripe_utils.py              # Pricing page, checkout URLs
+├── analytics_utils.py           # User analytics
+├── email_utils.py               # Welcome/milestone emails
+│
+├── # Landing Pages (deployed to GreenGeeks)
+├── index.html                   # English landing page
+├── index_es.html                # Spanish landing page
+├── privacy.html                 # Privacy policy
+├── terms.html                   # Terms of service
+│
+├── # Supabase
+├── supabase/
+│   └── functions/
+│       ├── mr-dp-chat/          # AI chat Edge Function
+│       │   └── index.ts
+│       └── stripe-webhook/      # Stripe webhook handler
+│           └── index.ts
+│
+├── # Streamlit Config
 ├── .streamlit/
-│   └── config.toml           # Streamlit configuration
-├── static/
-│   ├── mr_dp_avatar.svg      # Assets
-│   └── animations/
-├── landing/
-│   ├── index.html            # English landing page
-│   └── index_es.html         # Spanish landing page
-└── README.md
+│   ├── config.toml              # Streamlit settings
+│   └── secrets.toml             # API keys (gitignored)
+│
+└── static/                      # PWA assets, icons
 ```
 
-### Key Files to Know
-- `app.py` - Main application (1800+ lines, handle with care)
-- `requirements.txt` - All Python dependencies
-- `.streamlit/config.toml` - App configuration
+### Key Files Reference
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `app.py` | ~10,000 | Main application - handle with extreme care |
+| `mr_dp_intelligence.py` | ~800 | Mr.DP AI, gamification, behavioral tracking |
+| `mr_dp_floating.py` | ~400 | Chat widget UI with SVG sanitization |
+| `gamification_enhanced.py` | ~500 | Points, streaks, 30 achievements |
+| `index.html` | ~2,400 | English landing with auth modals |
 
 ---
 
-## 🚨 CRITICAL DEVELOPMENT RULES
+## CRITICAL DEVELOPMENT RULES
 
 ### Rule #1: NO REFACTORING WITHOUT PERMISSION
-**Why**: Developer has ADHD and has built substantial working code over time. Breaking changes cause significant setback.
+**Why**: Developer has ADHD. Breaking changes cause significant setback.
 
-**What this means**:
 - ✅ Fix specific bugs as requested
 - ✅ Add new features surgically
 - ✅ Preserve ALL existing functionality
@@ -89,7 +133,6 @@ project-root/
 ### Rule #2: STEP-BY-STEP APPROACH
 **Why**: Developer has extreme ADHD and needs manageable chunks.
 
-**What this means**:
 - ✅ One task at a time
 - ✅ Wait for confirmation before proceeding
 - ✅ Break complex changes into small steps
@@ -97,26 +140,22 @@ project-root/
 - ❌ No "here are 5 different approaches" - pick the best one
 
 ### Rule #3: ASK, DON'T ASSUME
-**What this means**:
 - ✅ Ask clarifying questions if task is ambiguous
 - ✅ Confirm approach before major changes
-- ✅ Explain WHY you're suggesting something
 - ❌ Don't make assumptions about requirements
-- ❌ Don't implement features not explicitly requested
 
 ### Rule #4: PRESERVE CONTEXT
-**What this means**:
-- ✅ Read `DOPAMINE_WATCH_PROJECT_BRAIN.md` before starting
+- ✅ Read this file before starting
 - ✅ Reference existing code patterns
 - ✅ Maintain coding style consistency
-- ❌ Don't introduce new patterns/libraries without discussion
 
 ---
 
-## 🔧 COMMON TASKS
+## COMMON TASKS
 
-### Starting the Development Server
+### Starting Development Server
 ```bash
+cd /Users/zamorita/Desktop/Neuronav
 streamlit run app.py
 ```
 
@@ -125,357 +164,272 @@ streamlit run app.py
 pip install -r requirements.txt
 ```
 
-### Database Migrations (Supabase)
-```sql
--- Run in Supabase SQL Editor
--- Check DOPAMINE_WATCH_PROJECT_BRAIN.md for schemas
-```
-
 ### Deploying to Railway
 ```bash
+git add <files>
+git commit -m "Description"
 git push origin main
 # Railway auto-deploys from main branch
 ```
 
-### Updating Landing Pages (GreenGeeks)
+### Uploading Landing Pages to GreenGeeks
 ```bash
-# Manual SFTP upload or use VS Code SFTP extension
-# Files: landing/index.html, landing/index_es.html
+# Via curl/FTP
+curl -T index.html ftp://ftp.pcmodderscr.com/MrRoboto/index.html \
+  --user "MrRobotto@dopamine.watch:PASSWORD"
+
+curl -T index_es.html ftp://ftp.pcmodderscr.com/MrRoboto/index_es.html \
+  --user "MrRobotto@dopamine.watch:PASSWORD"
+```
+
+### Deploying Supabase Edge Functions
+```bash
+npx supabase login
+npx supabase link --project-ref wkfewpynskakgbetscsa
+npx supabase functions deploy stripe-webhook --no-verify-jwt
+npx supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_xxx
 ```
 
 ---
 
-## 🎨 CODING STANDARDS
+## ENVIRONMENT VARIABLES
 
-### Python Style
-- Follow existing code patterns in `app.py`
-- Use Streamlit session state for state management
-- Keep functions focused and named descriptively
-- Add comments for complex logic
+### Railway / .streamlit/secrets.toml
+```toml
+[tmdb]
+api_key = "eyJ..."
 
-### CSS/Styling
-- Use ADHD-optimized color palette (see PROJECT_BRAIN.md)
-- Maintain Lexend font family
-- Keep animations smooth and subtle
-- Ensure 44px minimum tap targets
+[openai]
+api_key = "sk-..."
 
-### Error Handling
-```python
-try:
-    # Operation
-except Exception as e:
-    st.error(f"Helpful error message: {str(e)}")
-    # Log for debugging
+[supabase]
+url = "https://wkfewpynskakgbetscsa.supabase.co"
+anon_key = "eyJ..."
+service_role_key = "eyJ..."
+
+[stripe]
+publishable_key = "pk_live_..."
+secret_key = "sk_live_..."
+payment_link_monthly = "https://buy.stripe.com/..."
+customer_portal = "https://billing.stripe.com/..."
+webhook_secret = "whsec_..."
+
+[spotify]
+client_id = "..."
+client_secret = "..."
 ```
 
-### Session State Pattern
-```python
-# Always check before accessing
-if 'key_name' not in st.session_state:
-    st.session_state.key_name = default_value
+### Supabase Edge Function Secrets
+```bash
+STRIPE_SECRET_KEY
+STRIPE_WEBHOOK_SECRET
 ```
 
 ---
 
-## 🐛 DEBUGGING GUIDELINES
+## DATABASE SCHEMA (Supabase)
 
-### When Code Breaks
+### Core Tables
+```sql
+-- profiles (user data)
+id UUID PRIMARY KEY
+email TEXT
+name TEXT
+is_premium BOOLEAN DEFAULT false
+premium_since TIMESTAMP
+stripe_customer_id TEXT
+subscription_id TEXT
+mr_dp_uses INTEGER DEFAULT 0
+last_mr_dp_reset DATE
+created_at TIMESTAMP
 
-1. **First**: Check if it's a session state initialization issue
-2. **Second**: Verify API keys are set in environment
-3. **Third**: Check Streamlit Cloud logs
-4. **Fourth**: Test locally with `streamlit run app.py`
+-- mood_logs
+id UUID PRIMARY KEY
+user_id UUID REFERENCES profiles(id)
+current_mood TEXT
+target_mood TEXT
+created_at TIMESTAMP
 
-### Common Issues & Fixes
+-- watch_queue
+id UUID PRIMARY KEY
+user_id UUID REFERENCES profiles(id)
+content_id TEXT
+content_type TEXT
+title TEXT
+added_at TIMESTAMP
+
+-- user_achievements
+id UUID PRIMARY KEY
+user_id UUID REFERENCES profiles(id)
+achievement_id TEXT
+unlocked_at TIMESTAMP
+
+-- user_points
+id UUID PRIMARY KEY
+user_id UUID REFERENCES profiles(id)
+total_points INTEGER DEFAULT 0
+level INTEGER DEFAULT 1
+streak_days INTEGER DEFAULT 0
+last_active DATE
+```
+
+---
+
+## STRIPE INTEGRATION
+
+### Payment Flow
+1. User clicks "Go Premium" → opens premium modal
+2. Modal shows Stripe Payment Link with `client_reference_id={user_id}`
+3. User completes checkout on Stripe
+4. Stripe redirects to `app.dopamine.watch?upgraded=true`
+5. App detects `?upgraded=true` and updates session state
+6. Webhook updates database for persistent premium status
+
+### Webhook Events Handled
+- `checkout.session.completed` → Set is_premium=true
+- `customer.subscription.updated` → Update status based on subscription.status
+- `customer.subscription.deleted` → Set is_premium=false
+
+### Testing
+- Use Stripe test mode keys for development
+- Test card: 4242 4242 4242 4242, any future date, any CVC
+
+---
+
+## MR.DP CHATBOT
+
+### Overview
+Mr.DP is the AI assistant mascot - a friendly neuron character with expressions.
+
+### Key Functions
+- `chat_with_mr_dp()` - Main conversation handler
+- `get_contextual_greeting()` - Time-aware greetings
+- `detect_decision_fatigue()` - ADHD intervention triggers
+- `sanitize_chat_content()` - Removes SVG leakage from responses
+
+### Usage Limits
+- Free: 5 chats per day (resets at midnight)
+- Premium: Unlimited
+
+### Expressions
+happy, thinking, excited, listening, sad, love, surprised, wink, confused, cool, focused, sleeping
+
+---
+
+## CURRENT FEATURES
+
+### Phase 1: Core
+- Mood-based recommendations (12 moods)
+- Quick Dope Hit (instant recommendation)
+- Content tabs: Movies, Music, Podcasts, Audiobooks, Shorts
+- Watch queue (save for later)
+- SOS Calm Mode
+
+### Phase 2: Engagement
+- Mr.DP AI chatbot
+- Gamification (XP, levels, achievements)
+- Focus timer with break reminders
+- Time-aware suggestions
+
+### Phase 3: Growth (dopamine_2027)
+- Enhanced gamification (30 achievements, leaderboards, streaks)
+- User learning/personalization
+- Wellness features (breathing, grounding, affirmations)
+- Search aggregator (multi-platform)
+- Social features (watch parties, messaging, friends)
+
+### Monetization
+- Free tier with limits
+- Premium ($4.99/month) via Stripe
+- Referral system
+
+---
+
+## DEBUGGING GUIDELINES
+
+### Common Issues
 
 **Issue**: Movies not loading
-- **Cause**: `media_type` missing from TMDB response
-- **Fix**: Default to `"movie"` in `_clean_results()`
+- Check TMDB API key in secrets
+- Verify `media_type` handling in `_clean_results()`
 
-**Issue**: Smart quotes breaking code
-- **Cause**: Copy-paste from rich text editors
-- **Fix**: Replace curly quotes with straight quotes
+**Issue**: Mr.DP chat shows SVG content
+- `sanitize_chat_content()` in mr_dp_floating.py handles this
+- Check for new SVG patterns leaking
 
-**Issue**: Session state AttributeError
-- **Cause**: Missing initialization
-- **Fix**: Add key to session state initialization
+**Issue**: Premium not persisting after checkout
+- Verify webhook is deployed and receiving events
+- Check Supabase profiles table for `is_premium` column
+- Ensure `client_reference_id` is being passed to Stripe
 
----
-
-## 🔌 API REFERENCE QUICK LINKS
-
-### TMDB API
-- **Docs**: https://developer.themoviedb.org/docs
-- **Auth**: Bearer token in environment
-- **Rate Limit**: 50 req/sec
-
-### OpenAI API
-- **Docs**: https://platform.openai.com/docs
-- **Model**: GPT-4
-- **Usage**: Mr.DP chatbot
-
-### Supabase
-- **Docs**: https://supabase.com/docs
-- **Dashboard**: https://app.supabase.com
-- **RLS**: Enabled on all tables
-
-### Stripe
-- **Docs**: https://stripe.com/docs/api
-- **Test Mode**: Use test keys for development
-- **Webhooks**: Need to configure for subscriptions
+**Issue**: Session state errors
+- Always check `if 'key' not in st.session_state` before access
+- Initialize all keys in the session state initialization block
 
 ---
 
-## 📋 FEATURE IMPLEMENTATION CHECKLIST
+## DEPLOYMENT CHECKLIST
 
-When adding new features:
+### Before Deploying
+- [ ] Test locally with `streamlit run app.py`
+- [ ] Check for console errors
+- [ ] Verify all API keys are set
+- [ ] Test critical flows (login, recommendations, Mr.DP)
 
-- [ ] Read relevant sections in PROJECT_BRAIN.md
-- [ ] Discuss approach with developer first
-- [ ] Write minimal code to achieve goal
-- [ ] Test locally before committing
-- [ ] Update this file if adding new patterns
-- [ ] Update PROJECT_BRAIN.md if significant
-- [ ] Commit with clear message
-- [ ] Verify deployment on Railway
-
----
-
-## 🎯 TESTING STRATEGY
-
-### Local Testing
-```bash
-# Run app
-streamlit run app.py
-
-# Test specific flows:
-# 1. Sign up / Login
-# 2. Mood selection → Recommendations
-# 3. Mr.DP chatbot
-# 4. Quick Dope Hit button
-# 5. Each content tab (Movies, Music, etc.)
-```
-
-### Environment Variables Needed
-```bash
-OPENAI_API_KEY=sk-...
-TMDB_API_KEY=eyJ...
-SUPABASE_URL=https://...
-SUPABASE_ANON_KEY=eyJ...
-STRIPE_PUBLISHABLE_KEY=pk_test_...
-STRIPE_SECRET_KEY=sk_test_...
-```
+### After Deploying
+- [ ] Verify Railway deployment succeeded
+- [ ] Test production app at app.dopamine.watch
+- [ ] Check Railway logs for errors
+- [ ] If landing pages changed, upload to GreenGeeks
 
 ---
 
-## 💬 WORKING WITH THE DEVELOPER
+## RED FLAGS - STOP AND ASK
 
-### Communication Style
-- Developer has extreme ADHD - be concise and clear
-- One task at a time, wait for go-ahead
-- Use step-by-step instructions
-- No overwhelming info dumps
-
-### What Developer Values
-- ✅ Surgical fixes that solve exact problem
-- ✅ Clear explanations of WHY
-- ✅ Preserving working code
-- ✅ Quick wins over perfect solutions
-
-### What Frustrates Developer
-- ❌ Refactoring working code without permission
-- ❌ Removing features to "simplify"
-- ❌ Multiple options without recommendation
-- ❌ Breaking existing functionality
+Stop and confirm with developer if you're about to:
+- Delete any existing code
+- Change session state structure
+- Modify database schema
+- Add new dependencies
+- Refactor more than 20 lines
+- Remove or rename functions
+- Change UI layout significantly
 
 ---
 
-## 🚀 DEPLOYMENT NOTES
-
-### Railway Deployment
-- Auto-deploys from `main` branch
-- Environment variables set in Railway dashboard
-- Check build logs if deployment fails
-- Streamlit Cloud cache may need clearing
-
-### GreenGeeks (Landing Pages)
-- Static HTML/CSS/JS files
-- Use SFTP for uploads
-- Test locally first (open index.html in browser)
-- Absolute URLs for all internal links
-
----
-
-## 📚 ESSENTIAL READING
-
-### Before Making Changes
-1. Read this entire `.claude.md` file
-2. Read `DOPAMINE_WATCH_PROJECT_BRAIN.md`
-3. Ask if anything is unclear
-
-### For Specific Features
-- **ADHD Optimization**: See "ADHD OPTIMIZATION" section in PROJECT_BRAIN.md
-- **API Integration**: See "API INTEGRATIONS" section in PROJECT_BRAIN.md
-- **Database Schema**: See "DEPLOYMENT & INFRASTRUCTURE" section in PROJECT_BRAIN.md
-
----
-
-## 🔄 WORKFLOW EXAMPLES
-
-### Example 1: Fixing a Bug
-```
-Developer: "The login button isn't working on the Spanish landing page"
-
-Claude:
-1. ✅ Read .claude.md and PROJECT_BRAIN.md
-2. ✅ Ask: "What error message do you see?" (if not provided)
-3. ✅ Locate issue in index_es.html
-4. ✅ Propose minimal fix
-5. ✅ Show before/after code
-6. ✅ Wait for approval
-7. ✅ Implement fix
-```
-
-### Example 2: Adding a Feature
-```
-Developer: "Add a 'Save for Later' button to each movie card"
-
-Claude:
-1. ✅ Read existing movie card implementation
-2. ✅ Ask: "Should this save to Supabase or session state?"
-3. ✅ Propose approach with code example
-4. ✅ Wait for approval
-5. ✅ Implement in stages (UI → functionality → storage)
-6. ✅ Test each stage before proceeding
-```
-
-### Example 3: What NOT to Do
-```
-Developer: "The app is slow, can you optimize it?"
-
-Claude:
-❌ "I'll refactor the entire app.py to be more efficient"
-✅ "Let me profile the app to find the bottleneck first. Can you tell me which specific actions feel slow?"
-```
-
----
-
-## 🎓 LEARNING RESOURCES
-
-### Streamlit
-- Official Docs: https://docs.streamlit.io
-- Session State Guide: https://docs.streamlit.io/library/api-reference/session-state
-
-### ADHD-Friendly Design
-- See research citations in PROJECT_BRAIN.md
-- Lexend Font: https://fonts.google.com/specimen/Lexend
-
-### Project-Specific
-- TMDB API Wrapper: `tmdbv3api` library docs
-- Supabase Python Client: https://supabase.com/docs/reference/python
-
----
-
-## ⚠️ RED FLAGS - STOP AND ASK
-
-**Stop and confirm with developer if you're about to**:
-- Delete any existing code (except obvious bugs)
-- Change the structure of session state
-- Modify the database schema
-- Add new dependencies to requirements.txt
-- Change how APIs are called
-- Refactor more than 20 lines of code
-- Remove or rename any functions
-- Change the UI layout significantly
-
----
-
-## 📝 COMMIT MESSAGE FORMAT
+## COMMIT MESSAGE FORMAT
 
 ```
-[Component] Brief description
+Brief description of change
 
 - Specific change 1
 - Specific change 2
 
-Fixes: #issue-number (if applicable)
-```
-
-**Examples**:
-```
-[Landing] Fix Spanish login modal
-
-- Corrected button event listener
-- Updated Google Sign-In integration
-```
-
-```
-[Chatbot] Add ADHD-aware response system
-
-- Updated Mr.DP system prompt
-- Reduced response length to 3 sentences max
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 ```
 
 ---
 
-## 🎯 SUCCESS CRITERIA
+## QUICK REFERENCE
 
-**You're doing it right when**:
-- ✅ Developer says "yes, exactly"
-- ✅ Code works first time
-- ✅ Existing features still work
-- ✅ Changes are minimal and focused
-- ✅ Developer understands what you did
+| Action | Command |
+|--------|---------|
+| Run locally | `streamlit run app.py` |
+| Deploy app | `git push origin main` |
+| Upload landing | `curl -T index.html ftp://...` |
+| Deploy function | `npx supabase functions deploy NAME` |
+| View logs | Railway dashboard → Deployments |
 
-**You're doing it wrong when**:
-- ❌ Developer says "that broke everything"
-- ❌ You removed working features
-- ❌ You refactored without permission
-- ❌ Developer is confused by your changes
-- ❌ You introduced new bugs
-
----
-
-## 🆘 WHEN STUCK
-
-### Ask These Questions
-1. "What specifically should change?"
-2. "Should I preserve [existing functionality]?"
-3. "Do you want me to [specific approach]?"
-4. "Can you show me the error message?"
-
-### Never Say
-- ❌ "I'll refactor this for you"
-- ❌ "Let me simplify this"
-- ❌ "Here are 5 different approaches"
-- ❌ "I don't have enough context" (read PROJECT_BRAIN.md)
+| URL | Purpose |
+|-----|---------|
+| https://app.dopamine.watch | Main app |
+| https://www.dopamine.watch | Landing page |
+| https://app.supabase.com | Database dashboard |
+| https://dashboard.stripe.com | Payments |
+| https://railway.app | App hosting |
 
 ---
 
-## 📞 GETTING HELP
-
-### For Claude Issues
-- Developer's memory contains project history
-- Reference past conversations if needed
-- Use `conversation_search` for specific topics
-
-### For Technical Issues
-- Check Streamlit documentation
-- Verify environment variables
-- Test API endpoints directly
-- Check Railway logs
-
----
-
-**FINAL REMINDER**: 
-
-🚨 **READ `DOPAMINE_WATCH_PROJECT_BRAIN.md` BEFORE EVERY SESSION** 🚨
-
-This file contains the complete project context, history, and technical specifications. Without it, you're flying blind.
-
----
-
-**Last Updated**: January 30, 2026  
-**Maintained By**: Johan (with Claude assistance)  
-**Version**: 1.0
-
+**Last Updated**: January 31, 2026
+**Maintained By**: Johan (with Claude assistance)
+**Version**: 2.0 (Phase 3 Complete)
