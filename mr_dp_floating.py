@@ -15,24 +15,39 @@ def sanitize_chat_content(content: str) -> str:
     if not content:
         return content
 
-    # Remove SVG tags and their content
+    # Remove complete SVG blocks (including malformed ones)
     content = re.sub(r'<svg[^>]*>.*?</svg>', '', content, flags=re.DOTALL | re.IGNORECASE)
 
+    # Remove SVG-like content patterns (coordinates, paths, etc.)
+    content = re.sub(r'<!\-\-[^>]*\-\->', '', content)  # Remove XML comments
+    content = re.sub(r'M\s*\d+\s+\d+\s*[QCLHVZSA\d\s\.\-,]+', '', content)  # SVG path data
+    content = re.sub(r'cx="\d+"', '', content)  # Circle attributes
+    content = re.sub(r'cy="\d+"', '', content)
+    content = re.sub(r'r="\d+"', '', content)
+    content = re.sub(r'rx="\d+"', '', content)
+    content = re.sub(r'ry="\d+"', '', content)
+
     # Remove partial SVG elements that might appear
-    content = re.sub(r'<(circle|rect|path|ellipse|polygon|line|polyline|g|defs|linearGradient|radialGradient|filter|animate|text|tspan)[^>]*/?>', '', content, flags=re.IGNORECASE)
+    content = re.sub(r'<(circle|rect|path|ellipse|polygon|line|polyline|g|defs|linearGradient|radialGradient|filter|animate|text|tspan|stop|feMerge|feMergeNode|feGaussianBlur)[^>]*/?>', '', content, flags=re.IGNORECASE)
 
     # Remove SVG closing tags
-    content = re.sub(r'</(svg|circle|rect|path|ellipse|polygon|line|polyline|g|defs|linearGradient|radialGradient|filter|animate|text|tspan)>', '', content, flags=re.IGNORECASE)
+    content = re.sub(r'</(svg|circle|rect|path|ellipse|polygon|line|polyline|g|defs|linearGradient|radialGradient|filter|animate|text|tspan|stop|feMerge|feMergeNode|feGaussianBlur)>', '', content, flags=re.IGNORECASE)
 
     # Remove dpGradient references and other SVG ID patterns
-    content = re.sub(r'(dpGradient|dpGlow|ng-|ag-)_?\w*', '', content, flags=re.IGNORECASE)
+    content = re.sub(r'(dpGradient|dpGlow|ng-|ag-|url\(#)[^\s\)]*\)?', '', content, flags=re.IGNORECASE)
 
     # Remove any remaining SVG attributes
-    content = re.sub(r'fill="url\([^)]*\)"', '', content)
-    content = re.sub(r'(stroke|fill|opacity|transform|viewBox|xmlns)[^"]*="[^"]*"', '', content)
+    content = re.sub(r'(stroke|fill|opacity|transform|viewBox|xmlns|stroke-width|stroke-linecap|font-size|font-family|text-anchor|stop-color|stdDeviation|attributeName|dur|repeatCount|values|style)[^"]*="[^"]*"', '', content, flags=re.IGNORECASE)
 
-    # Clean up multiple spaces and newlines
-    content = re.sub(r'\s+', ' ', content).strip()
+    # Remove SVG-specific text patterns
+    content = re.sub(r'z\s*z\s*z', '', content)  # Sleeping "zzz"
+    content = re.sub(r'[◠◡●○◉◐◔◕★♥▬−]', '', content)  # Expression characters
+
+    # Clean up multiple spaces, newlines, and empty brackets
+    content = re.sub(r'\s+', ' ', content)
+    content = re.sub(r'\(\s*\)', '', content)
+    content = re.sub(r'\[\s*\]', '', content)
+    content = content.strip()
 
     return content
 
