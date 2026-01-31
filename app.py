@@ -83,6 +83,54 @@ from time_aware_picks import render_time_picker, get_time_of_day_suggestions, fi
 from focus_timer import render_focus_timer_sidebar, render_break_reminder_overlay, init_focus_session_state
 
 # --------------------------------------------------
+# PHASE 3 FEATURES - Enhanced dopamine_2027 Integration
+# --------------------------------------------------
+try:
+    from gamification_enhanced import (
+        PointAction, add_points, get_points_summary, get_leaderboard, get_user_rank,
+        update_streak, get_streak_summary, check_streak_at_risk, get_streak_leaderboard,
+        ACHIEVEMENTS_ENHANCED, unlock_achievement, update_achievement_progress,
+        get_achievements_summary, render_leaderboard_widget, render_streak_card,
+        render_achievements_grid
+    )
+    GAMIFICATION_ENHANCED_AVAILABLE = True
+except ImportError:
+    GAMIFICATION_ENHANCED_AVAILABLE = False
+
+try:
+    from user_learning import (
+        EventType, track_learning_event, init_learning_session,
+        analyze_user_patterns, get_genre_preferences, get_mood_recommendations,
+        get_duration_recommendation, get_mrdp_personalization_context,
+        render_insights_dashboard
+    )
+    USER_LEARNING_AVAILABLE = True
+except ImportError:
+    USER_LEARNING_AVAILABLE = False
+
+try:
+    from wellness_enhanced import (
+        BREATHING_EXERCISES, get_breathing_exercise, get_all_breathing_exercises,
+        GROUNDING_54321, get_grounding_exercise,
+        AFFIRMATIONS_BY_MOOD, get_affirmation, get_affirmations, get_sos_content_package,
+        render_breathing_animation, render_grounding_guided_exercise,
+        render_affirmation_card, render_enhanced_sos_overlay
+    )
+    WELLNESS_ENHANCED_AVAILABLE = True
+except ImportError:
+    WELLNESS_ENHANCED_AVAILABLE = False
+
+try:
+    from search_aggregator import (
+        search_all_sync, quick_search_sync, mood_based_search_sync,
+        render_unified_search_bar, render_search_results_grid, render_mood_quick_picks,
+        MOOD_GENRE_MAP, format_duration, is_adhd_friendly
+    )
+    SEARCH_AGGREGATOR_AVAILABLE = True
+except ImportError:
+    SEARCH_AGGREGATOR_AVAILABLE = False
+
+# --------------------------------------------------
 # 1. CONFIG
 # --------------------------------------------------
 st.set_page_config(

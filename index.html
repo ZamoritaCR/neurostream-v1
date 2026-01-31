@@ -768,6 +768,11 @@ footer {
     50% { transform: translateY(-6px); }
 }
 
+@keyframes slideUp {
+    from { transform: translate(-50%, 100px); opacity: 0; }
+    to { transform: translate(-50%, 0); opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .mr-dp-avatar { animation: none !important; }
 }
@@ -1862,9 +1867,110 @@ footer {
 // ============================================
 const STREAMLIT_APP_URL = "https://app.dopamine.watch";
 
+// Detect if running locally
+const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+// API Configuration - use local API when running locally
+const API_BASE_URL = IS_LOCAL ? '' : 'https://api.dopamine.watch';
+
 // Supabase Configuration
 const SUPABASE_URL = "https://wkfewpynskakgbetscsa.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndrZmV3cHluc2tha2diZXRzY3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MDcwMTAsImV4cCI6MjA4MzQ4MzAxMH0.DXnSsvabfwfNZIJaP0UR39YQe_3CHW-RjL2o1vDsunQ";
+
+// Log environment
+console.log('🧠 dopamine.watch', IS_LOCAL ? '(Local Dev)' : '(Production)');
+
+// Current user state
+let currentUser = null;
+
+// Handle post-login behavior
+function onLoginSuccess(user) {
+    currentUser = user;
+    localStorage.setItem('dopamine_user', JSON.stringify(user));
+    closeModal();
+
+    if (IS_LOCAL) {
+        // Redirect to local dashboard
+        console.log('✅ Logged in locally:', user.name);
+        window.location.href = '/dashboard';
+    } else {
+        // Redirect to production Streamlit app
+        window.location.href = STREAMLIT_APP_URL + '?user=' + encodeURIComponent(user.name);
+    }
+}
+
+// Update UI for logged-in state
+function updateUIForLoggedInUser(user) {
+    // Update nav buttons
+    const navBtns = document.querySelector('.nav-btns');
+    if (navBtns) {
+        navBtns.innerHTML = `
+            <span style="color: var(--text-secondary); margin-right: 12px;">
+                👋 Hey, ${user.name}!
+            </span>
+            <button class="nav-btn primary" onclick="openDashboard()">
+                🧠 Dashboard
+            </button>
+            <button class="nav-btn secondary" onclick="handleLogout()">
+                Log Out
+            </button>
+        `;
+    }
+
+    // Show welcome toast
+    showToast('Welcome back, ' + user.name + '! 💜');
+}
+
+// Open dashboard (local mode)
+function openDashboard() {
+    // For local dev, show a dashboard section or redirect to test GUI
+    showToast('Dashboard coming soon! Try the API at /api/docs');
+    window.open('/api/docs', '_blank');
+}
+
+// Handle logout
+function handleLogout() {
+    currentUser = null;
+    localStorage.removeItem('dopamine_user');
+    window.location.reload();
+}
+
+// Show toast notification
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+        color: white;
+        padding: 16px 24px;
+        border-radius: 12px;
+        font-weight: 500;
+        z-index: 10000;
+        animation: slideUp 0.3s ease;
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+// Check for existing session on load
+function checkExistingSession() {
+    const stored = localStorage.getItem('dopamine_user');
+    if (stored) {
+        try {
+            const user = JSON.parse(stored);
+            if (user.loggedIn && Date.now() - user.timestamp < 7 * 24 * 60 * 60 * 1000) {
+                currentUser = user;
+                if (IS_LOCAL) {
+                    updateUIForLoggedInUser(user);
+                }
+            }
+        } catch (e) {}
+    }
+}
 
 // Initialize Supabase only when available
 let supabaseClient = null;
@@ -1968,7 +2074,8 @@ function setMrDpExpression(expression) {
 // ============================================
 // MR.DP CHAT FUNCTIONALITY (AI-Powered)
 // ============================================
-const MR_DP_API = SUPABASE_URL + '/functions/v1/mr-dp-chat';
+// Use local API when running locally, Supabase Edge Function in production
+const MR_DP_API = IS_LOCAL ? '/api/mr-dp/chat' : SUPABASE_URL + '/functions/v1/mr-dp-chat';
 let mrDpHistory = [];
 
 async function sendMrDpMessage() {
@@ -1989,20 +2096,24 @@ async function sendMrDpMessage() {
     setMrDpExpression('thinking');
 
     try {
+        // Build headers - only add auth for Supabase
+        const headers = { 'Content-Type': 'application/json' };
+        if (!IS_LOCAL) {
+            headers['Authorization'] = 'Bearer ' + SUPABASE_ANON_KEY;
+        }
+
         const response = await fetch(MR_DP_API, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
-            },
+            headers: headers,
             body: JSON.stringify({
                 message: message,
-                history: mrDpHistory.slice(-6)
+                history: mrDpHistory.slice(-6),
+                user_id: currentUser?.id || 'anonymous'
             })
         });
 
         const data = await response.json();
-        const aiResponse = data.response || "Hmm, I'm having a moment. Try again? 💜";
+        const aiResponse = data.response || data.message || "Hmm, I'm having a moment. Try again? 💜";
 
         addMrDpMessage(aiResponse, 'assistant');
         mrDpHistory.push({ role: 'assistant', content: aiResponse });
@@ -2049,6 +2160,9 @@ function addMrDpMessage(text, role) {
 
 // Enter key support for Mr.DP chat
 document.addEventListener('DOMContentLoaded', function() {
+    // Check for existing session first
+    checkExistingSession();
+
     initMrDp();
 
     const input = document.getElementById('mrDpInput');
@@ -2080,11 +2194,8 @@ function handleGoogleSignIn(response) {
         timestamp: Date.now()
     };
 
-    localStorage.setItem('dopamine_user', JSON.stringify(user));
-
-    // Close modal and redirect to app
-    closeModal();
-    window.location.href = STREAMLIT_APP_URL + '?user=' + encodeURIComponent(user.name) + '&google=1';
+    // Use unified login handler
+    onLoginSuccess(user);
 }
 
 // ============================================
@@ -2141,7 +2252,7 @@ async function handleLogin() {
             return;
         }
 
-        // Store user info locally
+        // Store user info and handle login
         const user = {
             id: data.user.id,
             email: data.user.email,
@@ -2149,10 +2260,9 @@ async function handleLogin() {
             loggedIn: true,
             timestamp: Date.now()
         };
-        localStorage.setItem('dopamine_user', JSON.stringify(user));
 
-        // Redirect to app
-        window.location.href = STREAMLIT_APP_URL + '?user=' + encodeURIComponent(user.name);
+        // Use unified login handler
+        onLoginSuccess(user);
     } catch (err) {
         alert('Login error: ' + err.message);
         btn.textContent = originalText;
@@ -2235,8 +2345,8 @@ async function handleSignup() {
             btn.textContent = originalText;
             btn.disabled = false;
         } else {
-            // Redirect to app
-            window.location.href = STREAMLIT_APP_URL + '?user=' + encodeURIComponent(username) + '&new=1';
+            // Use unified login handler
+            onLoginSuccess(user);
         }
     } catch (err) {
         alert('Signup error: ' + err.message);
@@ -2247,14 +2357,16 @@ async function handleSignup() {
 
 function guestAccess() {
     const user = {
+        id: 'guest_' + Date.now(),
         email: 'guest@dopamine.watch',
         name: 'Guest',
         loggedIn: true,
         isGuest: true,
         timestamp: Date.now()
     };
-    localStorage.setItem('dopamine_user', JSON.stringify(user));
-    window.location.href = STREAMLIT_APP_URL + '?guest=1';
+
+    // Use unified login handler
+    onLoginSuccess(user);
 }
 
 async function handleForgotPassword() {
