@@ -474,32 +474,21 @@ def render_pricing_page():
             else:
                 st.warning("Please log in to upgrade.")
 
-    # FAQ Section
-    st.markdown("""
-    <div class="faq-section">
-        <h2 style="text-align: center; margin-bottom: 32px;">Frequently Asked Questions</h2>
+    # FAQ Section - Using native Streamlit expanders
+    st.markdown("---")
+    st.markdown("### Frequently Asked Questions")
 
-        <div class="faq-item">
-            <div class="faq-question">Can I cancel anytime?</div>
-            <div class="faq-answer">Yes! You can cancel your subscription at any time. You'll continue to have access until the end of your billing period.</div>
-        </div>
+    with st.expander("Can I cancel anytime?"):
+        st.write("Yes! You can cancel your subscription at any time. You'll continue to have access until the end of your billing period.")
 
-        <div class="faq-item">
-            <div class="faq-question">What payment methods do you accept?</div>
-            <div class="faq-answer">We accept all major credit cards (Visa, Mastercard, American Express) through our secure payment processor, Stripe.</div>
-        </div>
+    with st.expander("What payment methods do you accept?"):
+        st.write("We accept all major credit cards (Visa, Mastercard, American Express) through our secure payment processor, Stripe.")
 
-        <div class="faq-item">
-            <div class="faq-question">Is there a free trial?</div>
-            <div class="faq-answer">Our Free plan lets you try all the core features! When you're ready for unlimited access, upgrade to Plus for just $4.99/month.</div>
-        </div>
+    with st.expander("Is there a free trial?"):
+        st.write("Our Free plan lets you try all the core features! When you're ready for unlimited access, upgrade to Plus for just $4.99/month.")
 
-        <div class="faq-item">
-            <div class="faq-question">What happens to my data if I downgrade?</div>
-            <div class="faq-answer">Your data is always safe. If you downgrade, you keep all your history and preferences. You'll just have daily limits on certain features.</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    with st.expander("What happens to my data if I downgrade?"):
+        st.write("Your data is always safe. If you downgrade, you keep all your history and preferences. You'll just have daily limits on certain features.")
 
 def check_subscription_limits(user_id: str, action: str, supabase_client) -> dict:
     """Check if user has reached their subscription limits"""
