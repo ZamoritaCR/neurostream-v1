@@ -6069,7 +6069,15 @@ def render_premium_modal():
                 st.rerun()
         with col2:
             if STRIPE_ENABLED and STRIPE_PAYMENT_LINK_MONTHLY:
-                st.link_button("⭐ Upgrade Now", STRIPE_PAYMENT_LINK_MONTHLY, use_container_width=True)
+                # Add client_reference_id for user tracking
+                user_id = st.session_state.get("db_user_id", "")
+                user_email = st.session_state.get("user", {}).get("email", "")
+                payment_url = STRIPE_PAYMENT_LINK_MONTHLY
+                if user_id:
+                    payment_url += f"?client_reference_id={user_id}"
+                    if user_email:
+                        payment_url += f"&prefilled_email={user_email}"
+                st.link_button("⭐ Upgrade Now", payment_url, use_container_width=True)
             else:
                 if st.button("⭐ Upgrade Now", key="premium_monthly_placeholder", use_container_width=True):
                     st.toast("Payment coming soon! 🚀", icon="⭐")
@@ -6228,6 +6236,34 @@ query_params = st.query_params
 # Check for referral code in URL (Phase 5)
 if query_params.get("ref"):
     st.session_state.pending_referral_code = query_params.get("ref")
+
+# Handle Stripe checkout success - user returning from payment
+if query_params.get("upgraded") == "true":
+    user_id = st.session_state.get("db_user_id")
+    if user_id and SUPABASE_ENABLED:
+        try:
+            # Update user to premium in database
+            supabase.table("profiles").update({
+                "is_premium": True,
+                "premium_since": datetime.now().isoformat()
+            }).eq("id", user_id).execute()
+            st.session_state.is_premium = True
+            st.session_state.auth_success = "🎉 Welcome to Premium! You now have unlimited access!"
+            st.balloons()
+        except Exception as e:
+            print(f"Premium upgrade error: {e}")
+    else:
+        # For guest users, just set session state
+        st.session_state.is_premium = True
+        st.session_state.auth_success = "🎉 Premium activated for this session!"
+    st.query_params.clear()
+    st.rerun()
+
+# Handle Stripe checkout cancellation
+if query_params.get("canceled") == "true":
+    st.session_state.auth_error = "Payment was canceled. You can upgrade anytime!"
+    st.query_params.clear()
+    st.rerun()
 
 if not st.session_state.get("user"):
     # Check for user param from index.html login/signup
@@ -9339,12 +9375,25 @@ def render_sidebar():
         
         if st.session_state.get("is_premium"):
             st.markdown("<span class='premium-badge'>⭐ Premium</span>", unsafe_allow_html=True)
+            # Subscription management for premium users
+            with st.expander("Manage Subscription"):
+                st.write("**Status:** Active Premium Member")
+                premium_since = st.session_state.get("premium_since", "")
+                if premium_since:
+                    st.caption(f"Member since: {premium_since[:10]}")
+                st.caption("Thank you for supporting dopamine.watch!")
+                # Stripe Customer Portal link (if configured)
+                portal_link = st.secrets.get("stripe", {}).get("customer_portal", "")
+                if portal_link:
+                    st.link_button("Manage Billing", portal_link, use_container_width=True)
         else:
             # Show daily usage for free users
             user_id = st.session_state.get("db_user_id")
-            if user_id and supabase:
-                mr_dp_uses = st.session_state.user.get("mr_dp_uses", 0)
-                st.progress(min(mr_dp_uses / FREE_MR_DP_LIMIT, 1.0), text=f"Mr.DP: {mr_dp_uses}/{FREE_MR_DP_LIMIT}")
+            chat_count = get_daily_chat_count()
+            st.progress(min(chat_count / FREE_MR_DP_LIMIT, 1.0), text=f"Mr.DP: {chat_count}/{FREE_MR_DP_LIMIT} chats")
+            if st.button("⭐ Go Premium", key="sidebar_upgrade", use_container_width=True, type="secondary"):
+                st.session_state.show_premium_modal = True
+                st.rerun()
 
         # Language Selector
         lang_col1, lang_col2 = st.columns(2)
