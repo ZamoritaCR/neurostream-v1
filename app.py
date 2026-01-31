@@ -130,6 +130,29 @@ try:
 except ImportError:
     SEARCH_AGGREGATOR_AVAILABLE = False
 
+try:
+    from social_features import (
+        # Watch parties
+        create_watch_party, join_watch_party, leave_watch_party,
+        send_party_message, get_party_state, get_public_parties,
+        # Messaging
+        get_or_create_conversation, send_direct_message, get_conversation_messages,
+        get_user_conversations, mark_messages_read,
+        # Friends
+        add_friend, get_friends, remove_friend, get_friends_count,
+        # Referrals & sharing
+        generate_referral_code, apply_referral_code, get_referral_stats,
+        generate_share_link,
+        # UI Components
+        render_watch_party_card, render_create_party_modal, render_join_party_modal,
+        render_party_chat, render_messages_sidebar,
+        render_share_buttons, render_referral_section
+    )
+    SOCIAL_FEATURES_AVAILABLE = True
+except ImportError as e:
+    print(f"[Social Features] Import error: {e}")
+    SOCIAL_FEATURES_AVAILABLE = False
+
 # --------------------------------------------------
 # 1. CONFIG
 # --------------------------------------------------
@@ -2474,6 +2497,19 @@ def ask_mr_dp_v2(user_prompt: str, chat_history: list = None, user_context: dict
             top = user_context["top_moods"]
             if top:
                 context_summary += f"\nUser's common moods: {top}"
+        # Enhanced personalization from user_learning (Phase 3)
+        if user_context.get("genre_preferences"):
+            context_summary += f"\nFavorite genres: {', '.join(user_context['genre_preferences'][:5])}"
+        if user_context.get("adhd_profile"):
+            adhd = user_context["adhd_profile"]
+            if adhd.get("attention_pattern"):
+                context_summary += f"\nAttention pattern: {adhd['attention_pattern']}"
+            if adhd.get("optimal_duration"):
+                context_summary += f"\nPreferred content duration: {adhd['optimal_duration']}"
+        if user_context.get("patterns"):
+            patterns = user_context["patterns"][:2]
+            for p in patterns:
+                context_summary += f"\nBehavior insight: {p.get('description', '')}"
 
     current_mood = st.session_state.get("current_feeling", "")
     desired_mood = st.session_state.get("desired_feeling", "")
@@ -5038,7 +5074,11 @@ def render_leaderboards():
     </div>
     """, unsafe_allow_html=True)
 
-    tab1, tab2, tab3 = st.tabs(["⚡ Top Points", "🔥 Top Streaks", "👥 Top Referrers"])
+    # Add achievements tab if enhanced gamification available
+    if GAMIFICATION_ENHANCED_AVAILABLE:
+        tab1, tab2, tab3, tab4 = st.tabs(["⚡ Top Points", "🔥 Top Streaks", "👥 Top Referrers", "🏅 Achievements"])
+    else:
+        tab1, tab2, tab3 = st.tabs(["⚡ Top Points", "🔥 Top Streaks", "👥 Top Referrers"])
 
     with tab1:
         render_leaderboard_tab("points", user_id)
@@ -5048,6 +5088,16 @@ def render_leaderboards():
 
     with tab3:
         render_leaderboard_tab("referrals", user_id)
+
+    # Achievements tab with 30 achievements from gamification_enhanced
+    if GAMIFICATION_ENHANCED_AVAILABLE:
+        with tab4:
+            st.markdown("### 🏅 Your Achievements")
+            st.caption("Complete actions to unlock all 30 achievements!")
+            if user_id:
+                render_achievements_grid(user_id)
+            else:
+                st.info("Log in to track your achievements!")
 
 
 def render_leaderboard_tab(board_type: str, user_id: str = None):
@@ -5091,6 +5141,228 @@ def render_leaderboard_tab(board_type: str, user_id: str = None):
             <span style="font-weight: 600;">{entry['icon']} {entry['value']:,}</span>
         </div>
         """, unsafe_allow_html=True)
+
+
+# --------------------------------------------------
+# PHASE 3: SOCIAL FEATURES PAGES
+# --------------------------------------------------
+def render_messages_page():
+    """Render direct messages page"""
+    st.markdown("""
+    <div class="section-header">
+        <span class="section-icon">💬</span>
+        <h2 class="section-title">Messages</h2>
+    </div>
+    """, unsafe_allow_html=True)
+
+    user_id = st.session_state.get("db_user_id")
+    if not user_id:
+        st.warning("Please log in to view your messages.")
+        return
+
+    # Show messages sidebar widget
+    if SOCIAL_FEATURES_AVAILABLE:
+        render_messages_sidebar(user_id)
+    else:
+        st.info("Social features coming soon!")
+
+
+def render_watch_parties_page():
+    """Render watch parties page"""
+    st.markdown("""
+    <div class="section-header">
+        <span class="section-icon">🎉</span>
+        <h2 class="section-title">Watch Parties</h2>
+    </div>
+    """, unsafe_allow_html=True)
+
+    user_id = st.session_state.get("db_user_id")
+    if not user_id:
+        st.warning("Please log in to join or create watch parties.")
+        return
+
+    tab1, tab2 = st.tabs(["🎬 Create Party", "🔗 Join Party"])
+
+    with tab1:
+        st.markdown("### Start a Watch Party")
+        st.caption("Invite friends to watch together in sync!")
+
+        content_title = st.text_input("What are you watching?", placeholder="Movie or show title")
+        content_id = st.text_input("Content ID (from TMDB)", placeholder="Optional - for syncing")
+
+        if st.button("🎉 Create Party", type="primary", use_container_width=True):
+            if content_title:
+                if SOCIAL_FEATURES_AVAILABLE:
+                    party = create_watch_party(user_id, content_id or "manual", content_title)
+                    st.session_state["current_party"] = party
+                    st.success(f"Party created! Share code: **{party['party_code']}**")
+                    st.balloons()
+                else:
+                    st.info("Watch parties coming soon!")
+            else:
+                st.error("Please enter what you're watching")
+
+    with tab2:
+        st.markdown("### Join a Party")
+        party_code = st.text_input("Enter party code", placeholder="e.g., ABC123")
+
+        if st.button("🔗 Join Party", type="primary", use_container_width=True):
+            if party_code and SOCIAL_FEATURES_AVAILABLE:
+                result = join_watch_party(party_code, user_id)
+                if result.get("success"):
+                    st.session_state["current_party"] = result.get("party")
+                    st.success("Joined the party!")
+                else:
+                    st.error(result.get("error", "Could not join party"))
+            elif not party_code:
+                st.error("Please enter a party code")
+
+    # Show current party if active
+    current_party = st.session_state.get("current_party")
+    if current_party and SOCIAL_FEATURES_AVAILABLE:
+        st.markdown("---")
+        st.markdown("### 🎬 Current Party")
+        render_watch_party_card(current_party)
+        user_name = st.session_state.user.get('name', 'Guest')
+        render_party_chat(current_party["party_id"], user_id, user_name)
+
+        if st.button("🚪 Leave Party", type="secondary"):
+            leave_watch_party(current_party["party_id"], user_id)
+            st.session_state["current_party"] = None
+            st.rerun()
+
+
+def render_friends_page():
+    """Render friends and referrals page"""
+    st.markdown("""
+    <div class="section-header">
+        <span class="section-icon">👫</span>
+        <h2 class="section-title">Friends & Referrals</h2>
+    </div>
+    """, unsafe_allow_html=True)
+
+    user_id = st.session_state.get("db_user_id")
+    if not user_id:
+        st.warning("Please log in to manage friends.")
+        return
+
+    tab1, tab2, tab3 = st.tabs(["👥 My Friends", "📨 Requests", "🎁 Referrals"])
+
+    with tab1:
+        st.markdown("### Your Friends")
+        if SOCIAL_FEATURES_AVAILABLE:
+            friends = get_friends(user_id)
+            friend_count = get_friends_count(user_id)
+            st.caption(f"{friend_count} friend{'s' if friend_count != 1 else ''}")
+            if friends:
+                for idx, friend_id in enumerate(friends):
+                    col1, col2, col3 = st.columns([3, 1, 1])
+                    with col1:
+                        st.markdown(f"**Friend #{idx + 1}**")
+                        st.caption(f"ID: {friend_id[:8]}...")
+                    with col2:
+                        if st.button("💬", key=f"msg_{friend_id}", help="Send message"):
+                            st.session_state.active_page = "💬 Messages"
+                            st.session_state.selected_friend = friend_id
+                            st.rerun()
+                    with col3:
+                        if st.button("❌", key=f"unfriend_{friend_id}", help="Remove"):
+                            remove_friend(user_id, friend_id)
+                            st.rerun()
+            else:
+                st.info("No friends yet. Share your referral code to connect!")
+        else:
+            st.info("Friends feature coming soon!")
+
+        st.markdown("---")
+        st.markdown("### Add Friend")
+        friend_id_input = st.text_input("Friend's user ID", placeholder="Enter friend's user ID")
+        if st.button("➕ Add Friend", type="primary"):
+            if friend_id_input and SOCIAL_FEATURES_AVAILABLE:
+                result = add_friend(user_id, friend_id_input)
+                if result:
+                    st.success("Friend added!")
+                    st.rerun()
+                else:
+                    st.error("Could not add friend. They may already be in your list.")
+
+    with tab2:
+        st.markdown("### Friend Requests")
+        st.info("Friend requests coming in a future update! For now, share your referral code to connect with friends.")
+        st.caption("Your friends can add you using your user ID from your profile.")
+
+    with tab3:
+        st.markdown("### Your Referral Code")
+        if SOCIAL_FEATURES_AVAILABLE:
+            render_referral_section(user_id)
+        else:
+            st.info("Referral system coming soon!")
+
+
+def render_wellness_page():
+    """Render enhanced wellness page with breathing, grounding, affirmations"""
+    st.markdown("""
+    <div class="section-header">
+        <span class="section-icon">🧘</span>
+        <h2 class="section-title">Wellness Center</h2>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.caption("ADHD-optimized calming techniques to help regulate your nervous system")
+
+    if not WELLNESS_ENHANCED_AVAILABLE:
+        st.info("Enhanced wellness features coming soon!")
+        return
+
+    tab1, tab2, tab3 = st.tabs(["🌬️ Breathing", "🌍 Grounding", "💜 Affirmations"])
+
+    with tab1:
+        st.markdown("### Breathing Exercises")
+        st.caption("Structured breathing patterns to calm your nervous system")
+
+        exercises = get_all_breathing_exercises()
+        cols = st.columns(2)
+        for idx, (ex_id, exercise) in enumerate(exercises.items()):
+            with cols[idx % 2]:
+                st.markdown(f"""
+                <div style="
+                    background: rgba(139,92,246,0.1);
+                    border: 1px solid rgba(139,92,246,0.3);
+                    border-radius: 12px;
+                    padding: 16px;
+                    margin-bottom: 12px;
+                ">
+                    <h4>{exercise['name']}</h4>
+                    <p style="font-size: 0.85rem; opacity: 0.8;">{exercise['description']}</p>
+                    <small>Duration: {exercise.get('duration_seconds', 60)}s</small>
+                </div>
+                """, unsafe_allow_html=True)
+                if st.button(f"Start {exercise['name']}", key=f"breathe_{ex_id}", use_container_width=True):
+                    st.session_state.active_breathing = ex_id
+                    st.rerun()
+
+        # Show active breathing animation
+        if st.session_state.get("active_breathing"):
+            st.markdown("---")
+            render_breathing_animation(st.session_state.active_breathing)
+            if st.button("✕ Close Exercise", key="close_breathing"):
+                st.session_state.active_breathing = None
+                st.rerun()
+
+    with tab2:
+        st.markdown("### 5-4-3-2-1 Grounding")
+        st.caption("A sensory grounding technique to bring you back to the present")
+        render_grounding_guided_exercise()
+
+    with tab3:
+        st.markdown("### Affirmations")
+        st.caption("Positive statements to shift your mindset")
+
+        current_mood = st.session_state.get("current_feeling", "Neutral")
+        affirmations = get_affirmations(current_mood, count=5)
+
+        for aff in affirmations:
+            render_affirmation_card(aff)
 
 
 # --------------------------------------------------
@@ -9119,6 +9391,31 @@ def render_sidebar():
                 st.session_state.active_page = full_label
                 st.rerun()
 
+        # Phase 3: Social Features
+        if SOCIAL_FEATURES_AVAILABLE:
+            st.markdown("---")
+            st.markdown("#### 👥 Social")
+
+            social_items = [
+                ("💬", "Messages"),
+                ("🎉", "Watch Parties"),
+                ("👫", "Friends"),
+            ]
+
+            for icon, label in social_items:
+                full_label = f"{icon} {label}"
+                is_active = st.session_state.active_page == full_label
+                btn_type = "primary" if is_active else "secondary"
+                if st.button(full_label, use_container_width=True, key=f"nav_social_{label}", type=btn_type):
+                    st.session_state.active_page = full_label
+                    st.rerun()
+
+        # Phase 3: Streak Card (gamification_enhanced)
+        if GAMIFICATION_ENHANCED_AVAILABLE:
+            st.markdown("---")
+            user_id = st.session_state.get("db_user_id", "guest")
+            render_streak_card(user_id)
+
         # Pricing Page
         if st.button("💎 Pricing", use_container_width=True, key="nav_pricing",
                     type="primary" if st.session_state.active_page == "💎 Pricing" else "secondary"):
@@ -9218,8 +9515,20 @@ def render_sidebar():
 
         st.markdown("---")
 
-        # SOS CALM MODE
-        render_sos_button()
+        # SOS CALM MODE / WELLNESS (Enhanced if available)
+        if WELLNESS_ENHANCED_AVAILABLE:
+            st.markdown("#### 🧘 Wellness")
+            wellness_col1, wellness_col2 = st.columns(2)
+            with wellness_col1:
+                if st.button("🆘 SOS", use_container_width=True, key="sos_enhanced"):
+                    st.session_state.sos_active = True
+                    st.rerun()
+            with wellness_col2:
+                if st.button("🌬️ Breathe", use_container_width=True, key="breathe_btn"):
+                    st.session_state.active_page = "🧘 Wellness"
+                    st.rerun()
+        else:
+            render_sos_button()
 
         st.markdown("---")
 
@@ -9335,7 +9644,11 @@ def render_main():
     init_focus_session_state()
 
     # Check for SOS Calm Mode overlay (takes over entire screen)
-    if render_sos_overlay():
+    # Use enhanced wellness overlay if available (Phase 3)
+    if WELLNESS_ENHANCED_AVAILABLE and st.session_state.get("sos_active"):
+        if render_enhanced_sos_overlay():
+            return  # Enhanced SOS mode is active, skip normal content
+    elif render_sos_overlay():
         return  # SOS mode is active, skip normal content
 
     # Check for break reminder overlay
@@ -10085,6 +10398,20 @@ def render_main():
     elif page == "🏆 Leaderboards":
         render_leaderboards()
 
+    # PHASE 3: SOCIAL FEATURES PAGES
+    elif page == "💬 Messages" and SOCIAL_FEATURES_AVAILABLE:
+        render_messages_page()
+
+    elif page == "🎉 Watch Parties" and SOCIAL_FEATURES_AVAILABLE:
+        render_watch_parties_page()
+
+    elif page == "👫 Friends" and SOCIAL_FEATURES_AVAILABLE:
+        render_friends_page()
+
+    # PHASE 3: WELLNESS PAGE
+    elif page == "🧘 Wellness" and WELLNESS_ENHANCED_AVAILABLE:
+        render_wellness_page()
+
     elif page == "⚙️ Admin":
         render_admin_dashboard()
 
@@ -10316,6 +10643,14 @@ else:
                         "queue": get_watch_queue(supabase, user_id, status='queued', limit=5),
                         "top_moods": get_top_moods(supabase, user_id, 'desired', days=30, limit=3)
                     }
+                    # Enhance with user learning data from dopamine_2027
+                    if USER_LEARNING_AVAILABLE:
+                        learning_context = get_mrdp_personalization_context(user_id)
+                        if learning_context:
+                            user_context["learning"] = learning_context
+                            user_context["genre_preferences"] = learning_context.get("top_genres", [])
+                            user_context["adhd_profile"] = learning_context.get("adhd_insights", {})
+                            user_context["patterns"] = learning_context.get("patterns", [])
                 except:
                     user_context = None
 
