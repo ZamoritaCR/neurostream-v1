@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+// Create Supabase admin client lazily to avoid build-time errors
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-// Create Supabase admin client for webhook
-const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+  if (!url || !key) {
+    throw new Error('Supabase credentials not configured')
+  }
+
+  return createClient(url, key)
+}
 
 interface StripeEvent {
   id: string
@@ -49,7 +54,7 @@ export async function POST(request: NextRequest) {
 
         if (userId) {
           // Update user to premium
-          const { error } = await supabaseAdmin
+          const { error } = await getSupabaseAdmin()
             .from('profiles')
             .update({
               is_premium: true,
@@ -74,7 +79,7 @@ export async function POST(request: NextRequest) {
         const status = subscription.status
 
         // Find user by subscription ID
-        const { data: profile } = await supabaseAdmin
+        const { data: profile } = await getSupabaseAdmin()
           .from('profiles')
           .select('id')
           .eq('subscription_id', subscription.id)
@@ -83,7 +88,7 @@ export async function POST(request: NextRequest) {
         if (profile) {
           const isPremium = status === 'active' || status === 'trialing'
 
-          await supabaseAdmin
+          await getSupabaseAdmin()
             .from('profiles')
             .update({ is_premium: isPremium })
             .eq('id', profile.id)
@@ -98,14 +103,14 @@ export async function POST(request: NextRequest) {
         const subscription = event.data.object
 
         // Find and update user
-        const { data: profile } = await supabaseAdmin
+        const { data: profile } = await getSupabaseAdmin()
           .from('profiles')
           .select('id')
           .eq('subscription_id', subscription.id)
           .single()
 
         if (profile) {
-          await supabaseAdmin
+          await getSupabaseAdmin()
             .from('profiles')
             .update({
               is_premium: false,
