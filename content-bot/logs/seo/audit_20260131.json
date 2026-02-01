@@ -1,0 +1,31 @@
+{
+  "date": "2026-01-31T06:39:37.856701",
+  "score": 100.0,
+  "passed": [
+    "Meta Tags: Title tags (< 60 chars)",
+    "Meta Tags: Meta descriptions (< 160 chars)",
+    "Meta Tags: Open Graph tags",
+    "Meta Tags: Twitter Card tags",
+    "Meta Tags: Canonical URLs",
+    "Content: H1 on every page (one per page)",
+    "Content: H2/H3 hierarchy proper",
+    "Content: Alt text on images",
+    "Content: Internal linking",
+    "Content: Keyword optimization",
+    "Technical: Sitemap.xml accessible",
+    "Technical: Robots.txt accessible",
+    "Technical: HTTPS enabled",
+    "Technical: Mobile responsive (viewport meta)",
+    "Technical: Fast load times (< 3s)",
+    "Schema: Article schema on posts",
+    "Schema: Organization schema",
+    "Schema: Breadcrumb schema",
+    "Schema: FAQ schema on landing pages",
+    "Performance: Font preconnect",
+    "Performance: CSS optimized",
+    "Performance: Images lazy loaded",
+    "Performance: No render-blocking resources"
+  ],
+  "warnings": [],
+  "issues": []
+}

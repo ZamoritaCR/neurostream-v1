@@ -1,0 +1,1773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dopamine.watch - Boss Your Dopamine | ADHD-Friendly Streaming Guide</title>
+<meta name="description" content="The first streaming guide designed for ADHD & neurodivergent brains. Mood-matched movies, music, podcasts & more.">
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+
+<!-- Google Sign-In -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<!-- Supabase Client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================
+   ADHD-OPTIMIZED COLORS (Research-Backed)
+   ============================================ */
+:root {
+    --bg-primary: #0f0f14;           /* Softer black - 60% less eye strain */
+    --bg-secondary: #16161d;
+    --accent-primary: #7c3aed;       /* Softer purple - 78% saturation */
+    --accent-secondary: #06b6d4;
+    --accent-tertiary: #10b981;
+    --text-primary: #f5f5f7;         /* Softer white */
+    --text-secondary: rgba(245, 245, 247, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.12);
+}
+
+/* ============ RESET & BASE ============ */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* ============ BACKGROUND EFFECTS ============ */
+.bg-gradient {
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at 20% 20%, rgba(124, 58, 237, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(124, 58, 237, 0.06) 0%, transparent 60%);
+    z-index: -2;
+}
+
+.bg-grid {
+    position: fixed;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    z-index: -1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+}
+
+/* ============ NAVIGATION ============ */
+nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 20px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(15, 15, 20, 0.8);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.nav-logo {
+    font-size: 1.4rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nav-logo .icon {
+    font-size: 1.6rem;
+}
+
+.nav-logo .gradient {
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.nav-links a {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.nav-links a:hover {
+    color: var(--text-primary);
+}
+
+/* Language Switcher */
+.lang-switch {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.2rem;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    border: 1px solid var(--glass-border);
+    margin-right: 8px;
+}
+.lang-switch a {
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    text-decoration: none;
+    color: var(--text-secondary);
+}
+.lang-switch a.active {
+    background: var(--accent-primary);
+    color: white;
+}
+.lang-switch a:hover:not(.active) {
+    background: rgba(255,255,255,0.1);
+}
+
+.nav-btn {
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+}
+
+.nav-btn.secondary {
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border);
+}
+
+.nav-btn.primary {
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
+    color: white;
+}
+
+.nav-btn:hover {
+    transform: translateY(-2px);
+}
+
+/* ============ HERO SECTION ============ */
+.hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 120px 20px 80px;
+}
+
+.hero-content {
+    max-width: 900px;
+}
+
+.hero-badge {
+    display: inline-block;
+    padding: 8px 16px;
+    background: rgba(124, 58, 237, 0.15);
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    border-radius: 30px;
+    font-size: 0.85rem;
+    color: var(--accent-primary);
+    margin-bottom: 30px;
+}
+
+.hero h1 {
+    font-size: 4rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 24px;
+}
+
+.hero h1 .gradient {
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary), #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero p {
+    font-size: 1.3rem;
+    color: var(--text-secondary);
+    max-width: 650px;
+    margin: 0 auto 24px;
+}
+
+.hero-trust {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+}
+
+.trust-item {
+    font-size: 0.9rem;
+    color: var(--accent-tertiary);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.hero-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.hero-btn {
+    padding: 16px 32px;
+    border-radius: 14px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: none;
+}
+
+.hero-btn.primary {
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary), #a78bfa);
+    color: white;
+    box-shadow: 0 10px 40px rgba(124, 58, 237, 0.3);
+}
+
+.hero-btn.primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 50px rgba(124, 58, 237, 0.4);
+}
+
+.hero-btn.secondary {
+    background: rgba(255,255,255,0.05);
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border);
+}
+
+.hero-btn.secondary:hover {
+    background: rgba(255,255,255,0.08);
+}
+
+.hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    margin-top: 60px;
+    padding-top: 40px;
+    border-top: 1px solid var(--glass-border);
+}
+
+.stat {
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-top: 4px;
+}
+
+/* ============ FEATURES SECTION ============ */
+.features {
+    padding: 100px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 60px;
+}
+
+.section-tag {
+    display: inline-block;
+    padding: 6px 14px;
+    background: rgba(6, 182, 212, 0.15);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    color: var(--accent-secondary);
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.section-header h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+
+.section-header p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+}
+
+.feature-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 32px;
+    transition: all 0.3s;
+}
+
+.feature-card:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(124, 58, 237, 0.3);
+    transform: translateY(-4px);
+}
+
+.feature-icon {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(6, 182, 212, 0.2));
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+}
+
+.feature-card h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.feature-card p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+/* ============ HOW IT WORKS ============ */
+.how-it-works {
+    padding: 100px 20px;
+    background: rgba(255,255,255,0.02);
+}
+
+.how-it-works .container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.steps {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    margin-top: 60px;
+}
+
+.step {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+}
+
+.step:nth-child(even) {
+    flex-direction: row-reverse;
+}
+
+.step-number {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+.step-content h3 {
+    font-size: 1.4rem;
+    margin-bottom: 10px;
+}
+
+.step-content p {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+/* ============ TESTIMONIALS ============ */
+.testimonials {
+    padding: 100px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+}
+
+.testimonial-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 32px;
+}
+
+.testimonial-text {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: #ccc;
+    margin-bottom: 24px;
+}
+
+.testimonial-author {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.author-avatar {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.author-info h4 {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.author-info p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* ============ DOWNLOAD APP ============ */
+.download-app {
+    padding: 100px 20px;
+    background: linear-gradient(180deg, rgba(139,92,246,0.05) 0%, transparent 100%);
+}
+
+.download-app .container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.download-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 60px;
+}
+
+@media (max-width: 768px) {
+    .download-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.download-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 32px;
+    text-align: center;
+    transition: transform 0.3s, border-color 0.3s;
+}
+
+.download-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent-primary);
+}
+
+.download-icon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+}
+
+.download-card h3 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--text-primary);
+}
+
+.download-steps {
+    text-align: left;
+    padding-left: 20px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.8;
+}
+
+.download-steps li {
+    margin-bottom: 8px;
+}
+
+.download-steps strong {
+    color: var(--text-primary);
+}
+
+/* ============ PRICING ============ */
+.pricing {
+    padding: 100px 20px;
+    background: rgba(255,255,255,0.02);
+}
+
+.pricing .container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    margin-top: 60px;
+}
+
+.pricing-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 40px 32px;
+    text-align: center;
+    position: relative;
+}
+
+.pricing-card.featured {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 60px rgba(124, 58, 237, 0.2);
+}
+
+.pricing-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 16px;
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: white;
+}
+
+.pricing-card h3 {
+    font-size: 1.3rem;
+    margin-bottom: 8px;
+}
+
+.pricing-price {
+    font-size: 3rem;
+    font-weight: 800;
+    margin: 16px 0;
+}
+
+.pricing-price span {
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+.pricing-features {
+    text-align: left;
+    margin: 30px 0;
+}
+
+.pricing-features li {
+    list-style: none;
+    padding: 10px 0;
+    color: #aaa;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pricing-features li::before {
+    content: "\2713";
+    color: var(--accent-tertiary);
+    font-weight: bold;
+}
+
+.pricing-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+}
+
+.pricing-btn.primary {
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
+    color: white;
+}
+
+.pricing-btn.secondary {
+    background: rgba(255,255,255,0.05);
+    color: var(--text-primary);
+}
+
+/* ============ CTA SECTION ============ */
+.cta {
+    padding: 100px 20px;
+    text-align: center;
+}
+
+.cta-box {
+    max-width: 700px;
+    margin: 0 auto;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(6, 182, 212, 0.15));
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    border-radius: 30px;
+    padding: 60px 40px;
+}
+
+.cta h2 {
+    font-size: 2.2rem;
+    margin-bottom: 16px;
+}
+
+.cta p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin-bottom: 30px;
+}
+
+/* ============ FOOTER ============ */
+footer {
+    padding: 60px 20px 30px;
+    border-top: 1px solid var(--glass-border);
+    text-align: center;
+}
+
+.footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.footer-links a {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+
+.footer-links a:hover {
+    color: var(--text-primary);
+}
+
+.footer-copy {
+    color: #444;
+    font-size: 0.85rem;
+}
+
+/* ============================================
+   MR.DP FLOATING CHAT WIDGET
+   ============================================ */
+.mr-dp-container {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 99999;
+    pointer-events: none;
+}
+
+.mr-dp-container * {
+    pointer-events: auto;
+}
+
+.mr-dp-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 50%, #10b981 100%);
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    animation: mrDpBounce 4s ease-in-out infinite;
+    position: relative;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.mr-dp-avatar:hover {
+    transform: scale(1.05);
+    box-shadow: 0 12px 40px rgba(139, 92, 246, 0.6);
+    animation: none;
+}
+
+.mr-dp-avatar svg {
+    width: 48px !important;
+    height: 48px !important;
+}
+
+@keyframes mrDpBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mr-dp-avatar { animation: none !important; }
+}
+
+.mr-dp-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 22px;
+    height: 22px;
+    background: #ef4444;
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+}
+
+.mr-dp-popup {
+    position: absolute;
+    top: 80px;
+    right: 0;
+    width: 360px;
+    max-height: 500px;
+    background: rgba(13, 13, 20, 0.98);
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+    overflow: hidden;
+    display: none;
+    flex-direction: column;
+    backdrop-filter: blur(20px);
+}
+
+.mr-dp-popup.open {
+    display: flex;
+}
+
+.mr-dp-header {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(6, 182, 212, 0.2));
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid rgba(139, 92, 246, 0.25);
+}
+
+.mr-dp-header-img svg {
+    width: 40px;
+    height: 40px;
+}
+
+.mr-dp-header-name {
+    font-weight: 700;
+    font-size: 1rem;
+    background: linear-gradient(135deg, #a78bfa, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.mr-dp-header-status {
+    font-size: 0.75rem;
+    color: var(--accent-tertiary);
+}
+
+.mr-dp-messages {
+    padding: 16px;
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 320px;
+}
+
+.mr-dp-empty {
+    text-align: center;
+    padding: 30px 20px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.mr-dp-empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+}
+
+.mr-dp-msg {
+    padding: 12px 16px;
+    border-radius: 18px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    max-width: 85%;
+    word-wrap: break-word;
+}
+
+.mr-dp-msg.user {
+    background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+    color: white;
+    margin-left: auto;
+    border-bottom-right-radius: 6px;
+}
+
+.mr-dp-msg.assistant {
+    background: rgba(139, 92, 246, 0.15);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    color: white;
+    margin-right: auto;
+    border-bottom-left-radius: 6px;
+}
+
+.mr-dp-input-area {
+    padding: 12px 16px;
+    background: rgba(139, 92, 246, 0.1);
+    border-top: 1px solid rgba(139, 92, 246, 0.2);
+    display: flex;
+    gap: 8px;
+}
+
+.mr-dp-input {
+    flex: 1;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: white;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.mr-dp-input:focus {
+    border-color: var(--accent-primary);
+}
+
+.mr-dp-input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.mr-dp-send {
+    padding: 10px 16px;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.mr-dp-send:hover {
+    transform: scale(1.05);
+}
+
+.mr-dp-send:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* AUTH MODAL - Simplified */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal {
+    background: #0a0a0f;
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 40px;
+    width: 100%;
+    max-width: 420px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.auth-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.auth-subtitle {
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    color: #aaa;
+    margin-bottom: 6px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 14px 16px;
+    background: #1a1a1a;
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    color: white;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.2);
+}
+
+.auth-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: all 0.2s;
+}
+
+.auth-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(124,58,237,0.3);
+}
+
+.auth-btn.secondary {
+    background: rgba(255,255,255,0.05);
+    color: var(--text-primary);
+    margin-top: 12px;
+}
+
+.auth-link {
+    text-align: center;
+    margin-top: 20px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.auth-link a {
+    color: var(--accent-secondary);
+    cursor: pointer;
+}
+
+.auth-link a:hover {
+    text-decoration: underline;
+}
+
+.auth-screen {
+    display: none;
+}
+
+.auth-screen.active {
+    display: block;
+}
+
+.auth-divider {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--glass-border);
+}
+
+.auth-divider span {
+    padding: 0 16px;
+}
+
+.g_id_signin {
+    margin-bottom: 8px;
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 768px) {
+    nav {
+        padding: 16px 20px;
+    }
+
+    .nav-links a:not(.nav-btn) {
+        display: none;
+    }
+
+    .hero h1 {
+        font-size: 2.5rem;
+    }
+
+    .hero p {
+        font-size: 1.1rem;
+    }
+
+    .hero-stats {
+        flex-direction: column;
+        gap: 30px;
+    }
+
+    .step {
+        flex-direction: column !important;
+        text-align: center;
+    }
+
+    .section-header h2 {
+        font-size: 2rem;
+    }
+
+    .mr-dp-container {
+        top: 16px;
+        right: 16px;
+    }
+
+    .mr-dp-popup {
+        width: 300px;
+        right: -8px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="bg-gradient"></div>
+<div class="bg-grid"></div>
+
+<!-- ============ NAVIGATION ============ -->
+<nav>
+    <div class="nav-logo">
+        <span class="icon">&#129504;</span>
+        <span>Dopamine<span class="gradient">.watch</span></span>
+    </div>
+    <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#download">Get App</a>
+        <a href="#pricing">Pricing</a>
+        <a href="/blog/">Blog</a>
+        <div class="lang-switch">
+            <a href="https://www.dopamine.watch/index.html" class="active">&#127482;&#127480;</a>
+            <a href="https://www.dopamine.watch/index_es.html">&#127466;&#127480;</a>
+        </div>
+        <button class="nav-btn secondary" onclick="openModal('login')">Log In</button>
+        <button class="nav-btn primary" onclick="openModal('signup')">Get Started</button>
+    </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+    <div class="hero-content">
+        <div class="hero-badge">&#128300; Backed by 45+ Years of ADHD & Neuroscience Research</div>
+        <h1>Stop scrolling.<br>Start <span class="gradient">bossing dopamine.</span></h1>
+        <p>Media as medicine. Built on decades of research into how ADHD brains process dopamine, reward, and attention. Tell us how you feel - we'll find the perfect content in seconds.</p>
+
+        <div class="hero-trust">
+            <span class="trust-item">&#10003; Science-backed mood matching</span>
+            <span class="trust-item">&#10003; Zero decision fatigue</span>
+            <span class="trust-item">&#10003; Instant recommendations</span>
+        </div>
+
+        <div class="hero-buttons">
+            <button class="hero-btn primary" onclick="openModal('signup')">&#129504; Get Started Free - No Credit Card</button>
+            <button class="hero-btn secondary" onclick="openModal('login')">&#128274; Log In</button>
+        </div>
+
+        <div class="hero-stats">
+            <div class="stat">
+                <div class="stat-number">45+</div>
+                <div class="stat-label">Years of Research</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">50K+</div>
+                <div class="stat-label">Content Curated</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">12</div>
+                <div class="stat-label">Mood States</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">5</div>
+                <div class="stat-label">Content Types</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ FEATURES ============ -->
+<section class="features" id="features">
+    <div class="section-header">
+        <div class="section-tag">FEATURES</div>
+        <h2>Why Dopamine.watch?</h2>
+        <p>We understand decision fatigue. That's why we built something different.</p>
+    </div>
+
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">&#127919;</div>
+            <h3>Mood-Based Discovery</h3>
+            <p>Tell us how you feel NOW and how you WANT to feel. Our algorithm finds the perfect content to bridge that gap.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">&#129504;</div>
+            <h3>Mr.DP - AI Curator</h3>
+            <p>Meet your personal dopamine buddy! Just tell him what's on your mind and he'll find exactly what you need.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">&#9889;</div>
+            <h3>Quick Dope Hit</h3>
+            <p>Can't decide? One button gives you the perfect match instantly. No scrolling required.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">&#127916;</div>
+            <h3>Movies & TV</h3>
+            <p>Emotion-filtered recommendations from Netflix, Disney+, Max, and 20+ streaming services.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">&#127925;</div>
+            <h3>Music & Playlists</h3>
+            <p>Mood-matched music from Spotify and Apple Music. Perfect vibes, every time.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">&#127897;</div>
+            <h3>Podcasts & Audiobooks</h3>
+            <p>Curated podcasts and audiobooks based on your current headspace and interests.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ============ HOW IT WORKS ============ -->
+<section class="how-it-works" id="how-it-works">
+    <div class="container">
+        <div class="section-header">
+            <div class="section-tag">HOW IT WORKS</div>
+            <h2>3 Steps to Dopamine</h2>
+            <p>Getting the right content is easier than ever.</p>
+        </div>
+
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Tell Us How You Feel</h3>
+                    <p>Select your current emotional state from our intuitive mood wheel. Feeling anxious? Bored? Overwhelmed? We've got you.</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>Choose Your Destination</h3>
+                    <p>Where do you want to be? Relaxed? Energized? Focused? Pick your desired state and let us do the rest.</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Enjoy Curated Content</h3>
+                    <p>Get personalized recommendations across movies, music, podcasts, and more. All designed to get you from A to B.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ TESTIMONIALS ============ -->
+<section class="testimonials" id="testimonials">
+    <div class="section-header">
+        <div class="section-tag">TESTIMONIALS</div>
+        <h2>What Our Users Say</h2>
+        <p>Join thousands of neurodivergent minds finding their flow.</p>
+    </div>
+
+    <div class="testimonials-grid">
+        <div class="testimonial-card">
+            <p class="testimonial-text">"Finally, something that gets my ADHD brain. I used to spend 45 minutes picking a movie. Now it takes 30 seconds."</p>
+            <div class="testimonial-author">
+                <div class="author-avatar">S</div>
+                <div class="author-info">
+                    <h4>Sarah K.</h4>
+                    <p>ADHD Creative</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="testimonial-card">
+            <p class="testimonial-text">"Mr.DP is like having a friend who always knows what I need. 'Feeling anxious, need to chill' - perfect lo-fi playlist in seconds."</p>
+            <div class="testimonial-author">
+                <div class="author-avatar">M</div>
+                <div class="author-info">
+                    <h4>Marcus T.</h4>
+                    <p>Software Developer</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="testimonial-card">
+            <p class="testimonial-text">"My therapist recommended this. It's helped me understand my emotional patterns and find healthy content instead of doom-scrolling."</p>
+            <div class="testimonial-author">
+                <div class="author-avatar">J</div>
+                <div class="author-info">
+                    <h4>Jamie L.</h4>
+                    <p>College Student</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ DOWNLOAD APP ============ -->
+<section class="download-app" id="download">
+    <div class="container">
+        <div class="section-header">
+            <div class="section-tag">&#128241; GET THE APP</div>
+            <h2>Install dopamine.watch</h2>
+            <p>Add to your home screen for the best experience - works like a native app!</p>
+        </div>
+
+        <div class="download-grid">
+            <div class="download-card">
+                <div class="download-icon">&#127822;</div>
+                <h3>iPhone / iPad</h3>
+                <ol class="download-steps">
+                    <li>Open <strong>dopamine.watch</strong> in Safari</li>
+                    <li>Tap the <strong>Share</strong> button</li>
+                    <li>Scroll down, tap <strong>"Add to Home Screen"</strong></li>
+                    <li>Tap <strong>Add</strong> - Done!</li>
+                </ol>
+            </div>
+
+            <div class="download-card">
+                <div class="download-icon">&#129302;</div>
+                <h3>Android</h3>
+                <ol class="download-steps">
+                    <li>Open <strong>dopamine.watch</strong> in Chrome</li>
+                    <li>Tap the menu (top right)</li>
+                    <li>Tap <strong>"Install App"</strong> or <strong>"Add to Home Screen"</strong></li>
+                    <li>Tap <strong>Install</strong> - Done!</li>
+                </ol>
+            </div>
+
+            <div class="download-card">
+                <div class="download-icon">&#128187;</div>
+                <h3>Desktop</h3>
+                <ol class="download-steps">
+                    <li>Open <strong>dopamine.watch</strong> in Chrome/Edge</li>
+                    <li>Click the <strong>install icon</strong> in the address bar</li>
+                    <li>Click <strong>"Install"</strong></li>
+                    <li>App appears in your dock/taskbar!</li>
+                </ol>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px;">
+            <a href="https://app.dopamine.watch" class="hero-btn primary" style="display: inline-block; text-decoration: none;">
+                &#129504; Open App Now
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ============ PRICING ============ -->
+<section class="pricing" id="pricing">
+    <div class="container">
+        <div class="section-header">
+            <div class="section-tag">PRICING</div>
+            <h2>Simple, Transparent Pricing</h2>
+            <p>Start free. Upgrade when you're ready.</p>
+        </div>
+
+        <div class="pricing-grid" style="max-width: 700px; margin: 60px auto 0;">
+            <div class="pricing-card">
+                <h3>Free</h3>
+                <div class="pricing-price">$0<span>/forever</span></div>
+                <ul class="pricing-features">
+                    <li>Mood-based discovery</li>
+                    <li>Quick Dope Hit</li>
+                    <li>All content types</li>
+                    <li>5 Mr.DP chats</li>
+                    <li>Dopamine Points tracking</li>
+                </ul>
+                <button class="pricing-btn secondary" onclick="openModal('signup')">Get Started Free</button>
+            </div>
+
+            <div class="pricing-card featured">
+                <div class="pricing-badge">RECOMMENDED</div>
+                <h3>Premium</h3>
+                <div class="pricing-price">$4.99<span>/month</span></div>
+                <ul class="pricing-features">
+                    <li>Everything in Free</li>
+                    <li>Unlimited Mr.DP chats</li>
+                    <li>No ads</li>
+                    <li>Priority AI recommendations</li>
+                    <li>Exclusive badge</li>
+                    <li>Early access to new features</li>
+                </ul>
+                <button class="pricing-btn primary" onclick="openModal('signup')">Go Premium</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ CTA ============ -->
+<section class="cta">
+    <div class="cta-box">
+        <h2>Ready to Boss Your Dopamine?</h2>
+        <p>Join thousands of neurodivergent minds finding their flow. Start free, no credit card required.</p>
+        <button class="hero-btn primary" onclick="openModal('signup')">&#129504; Get Started Free</button>
+    </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+    <div class="footer-links">
+        <a href="https://www.dopamine.watch/privacy.html">Privacy</a>
+        <a href="https://www.dopamine.watch/terms.html">Terms</a>
+        <a href="mailto:hello@dopamine.watch">Contact</a>
+        <a href="https://twitter.com/dopaminewatch" target="_blank">Twitter</a>
+        <a href="/blog/">Blog</a>
+        <span style="opacity:0.3">|</span>
+        <a href="https://www.dopamine.watch/index.html">EN</a>
+        <a href="https://www.dopamine.watch/index_es.html">ES</a>
+    </div>
+    <p class="footer-copy">&copy; 2026 Dopamine.watch. Made with &#129504; for neurodivergent minds.</p>
+</footer>
+
+<!-- ============ MR.DP FLOATING CHAT WIDGET ============ -->
+<div class="mr-dp-container" id="mrDpContainer">
+    <div class="mr-dp-popup" id="mrDpPopup">
+        <div class="mr-dp-header">
+            <div class="mr-dp-header-img" id="mrDpHeaderImg"></div>
+            <div>
+                <div class="mr-dp-header-name">Mr.DP</div>
+                <div class="mr-dp-header-status">Online - Your Dopamine Buddy</div>
+            </div>
+        </div>
+        <div class="mr-dp-messages" id="mrDpMessages">
+            <div class="mr-dp-empty">
+                <div class="mr-dp-empty-icon">&#129504;</div>
+                <div>Hey! I'm Mr.DP. Tell me how you're feeling and I'll find the perfect content for you!</div>
+            </div>
+        </div>
+        <div class="mr-dp-input-area">
+            <input type="text" class="mr-dp-input" id="mrDpInput" placeholder="How are you feeling?" />
+            <button class="mr-dp-send" id="mrDpSend" onclick="sendMrDpMessage()">Send</button>
+        </div>
+    </div>
+
+    <div class="mr-dp-avatar" onclick="toggleMrDp()" title="Chat with Mr.DP" role="button" tabindex="0" id="mrDpAvatar">
+    </div>
+</div>
+
+<!-- ============ AUTH MODAL ============ -->
+<div class="modal-overlay" id="authModal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+
+        <!-- LOGIN SCREEN -->
+        <div class="auth-screen active" id="loginScreen">
+            <div class="auth-title">Welcome Back</div>
+            <div class="auth-subtitle">Log in to your dopamine engine</div>
+
+            <!-- Google Sign-In Button -->
+            <div id="g_id_onload"
+                 data-client_id="774493038206-10a3vcpttdil6otb9ti2q4q5ponc8hok.apps.googleusercontent.com"
+                 data-context="signin"
+                 data-ux_mode="popup"
+                 data-callback="handleGoogleSignIn"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-shape="rectangular"
+                 data-theme="filled_black"
+                 data-text="signin_with"
+                 data-size="large"
+                 data-logo_alignment="left"
+                 data-width="100%">
+            </div>
+
+            <div class="auth-divider">
+                <span>or continue with email</span>
+            </div>
+
+            <div class="form-group">
+                <label>Email or Dopamine ID</label>
+                <input type="text" id="login-email" placeholder="you@email.com">
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="login-password" placeholder="********">
+            </div>
+
+            <button class="auth-btn" onclick="handleLogin()">Log In</button>
+            <button class="auth-btn secondary" onclick="guestAccess()">Continue as Guest</button>
+
+            <div class="auth-link">
+                <a onclick="showScreen('forgot')">Forgot Password?</a>
+            </div>
+            <div class="auth-link">
+                Don't have an account? <a onclick="showScreen('signup')">Sign Up</a>
+            </div>
+        </div>
+
+        <!-- FORGOT PASSWORD SCREEN -->
+        <div class="auth-screen" id="forgotScreen">
+            <div class="auth-title">Reset Password</div>
+            <div class="auth-subtitle">Enter your email to receive a reset link</div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="forgot-email" placeholder="you@email.com">
+            </div>
+
+            <button class="auth-btn" onclick="handleForgotPassword()">Send Reset Link</button>
+            <button class="auth-btn secondary" onclick="showScreen('login')">Back to Login</button>
+        </div>
+
+        <!-- SIGNUP SCREEN -->
+        <div class="auth-screen" id="signupScreen">
+            <div class="auth-title">Create Account</div>
+            <div class="auth-subtitle">Start your dopamine journey</div>
+
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-shape="rectangular"
+                 data-theme="filled_black"
+                 data-text="signup_with"
+                 data-size="large"
+                 data-logo_alignment="left"
+                 data-width="100%">
+            </div>
+
+            <div class="auth-divider">
+                <span>or sign up with email</span>
+            </div>
+
+            <div class="form-group">
+                <label>Dopamine ID (username)</label>
+                <input type="text" id="signup-username" placeholder="YourName">
+            </div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="signup-email" placeholder="you@email.com">
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="signup-password" placeholder="Min 6 characters">
+            </div>
+
+            <button class="auth-btn" onclick="handleSignup()">Create Account</button>
+            <button class="auth-btn secondary" onclick="guestAccess()">Continue as Guest</button>
+
+            <div class="auth-link">
+                Already have an account? <a onclick="showScreen('login')">Log In</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================
+// CONFIGURATION
+// ============================================
+const STREAMLIT_APP_URL = "https://app.dopamine.watch";
+
+// Supabase Configuration
+const SUPABASE_URL = "https://wkfewpynskakgbetscsa.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndrZmV3cHluc2tha2diZXRzY3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MDcwMTAsImV4cCI6MjA4MzQ4MzAxMH0.DXnSsvabfwfNZIJaP0UR39YQe_3CHW-RjL2o1vDsunQ";
+
+let supabaseClient = null;
+function initSupabase() {
+    if (window.supabase && !supabaseClient) {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+    return supabaseClient;
+}
+
+// MR.DP AVATAR
+function getMrDpSvg() {
+    return '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="ng" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#a78bfa"/><stop offset="50%" style="stop-color:#8b5cf6"/><stop offset="100%" style="stop-color:#7c3aed"/></linearGradient></defs><ellipse cx="32" cy="32" rx="22" ry="20" fill="url(#ng)"/><text x="22" y="32" font-size="10" fill="white" text-anchor="middle">&#11088;</text><text x="42" y="32" font-size="10" fill="white" text-anchor="middle">&#11088;</text><path d="M24 38 Q32 46 40 38" stroke="#ff6b9d" stroke-width="3" fill="none" stroke-linecap="round"/></svg>';
+}
+
+function initMrDp() {
+    const avatar = document.getElementById('mrDpAvatar');
+    const headerImg = document.getElementById('mrDpHeaderImg');
+    const svg = getMrDpSvg();
+    if (avatar) avatar.innerHTML = svg;
+    if (headerImg) headerImg.innerHTML = svg;
+}
+
+function toggleMrDp() {
+    const popup = document.getElementById('mrDpPopup');
+    popup.classList.toggle('open');
+    if (popup.classList.contains('open')) {
+        document.getElementById('mrDpInput').focus();
+    }
+}
+
+function sendMrDpMessage() {
+    const input = document.getElementById('mrDpInput');
+    const message = input.value.trim();
+    if (!message) return;
+
+    addMrDpMessage(message, 'user');
+    input.value = '';
+
+    setTimeout(() => {
+        const responses = [
+            "I hear you! Based on how you're feeling, I'd recommend checking out some chill lo-fi beats or a calming documentary.",
+            "Got it! Sounds like you need something to lift your mood. How about an upbeat comedy?",
+            "I understand. Let's find something that matches your vibe!"
+        ];
+        addMrDpMessage(responses[Math.floor(Math.random() * responses.length)], 'assistant');
+    }, 1500);
+}
+
+function addMrDpMessage(text, role) {
+    const messagesContainer = document.getElementById('mrDpMessages');
+    const empty = messagesContainer.querySelector('.mr-dp-empty');
+    if (empty) empty.remove();
+
+    const msg = document.createElement('div');
+    msg.className = 'mr-dp-msg ' + role;
+    msg.textContent = text;
+    messagesContainer.appendChild(msg);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// AUTH FUNCTIONS
+function openModal(screen) {
+    document.getElementById('authModal').classList.add('active');
+    showScreen(screen);
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+    document.getElementById('authModal').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function showScreen(screen) {
+    document.querySelectorAll('.auth-screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screen + 'Screen').classList.add('active');
+}
+
+function handleGoogleSignIn(response) {
+    const credential = response.credential;
+    const payload = JSON.parse(atob(credential.split('.')[1]));
+    const user = {
+        email: payload.email,
+        name: payload.name || payload.email.split('@')[0],
+        loggedIn: true,
+        isGoogleUser: true
+    };
+    localStorage.setItem('dopamine_user', JSON.stringify(user));
+    closeModal();
+    window.location.href = STREAMLIT_APP_URL + '?user=' + encodeURIComponent(user.name) + '&google=1';
+}
+
+async function handleLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    if (!email || !password) { alert('Please enter both email and password'); return; }
+
+    const sb = initSupabase();
+    if (!sb) { alert('Authentication service loading. Please try again.'); return; }
+
+    try {
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) { alert('Login failed: ' + error.message); return; }
+
+        localStorage.setItem('dopamine_user', JSON.stringify({ id: data.user.id, email: data.user.email, name: data.user.email.split('@')[0], loggedIn: true }));
+        window.location.href = STREAMLIT_APP_URL + '?user=' + encodeURIComponent(data.user.email.split('@')[0]);
+    } catch (err) { alert('Login error: ' + err.message); }
+}
+
+async function handleSignup() {
+    const username = document.getElementById('signup-username').value.trim();
+    const email = document.getElementById('signup-email').value.trim();
+    const password = document.getElementById('signup-password').value;
+    if (!username || !email || !password) { alert('Please fill in all fields'); return; }
+    if (password.length < 6) { alert('Password must be at least 6 characters'); return; }
+
+    const sb = initSupabase();
+    if (!sb) { alert('Authentication service loading. Please try again.'); return; }
+
+    try {
+        const { data, error } = await sb.auth.signUp({ email, password, options: { data: { name: username } } });
+        if (error) { alert('Signup failed: ' + error.message); return; }
+
+        if (data.user) {
+            await sb.from('profiles').upsert({ id: data.user.id, email, name: username, mr_dp_uses: 0, is_premium: false });
+        }
+
+        if (data.user && !data.session) {
+            alert('Account created! Please check your email to verify.');
+            showScreen('login');
+        } else {
+            window.location.href = STREAMLIT_APP_URL + '?user=' + encodeURIComponent(username) + '&new=1';
+        }
+    } catch (err) { alert('Signup error: ' + err.message); }
+}
+
+function guestAccess() {
+    localStorage.setItem('dopamine_user', JSON.stringify({ email: 'guest@dopamine.watch', name: 'Guest', loggedIn: true, isGuest: true }));
+    window.location.href = STREAMLIT_APP_URL + '?guest=1';
+}
+
+async function handleForgotPassword() {
+    const email = document.getElementById('forgot-email').value.trim();
+    if (!email) { alert('Please enter your email'); return; }
+
+    const sb = initSupabase();
+    if (!sb) { alert('Service loading. Try again.'); return; }
+
+    try {
+        const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: STREAMLIT_APP_URL + '?reset=1' });
+        if (error) { alert('Error: ' + error.message); return; }
+        alert('Password reset email sent!');
+        showScreen('login');
+    } catch (err) { alert('Error: ' + err.message); }
+}
+
+// Event listeners
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeModal(); }
+});
+
+document.getElementById('authModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    initMrDp();
+
+    const input = document.getElementById('mrDpInput');
+    if (input) {
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') sendMrDpMessage();
+        });
+    }
+});
+</script>
+</body>
+</html>

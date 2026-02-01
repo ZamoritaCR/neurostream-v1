@@ -13,8 +13,10 @@
 **Repository**: https://github.com/ZamoritaCR/neurostream-v1
 **Live URLs**:
 - App: https://app.dopamine.watch (Railway)
-- Landing: https://www.dopamine.watch (GreenGeeks)
+- Landing EN: https://www.dopamine.watch (GreenGeeks)
 - Landing ES: https://www.dopamine.watch/index_es.html
+- Blog: https://dopamine.watch/blog/
+- RSS Feed: https://dopamine.watch/blog/feed.xml
 
 ### Core Purpose
 Media as medicine for ADHD brains. Users tell the app how they feel NOW and how they WANT to feel, and the app finds content (movies, music, podcasts, audiobooks, shorts) to bridge that emotional gap. Built on 45+ years of ADHD and neuroscience research.
@@ -28,23 +30,37 @@ Media as medicine for ADHD brains. Users tell the app how they feel NOW and how 
 
 ## TECH STACK
 
-### Frontend
+### Current Production (Streamlit)
 - **Framework**: Streamlit (Python)
-- **Styling**: Custom CSS with ADHD-optimized design (softer colors, larger touch targets)
-- **Typography**: Inter font family
-- **PWA**: Progressive Web App with service worker
+- **Styling**: Custom CSS with ADHD-optimized design
+- **Hosting**: Railway (auto-deploys from GitHub main branch)
+- **URL**: https://app.dopamine.watch
 
-### Backend
+### Next.js Rebuild (In Development)
+- **Framework**: Next.js 14 (App Router) + TypeScript
+- **Styling**: Tailwind CSS + Custom Design System
+- **Animations**: Framer Motion
+- **Icons**: Phosphor Icons (professional, no emojis)
+- **Components**: Custom UI library (Button, Card, Modal, Toast, etc.)
+- **Location**: `/Users/zamorita/Desktop/Neuronav/dopamine-next/`
+- **Run**: `cd dopamine-next && npm run dev` → http://localhost:3000
+
+### Backend (Shared)
 - **Database**: Supabase Pro (PostgreSQL)
 - **Authentication**: Supabase Auth + Google OAuth
 - **Edge Functions**: Supabase Edge Functions (Deno)
-- **APIs**: TMDB, OpenAI (GPT-4), Stripe, Spotify
+- **APIs**: TMDB, OpenAI (GPT-4), Anthropic (Claude), Stripe, Spotify
 
 ### Hosting & Deployment
-- **Main App**: Railway (auto-deploys from GitHub main branch)
-- **Landing Pages**: GreenGeeks (FTP upload)
+- **Streamlit App**: Railway (production)
+- **Next.js App**: Local development (will deploy to Vercel)
+- **Landing Pages & Blog**: GreenGeeks (FTP upload)
 - **Edge Functions**: Supabase
 - **Version Control**: GitHub
+
+### Analytics
+- **Google Analytics 4**: G-34Q0KMXDQF
+- Installed on: Landing pages, Blog, Streamlit app, Next.js app
 
 ### Payments
 - **Provider**: Stripe
@@ -85,10 +101,49 @@ project-root/
 ├── email_utils.py               # Welcome/milestone emails
 │
 ├── # Landing Pages (deployed to GreenGeeks)
-├── index.html                   # English landing page
-├── index_es.html                # Spanish landing page
+├── index.html                   # English landing page (with GA)
+├── index_es.html                # Spanish landing page (with GA)
 ├── privacy.html                 # Privacy policy
 ├── terms.html                   # Terms of service
+│
+├── # Blog (deployed to GreenGeeks /blog/)
+├── blog/
+│   ├── index.html               # Blog home page
+│   ├── feed.xml                 # RSS feed
+│   ├── sitemap.xml              # Blog sitemap
+│   ├── assets/
+│   │   └── css/
+│   │       └── blog.css         # Blog styles
+│   ├── posts/
+│   │   ├── adhd-decision-paralysis-science.html
+│   │   ├── netflix-algorithm-not-built-for-adhd.html
+│   │   └── shows-that-help-anxiety.html
+│   └── categories/
+│       ├── adhd.html
+│       ├── streaming.html
+│       └── psychology.html
+│
+├── # Content Bot (AI-powered content automation)
+├── content-bot/
+│   ├── .env                     # API keys (gitignored)
+│   ├── .env.example             # Template for .env
+│   ├── tools.py                 # 12 callable tools for Claude agent
+│   ├── agent.py                 # Claude-powered conversational agent
+│   ├── chat.py                  # Terminal chat interface
+│   ├── social_media.py          # Social media posting (Twitter, LinkedIn, Facebook)
+│   ├── analytics_dashboard.py   # Analytics tracking
+│   ├── ab_testing.py            # A/B testing for headlines
+│   ├── generate_rss.py          # RSS feed generator
+│   ├── seo_audit.py             # SEO analysis tool
+│   ├── monitor.py               # Site health monitoring
+│   ├── LAUNCH_CHECKLIST.md      # Launch checklist
+│   ├── templates/
+│   │   └── newsletter_template.html
+│   └── dashboard/
+│       ├── api.py               # Flask API server (port 5001)
+│       ├── index.html           # Dashboard UI
+│       ├── web_chat.html        # Web chat interface
+│       └── start.sh             # Server start script
 │
 ├── # Supabase
 ├── supabase/
@@ -104,6 +159,39 @@ project-root/
 │   └── secrets.toml             # API keys (gitignored)
 │
 └── static/                      # PWA assets, icons
+
+# Next.js Rebuild (dopamine-next/)
+dopamine-next/
+├── package.json                 # Dependencies (Next.js 14, Tailwind, Framer Motion)
+├── tailwind.config.ts           # Design system tokens
+├── .env.local                   # Environment variables
+├── src/
+│   ├── app/
+│   │   ├── page.tsx             # Landing page (hero, features, CTA)
+│   │   ├── layout.tsx           # Root layout (GA, PWA meta)
+│   │   ├── providers.tsx        # Auth + Toast providers
+│   │   ├── globals.css          # Design system CSS
+│   │   ├── login/page.tsx       # Auth (Google + email)
+│   │   ├── auth/callback/route.ts # OAuth callback
+│   │   └── (app)/               # App route group
+│   │       ├── layout.tsx       # App layout with navigation
+│   │       ├── home/page.tsx    # Dashboard with quick actions
+│   │       ├── discover/page.tsx # Mood selector flow
+│   │       ├── recommendations/ # Content grid with filters
+│   │       ├── quick-hit/       # Instant recommendation
+│   │       ├── chat/page.tsx    # Mr.DP chat (iMessage style)
+│   │       └── profile/page.tsx # Stats, achievements, settings
+│   ├── components/
+│   │   ├── ui/                  # Button, Card, Input, Modal, Toast, Skeleton
+│   │   ├── layout/Navigation.tsx # Mobile bottom tabs + desktop header
+│   │   └── features/MoodSelector.tsx # Swipeable cards (mobile) + grid
+│   ├── lib/
+│   │   ├── utils.ts             # Helper functions, haptic feedback
+│   │   ├── moods.ts             # 12 mood definitions
+│   │   ├── supabase.ts          # Database functions
+│   │   ├── auth-context.tsx     # Auth provider
+│   │   └── tmdb.ts              # TMDB API client
+│   └── types/index.ts           # TypeScript definitions
 ```
 
 ### Key Files Reference
@@ -114,7 +202,124 @@ project-root/
 | `mr_dp_intelligence.py` | ~800 | Mr.DP AI, gamification, behavioral tracking |
 | `mr_dp_floating.py` | ~400 | Chat widget UI with SVG sanitization |
 | `gamification_enhanced.py` | ~500 | Points, streaks, 30 achievements |
-| `index.html` | ~2,400 | English landing with auth modals |
+| `index.html` | ~2,400 | English landing with auth modals + GA |
+| `content-bot/agent.py` | ~200 | Claude-powered content agent |
+| `content-bot/tools.py` | ~400 | 12 tools for content automation |
+
+---
+
+## CONTENT BOT SYSTEM
+
+### Overview
+AI-powered content automation system with Claude conversational agent for managing blog, social media, and SEO.
+
+### Starting the Content Bot
+```bash
+cd /Users/zamorita/Desktop/Neuronav/content-bot/dashboard
+python3 api.py
+# Server runs on http://127.0.0.1:5001
+```
+
+### Interfaces
+- **Dashboard**: http://127.0.0.1:5001/ - Visual dashboard
+- **Web Chat**: http://127.0.0.1:5001/chat - ChatGPT-style interface
+- **Terminal Chat**: `python3 chat.py` - CLI interface
+
+### Available Tools (12 total)
+1. `generate_blog_post` - Create SEO-optimized blog posts
+2. `get_analytics` - View traffic and engagement stats
+3. `check_site_health` - Monitor site status
+4. `list_posts` - List all blog posts
+5. `get_scheduler_status` - Check scheduled posts
+6. `control_scheduler` - Start/stop scheduler
+7. `generate_rss_feed` - Regenerate RSS feed
+8. `run_seo_audit` - SEO analysis
+9. `get_activity_log` - Recent activity
+10. `get_system_status` - API connection status
+11. `create_landing_pages` - Generate landing pages
+12. `generate_topic_ideas` - AI topic suggestions
+
+### Content Bot Environment Variables
+Located in `content-bot/.env`:
+```bash
+# Required
+OPENAI_API_KEY=sk-proj-...           # For content generation
+ANTHROPIC_API_KEY=sk-ant-api03-...   # For Claude agent
+FTP_HOST=ftp.pcmodderscr.com
+FTP_USER=MrRobotto2@dopamine.watch
+FTP_PASSWORD=ElroboT0b@!l@
+FTP_PATH=/blog
+
+# Optional - Social Media
+TWITTER_API_KEY=
+TWITTER_API_SECRET=
+TWITTER_ACCESS_TOKEN=
+TWITTER_ACCESS_SECRET=
+LINKEDIN_TOKEN=
+FACEBOOK_PAGE_TOKEN=
+
+# Optional - Analytics
+GA4_MEASUREMENT_ID=G-34Q0KMXDQF
+```
+
+---
+
+## BLOG SYSTEM
+
+### Structure
+- **Home**: https://dopamine.watch/blog/
+- **RSS**: https://dopamine.watch/blog/feed.xml
+- **Categories**: ADHD, Streaming, Psychology
+
+### Current Posts
+1. "Why ADHD Makes Choosing Content Impossible (The Science)" - ADHD category
+2. "The Netflix Algorithm Wasn't Built for Your Brain" - Streaming category
+3. "10 Shows That Actually Help With Anxiety (Research-Backed)" - Psychology category
+
+### Adding New Posts
+1. Create HTML file in `blog/posts/`
+2. Add Google Analytics snippet to `<head>`
+3. Add post card to `blog/index.html`
+4. Add post card to relevant category page
+5. Update `blog/feed.xml` with new item
+6. Upload all changed files via FTP
+
+### Blog CSS Variables
+```css
+--primary: #8B7FD8;        /* Purple accent */
+--primary-dark: #6B5FB8;
+--text: #1a1a2e;
+--text-light: #64748b;
+--bg: #fafafa;
+--card-bg: white;
+```
+
+---
+
+## GOOGLE ANALYTICS
+
+### Measurement ID
+`G-34Q0KMXDQF`
+
+### Installed On
+- Landing pages (index.html, index_es.html)
+- All blog pages (index, posts, categories)
+- Streamlit app (app.py via inject_google_analytics())
+
+### Code Snippet
+```html
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-34Q0KMXDQF"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-34Q0KMXDQF');
+</script>
+```
+
+### Streamlit Integration
+GA is injected via `inject_google_analytics()` function right after `st.set_page_config()` in app.py.
 
 ---
 
@@ -153,10 +358,30 @@ project-root/
 
 ## COMMON TASKS
 
-### Starting Development Server
+### Starting Streamlit App (Production)
 ```bash
 cd /Users/zamorita/Desktop/Neuronav
 streamlit run app.py
+```
+
+### Starting Next.js App (Development)
+```bash
+cd /Users/zamorita/Desktop/Neuronav/dopamine-next
+npm run dev
+# Opens at http://localhost:3000
+```
+
+### Building Next.js for Production
+```bash
+cd /Users/zamorita/Desktop/Neuronav/dopamine-next
+npm run build
+```
+
+### Starting Content Bot
+```bash
+cd /Users/zamorita/Desktop/Neuronav/content-bot/dashboard
+python3 api.py
+# Open http://127.0.0.1:5001/chat
 ```
 
 ### Installing Dependencies
@@ -172,14 +397,33 @@ git push origin main
 # Railway auto-deploys from main branch
 ```
 
-### Uploading Landing Pages to GreenGeeks
+### Uploading to GreenGeeks (FTP)
 ```bash
-# Via curl/FTP
+# Landing pages
 curl -T index.html ftp://ftp.pcmodderscr.com/MrRoboto/index.html \
-  --user "MrRobotto@dopamine.watch:PASSWORD"
+  --user "MrRobotto2@dopamine.watch:ElroboT0b@!l@"
 
 curl -T index_es.html ftp://ftp.pcmodderscr.com/MrRoboto/index_es.html \
-  --user "MrRobotto@dopamine.watch:PASSWORD"
+  --user "MrRobotto2@dopamine.watch:ElroboT0b@!l@"
+
+# Blog files
+curl -T blog/index.html ftp://ftp.pcmodderscr.com/MrRoboto/blog/index.html \
+  --user "MrRobotto2@dopamine.watch:ElroboT0b@!l@" --ftp-create-dirs
+
+curl -T blog/feed.xml ftp://ftp.pcmodderscr.com/MrRoboto/blog/feed.xml \
+  --user "MrRobotto2@dopamine.watch:ElroboT0b@!l@"
+
+# Blog posts
+curl -T blog/posts/POST_NAME.html ftp://ftp.pcmodderscr.com/MrRoboto/blog/posts/POST_NAME.html \
+  --user "MrRobotto2@dopamine.watch:ElroboT0b@!l@" --ftp-create-dirs
+
+# Blog categories
+curl -T blog/categories/CATEGORY.html ftp://ftp.pcmodderscr.com/MrRoboto/blog/categories/CATEGORY.html \
+  --user "MrRobotto2@dopamine.watch:ElroboT0b@!l@" --ftp-create-dirs
+
+# Blog CSS
+curl -T blog/assets/css/blog.css ftp://ftp.pcmodderscr.com/MrRoboto/blog/assets/css/blog.css \
+  --user "MrRobotto2@dopamine.watch:ElroboT0b@!l@" --ftp-create-dirs
 ```
 
 ### Deploying Supabase Edge Functions
@@ -196,16 +440,15 @@ npx supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_xxx
 
 ### Railway / .streamlit/secrets.toml
 ```toml
-[tmdb]
-api_key = "eyJ..."
-
-[openai]
-api_key = "sk-..."
-
 [supabase]
 url = "https://wkfewpynskakgbetscsa.supabase.co"
-anon_key = "eyJ..."
-service_role_key = "eyJ..."
+anon_key = "eyJhbGci..."
+
+[openai]
+api_key = "sk-proj-..."
+
+[tmdb]
+api_key = "cdec2af78254e8aea1983848ebdb7b58"
 
 [stripe]
 publishable_key = "pk_live_..."
@@ -219,10 +462,71 @@ client_id = "..."
 client_secret = "..."
 ```
 
+### Content Bot / content-bot/.env
+```bash
+OPENAI_API_KEY=sk-proj-...
+ANTHROPIC_API_KEY=sk-ant-api03-...
+FTP_HOST=ftp.pcmodderscr.com
+FTP_USER=MrRobotto2@dopamine.watch
+FTP_PASSWORD=ElroboT0b@!l@
+FTP_PATH=/blog
+GA4_MEASUREMENT_ID=G-34Q0KMXDQF
+```
+
+### Next.js / dopamine-next/.env.local
+```bash
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://wkfewpynskakgbetscsa.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
+
+# TMDB
+NEXT_PUBLIC_TMDB_API_KEY=cdec2af78254e8aea1983848ebdb7b58
+
+# Google Analytics
+NEXT_PUBLIC_GA_ID=G-34Q0KMXDQF
+
+# OpenAI (for Mr.DP)
+OPENAI_API_KEY=sk-proj-...
+```
+
 ### Supabase Edge Function Secrets
 ```bash
 STRIPE_SECRET_KEY
 STRIPE_WEBHOOK_SECRET
+```
+
+---
+
+## FTP CREDENTIALS (GreenGeeks)
+
+```
+Host: ftp.pcmodderscr.com
+User: MrRobotto2@dopamine.watch
+Password: ElroboT0b@!l@
+Path: /MrRoboto/
+```
+
+**Directory Structure on Server:**
+```
+/MrRoboto/
+├── index.html          # Landing EN
+├── index_es.html       # Landing ES
+├── privacy.html
+├── terms.html
+├── favicon.ico
+└── blog/
+    ├── index.html
+    ├── feed.xml
+    ├── sitemap.xml
+    ├── assets/css/blog.css
+    ├── posts/
+    │   ├── adhd-decision-paralysis-science.html
+    │   ├── netflix-algorithm-not-built-for-adhd.html
+    │   └── shows-that-help-anxiety.html
+    └── categories/
+        ├── adhd.html
+        ├── streaming.html
+        └── psychology.html
 ```
 
 ---
@@ -338,6 +642,13 @@ happy, thinking, excited, listening, sad, love, surprised, wink, confused, cool,
 - Search aggregator (multi-platform)
 - Social features (watch parties, messaging, friends)
 
+### Phase 4: Content & SEO
+- Blog with 3 categories (ADHD, Streaming, Psychology)
+- RSS feed for syndication
+- Content bot for automated publishing
+- Google Analytics tracking
+- SEO-optimized posts
+
 ### Monetization
 - Free tier with limits
 - Premium ($4.99/month) via Stripe
@@ -366,21 +677,42 @@ happy, thinking, excited, listening, sad, love, surprised, wink, confused, cool,
 - Always check `if 'key' not in st.session_state` before access
 - Initialize all keys in the session state initialization block
 
+**Issue**: Content bot can't generate posts
+- Check OpenAI API key in content-bot/.env
+- Verify OPENAI_API_KEY is not empty
+- Restart API server after adding key
+
+**Issue**: Blog pages not updating
+- FTP upload may have failed - check curl output
+- Verify file exists on server
+- Clear browser cache
+
+**Issue**: Google Analytics not tracking
+- Check GA4 measurement ID is correct (G-34Q0KMXDQF)
+- Verify script is in `<head>` section
+- Check browser console for blocked scripts
+
 ---
 
 ## DEPLOYMENT CHECKLIST
 
-### Before Deploying
+### Before Deploying App
 - [ ] Test locally with `streamlit run app.py`
 - [ ] Check for console errors
 - [ ] Verify all API keys are set
 - [ ] Test critical flows (login, recommendations, Mr.DP)
 
-### After Deploying
+### After Deploying App
 - [ ] Verify Railway deployment succeeded
 - [ ] Test production app at app.dopamine.watch
 - [ ] Check Railway logs for errors
-- [ ] If landing pages changed, upload to GreenGeeks
+
+### Deploying Landing/Blog to GreenGeeks
+- [ ] Upload changed HTML files via FTP
+- [ ] Verify Google Analytics is in each file
+- [ ] Test pages load correctly
+- [ ] Check mobile responsiveness
+- [ ] Verify RSS feed validates (feed.xml)
 
 ---
 
@@ -394,6 +726,8 @@ Stop and confirm with developer if you're about to:
 - Refactor more than 20 lines
 - Remove or rename functions
 - Change UI layout significantly
+- Modify FTP credentials
+- Change API keys
 
 ---
 
@@ -414,22 +748,45 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
 | Action | Command |
 |--------|---------|
-| Run locally | `streamlit run app.py` |
-| Deploy app | `git push origin main` |
-| Upload landing | `curl -T index.html ftp://...` |
+| Run Streamlit locally | `streamlit run app.py` |
+| Run Next.js locally | `cd dopamine-next && npm run dev` |
+| Build Next.js | `cd dopamine-next && npm run build` |
+| Run content bot | `cd content-bot/dashboard && python3 api.py` |
+| Deploy Streamlit | `git push origin main` |
+| Upload landing | `curl -T index.html ftp://ftp.pcmodderscr.com/MrRoboto/index.html --user "MrRobotto2@dopamine.watch:ElroboT0b@!l@"` |
+| Upload blog post | `curl -T blog/posts/FILE.html ftp://ftp.pcmodderscr.com/MrRoboto/blog/posts/FILE.html --user "MrRobotto2@dopamine.watch:ElroboT0b@!l@" --ftp-create-dirs` |
 | Deploy function | `npx supabase functions deploy NAME` |
 | View logs | Railway dashboard → Deployments |
 
 | URL | Purpose |
 |-----|---------|
-| https://app.dopamine.watch | Main app |
+| https://app.dopamine.watch | Production app (Streamlit) |
+| http://localhost:3000 | Next.js dev server |
 | https://www.dopamine.watch | Landing page |
+| https://dopamine.watch/blog/ | Blog |
+| https://dopamine.watch/blog/feed.xml | RSS Feed |
+| http://127.0.0.1:5001/chat | Content bot chat (local) |
 | https://app.supabase.com | Database dashboard |
 | https://dashboard.stripe.com | Payments |
+| https://analytics.google.com | Google Analytics |
 | https://railway.app | App hosting |
+
+---
+
+## API KEYS REFERENCE
+
+| Service | Location | Purpose |
+|---------|----------|---------|
+| OpenAI | .streamlit/secrets.toml, content-bot/.env | GPT-4 for Mr.DP and content generation |
+| Anthropic | content-bot/.env | Claude for content bot agent |
+| TMDB | .streamlit/secrets.toml | Movie/TV data |
+| Supabase | .streamlit/secrets.toml | Database and auth |
+| Stripe | .streamlit/secrets.toml | Payments |
+| Spotify | .streamlit/secrets.toml | Music recommendations |
+| Google Analytics | Hardcoded in HTML/app.py | Traffic analytics |
 
 ---
 
 **Last Updated**: January 31, 2026
 **Maintained By**: Johan (with Claude assistance)
-**Version**: 2.0 (Phase 3 Complete)
+**Version**: 4.0 (Phase 5: Next.js Rebuild)

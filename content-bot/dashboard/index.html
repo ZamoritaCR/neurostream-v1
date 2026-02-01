@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Bot Dashboard | Dopamine.watch</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎛️</text></svg>">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'bg-primary': '#0f0f14',
+                        'bg-secondary': '#16161d',
+                        'bg-card': '#1a1a24',
+                        'accent-purple': '#7c3aed',
+                        'accent-cyan': '#06b6d4',
+                        'accent-green': '#10b981',
+                        'accent-orange': '#f59e0b',
+                        'accent-red': '#ef4444',
+                        'text-primary': '#f5f5f7',
+                        'text-secondary': 'rgba(245, 245, 247, 0.7)',
+                        'glass-border': 'rgba(255, 255, 255, 0.12)',
+                    },
+                    fontFamily: {
+                        'inter': ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #0f0f14;
+            color: #f5f5f7;
+        }
+
+        /* Background effects */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(124, 58, 237, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(6, 182, 212, 0.1) 0%, transparent 50%);
+            z-index: -2;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .glass-card {
+            background: rgba(26, 26, 36, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(20px);
+        }
+
+        .gradient-text {
+            background: linear-gradient(90deg, #06b6d4, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .gradient-btn {
+            background: linear-gradient(135deg, #06b6d4, #7c3aed);
+        }
+
+        .gradient-btn:hover {
+            background: linear-gradient(135deg, #0891b2, #6d28d9);
+        }
+
+        .status-dot {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .action-btn {
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(124, 58, 237, 0.3);
+        }
+
+        .log-entry {
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #16161d;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #3f3f50;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #5f5f70;
+        }
+
+        /* Toast notification */
+        .toast {
+            animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s;
+        }
+
+        @keyframes toastIn {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes toastOut {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(100%); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Header -->
+    <header class="glass-card sticky top-0 z-50 border-b border-glass-border">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <h1 class="text-2xl font-bold gradient-text">🎛️ Content Bot Dashboard</h1>
+                    <span class="text-text-secondary text-sm">dopamine.watch</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div id="last-updated" class="text-sm text-text-secondary">
+                        Updated just now
+                    </div>
+                    <div id="bot-status" class="flex items-center gap-2 px-4 py-2 rounded-full glass-card">
+                        <span class="w-2 h-2 rounded-full bg-accent-green status-dot"></span>
+                        <span class="text-sm font-medium">Bot Ready</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Total Posts -->
+            <div class="glass-card rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-3xl">📝</span>
+                    <span class="text-accent-green text-sm font-medium">+2 this week</span>
+                </div>
+                <div id="stat-posts" class="text-3xl font-bold mb-1">3</div>
+                <div class="text-text-secondary text-sm">Total Posts</div>
+            </div>
+
+            <!-- Total Views -->
+            <div class="glass-card rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-3xl">👁️</span>
+                    <span class="text-accent-green text-sm font-medium">+15%</span>
+                </div>
+                <div id="stat-views" class="text-3xl font-bold mb-1">150</div>
+                <div class="text-text-secondary text-sm">Total Views</div>
+            </div>
+
+            <!-- Email Subscribers -->
+            <div class="glass-card rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-3xl">📧</span>
+                    <span class="text-accent-green text-sm font-medium">+5</span>
+                </div>
+                <div id="stat-subscribers" class="text-3xl font-bold mb-1">12</div>
+                <div class="text-text-secondary text-sm">Email Subscribers</div>
+            </div>
+
+            <!-- Social Shares -->
+            <div class="glass-card rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-3xl">📱</span>
+                    <span class="text-accent-cyan text-sm font-medium">8 shares</span>
+                </div>
+                <div id="stat-shares" class="text-3xl font-bold mb-1">8</div>
+                <div class="text-text-secondary text-sm">Social Shares</div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column - Actions & Posts -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Quick Actions -->
+                <div class="glass-card rounded-2xl p-6">
+                    <h2 class="text-xl font-bold mb-6">Quick Actions</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <button onclick="generatePost()" class="action-btn gradient-btn text-white rounded-xl p-4 text-center font-semibold">
+                            <div class="text-2xl mb-2">🚀</div>
+                            Generate Post
+                        </button>
+                        <button onclick="runHealthCheck()" class="action-btn glass-card hover:border-accent-cyan rounded-xl p-4 text-center font-semibold">
+                            <div class="text-2xl mb-2">🩺</div>
+                            Health Check
+                        </button>
+                        <button onclick="generateRSS()" class="action-btn glass-card hover:border-accent-purple rounded-xl p-4 text-center font-semibold">
+                            <div class="text-2xl mb-2">📡</div>
+                            Update RSS
+                        </button>
+                        <button onclick="viewAnalytics()" class="action-btn glass-card hover:border-accent-green rounded-xl p-4 text-center font-semibold">
+                            <div class="text-2xl mb-2">📊</div>
+                            Analytics
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recent Posts -->
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold">Recent Posts</h2>
+                        <a href="https://dopamine.watch/blog/" target="_blank" class="text-accent-cyan text-sm hover:underline">View Blog →</a>
+                    </div>
+                    <div id="posts-list" class="space-y-4">
+                        <!-- Posts will be loaded here -->
+                        <div class="text-text-secondary text-center py-8">Loading posts...</div>
+                    </div>
+                </div>
+
+                <!-- Activity Log -->
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold">Activity Log</h2>
+                        <button onclick="loadLogs()" class="text-accent-cyan text-sm hover:underline">Refresh</button>
+                    </div>
+                    <div id="activity-log" class="space-y-3 max-h-80 overflow-y-auto">
+                        <!-- Logs will be loaded here -->
+                        <div class="text-text-secondary text-center py-8">Loading activity...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Status & Scheduler -->
+            <div class="space-y-8">
+                <!-- System Status -->
+                <div class="glass-card rounded-2xl p-6">
+                    <h2 class="text-xl font-bold mb-6">System Status</h2>
+                    <div id="system-status" class="space-y-4">
+                        <!-- Status items will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Scheduler -->
+                <div class="glass-card rounded-2xl p-6">
+                    <h2 class="text-xl font-bold mb-6">Scheduler</h2>
+                    <div id="scheduler-info" class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-text-secondary">Status</span>
+                            <span id="scheduler-status" class="font-medium text-accent-orange">Paused</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-text-secondary">Next Post</span>
+                            <span id="next-post" class="font-medium">--</span>
+                        </div>
+                        <div class="border-t border-glass-border pt-4 mt-4">
+                            <div class="text-sm text-text-secondary mb-3">Schedule:</div>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-accent-purple"></span>
+                                    Monday 9:00 AM
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-accent-cyan"></span>
+                                    Thursday 9:00 AM
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex gap-3 mt-4">
+                            <button id="btn-start-scheduler" onclick="startScheduler()" class="flex-1 bg-accent-green/20 text-accent-green border border-accent-green/30 rounded-lg py-2 font-semibold hover:bg-accent-green/30 transition">
+                                ▶ Start
+                            </button>
+                            <button id="btn-stop-scheduler" onclick="stopScheduler()" class="flex-1 bg-accent-red/20 text-accent-red border border-accent-red/30 rounded-lg py-2 font-semibold hover:bg-accent-red/30 transition">
+                                ⏸ Pause
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configuration -->
+                <div class="glass-card rounded-2xl p-6">
+                    <h2 class="text-xl font-bold mb-6">Configuration</h2>
+                    <div id="config-status" class="space-y-3">
+                        <!-- Config items will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="glass-card rounded-2xl p-6">
+                    <h2 class="text-xl font-bold mb-6">Quick Links</h2>
+                    <div class="space-y-3">
+                        <a href="https://dopamine.watch/" target="_blank" class="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition">
+                            <span>🏠</span>
+                            <span>Landing Page</span>
+                        </a>
+                        <a href="https://dopamine.watch/blog/" target="_blank" class="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition">
+                            <span>📝</span>
+                            <span>Blog</span>
+                        </a>
+                        <a href="https://app.dopamine.watch/" target="_blank" class="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition">
+                            <span>🧠</span>
+                            <span>Main App</span>
+                        </a>
+                        <a href="https://dopamine.watch/blog/feed.xml" target="_blank" class="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition">
+                            <span>📡</span>
+                            <span>RSS Feed</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 space-y-3"></div>
+
+    <!-- Generate Post Modal -->
+    <div id="generate-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden items-center justify-center">
+        <div class="glass-card rounded-2xl p-8 max-w-md w-full mx-4">
+            <h3 class="text-xl font-bold mb-6">Generate New Post</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm text-text-secondary mb-2">Content Pillar</label>
+                    <select id="pillar-select" class="w-full bg-bg-secondary border border-glass-border rounded-lg p-3 text-text-primary">
+                        <option value="">Any Topic</option>
+                        <option value="adhd">ADHD & Executive Function</option>
+                        <option value="streaming">Streaming Psychology</option>
+                        <option value="mood">Mood & Content</option>
+                        <option value="productivity">Productivity & Focus</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-3">
+                    <input type="checkbox" id="dry-run" class="w-4 h-4 rounded">
+                    <label for="dry-run" class="text-sm text-text-secondary">Dry run (don't publish)</label>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="closeGenerateModal()" class="flex-1 glass-card rounded-lg py-3 font-semibold hover:bg-white/5 transition">
+                    Cancel
+                </button>
+                <button onclick="confirmGenerate()" class="flex-1 gradient-btn text-white rounded-lg py-3 font-semibold">
+                    🚀 Generate
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Modal -->
+    <div id="progress-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden items-center justify-center">
+        <div class="glass-card rounded-2xl p-8 max-w-md w-full mx-4">
+            <h3 class="text-xl font-bold mb-6">Generating Post...</h3>
+            <div id="progress-steps" class="space-y-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-6 h-6 rounded-full bg-accent-purple/20 flex items-center justify-center">
+                        <span class="animate-spin">⏳</span>
+                    </div>
+                    <span>Selecting topic...</span>
+                </div>
+            </div>
+            <p class="text-text-secondary text-sm mt-6">This may take 1-2 minutes. Please wait...</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';  // Same origin
+
+        // ============================================
+        // Utility Functions
+        // ============================================
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            const bgColor = {
+                success: 'bg-accent-green',
+                error: 'bg-accent-red',
+                info: 'bg-accent-cyan',
+                warning: 'bg-accent-orange'
+            }[type] || 'bg-accent-purple';
+
+            toast.className = `toast ${bgColor} text-white px-6 py-3 rounded-xl shadow-lg font-medium`;
+            toast.textContent = message;
+
+            container.appendChild(toast);
+
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function formatTime(isoString) {
+            if (!isoString) return '--';
+            const date = new Date(isoString);
+            return date.toLocaleString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+        }
+
+        function timeAgo(isoString) {
+            if (!isoString) return 'Never';
+            const seconds = Math.floor((new Date() - new Date(isoString)) / 1000);
+
+            if (seconds < 60) return 'Just now';
+            if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+            if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+            return `${Math.floor(seconds / 86400)}d ago`;
+        }
+
+        // ============================================
+        // API Functions
+        // ============================================
+
+        async function loadStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/api/status`);
+                const data = await response.json();
+
+                // Update bot status indicator
+                const statusEl = document.getElementById('bot-status');
+                const statusDot = statusEl.querySelector('span:first-child');
+                const statusText = statusEl.querySelector('span:last-child');
+
+                if (data.bot_status === 'running') {
+                    statusDot.className = 'w-2 h-2 rounded-full bg-accent-orange status-dot';
+                    statusText.textContent = 'Bot Running...';
+                } else if (data.bot_status === 'error') {
+                    statusDot.className = 'w-2 h-2 rounded-full bg-accent-red';
+                    statusText.textContent = 'Error';
+                } else {
+                    statusDot.className = 'w-2 h-2 rounded-full bg-accent-green status-dot';
+                    statusText.textContent = 'Bot Ready';
+                }
+
+                // Update system status panel
+                const systemStatus = document.getElementById('system-status');
+                systemStatus.innerHTML = Object.entries(data.systems).map(([name, status]) => {
+                    const statusColor = status === 'connected' || status === 'online' || status === 'idle'
+                        ? 'bg-accent-green'
+                        : status === 'running'
+                        ? 'bg-accent-orange'
+                        : 'bg-accent-red';
+                    const statusLabel = {
+                        'connected': 'Connected',
+                        'online': 'Online',
+                        'idle': 'Ready',
+                        'running': 'Running',
+                        'not_configured': 'Not Set',
+                        'error': 'Error'
+                    }[status] || status;
+
+                    return `
+                        <div class="flex items-center justify-between">
+                            <span class="text-text-secondary capitalize">${name}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full ${statusColor}"></span>
+                                <span class="font-medium text-sm">${statusLabel}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Update last updated
+                document.getElementById('last-updated').textContent = `Updated ${timeAgo(data.updated_at)}`;
+
+            } catch (error) {
+                console.error('Failed to load status:', error);
+            }
+        }
+
+        async function loadPosts() {
+            try {
+                const response = await fetch(`${API_BASE}/api/posts`);
+                const data = await response.json();
+
+                const postsList = document.getElementById('posts-list');
+
+                if (data.posts.length === 0) {
+                    postsList.innerHTML = '<div class="text-text-secondary text-center py-8">No posts yet</div>';
+                    return;
+                }
+
+                postsList.innerHTML = data.posts.map(post => `
+                    <a href="${post.url}" target="_blank" class="block p-4 rounded-xl hover:bg-white/5 transition border border-transparent hover:border-glass-border">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex-1">
+                                <h3 class="font-semibold mb-1 line-clamp-1">${post.title}</h3>
+                                <div class="flex items-center gap-3 text-sm text-text-secondary">
+                                    <span class="px-2 py-0.5 rounded-full bg-accent-purple/20 text-accent-purple text-xs font-medium">${post.category}</span>
+                                    <span>${post.date}</span>
+                                    <span>${post.reading_time} min read</span>
+                                </div>
+                            </div>
+                            <span class="text-text-secondary">→</span>
+                        </div>
+                    </a>
+                `).join('');
+
+                // Update stat
+                document.getElementById('stat-posts').textContent = data.total;
+
+            } catch (error) {
+                console.error('Failed to load posts:', error);
+            }
+        }
+
+        async function loadLogs() {
+            try {
+                const response = await fetch(`${API_BASE}/api/logs`);
+                const data = await response.json();
+
+                const logContainer = document.getElementById('activity-log');
+
+                if (data.logs.length === 0) {
+                    logContainer.innerHTML = '<div class="text-text-secondary text-center py-8">No activity yet</div>';
+                    return;
+                }
+
+                logContainer.innerHTML = data.logs.map(log => {
+                    const statusIcon = {
+                        'success': '✅',
+                        'started': '⏳',
+                        'error': '❌',
+                        'failed': '❌',
+                        'stopped': '⏸️',
+                        'generated': '📝'
+                    }[log.status] || '📋';
+
+                    return `
+                        <div class="log-entry flex items-start gap-3 p-3 rounded-lg bg-white/5">
+                            <span class="text-lg">${statusIcon}</span>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-medium">${log.action}</div>
+                                <div class="text-sm text-text-secondary truncate">${log.details || ''}</div>
+                            </div>
+                            <span class="text-xs text-text-secondary whitespace-nowrap">${timeAgo(log.timestamp)}</span>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Failed to load logs:', error);
+            }
+        }
+
+        async function loadAnalytics() {
+            try {
+                const response = await fetch(`${API_BASE}/api/analytics`);
+                const data = await response.json();
+
+                document.getElementById('stat-views').textContent = data.summary.total_views.toLocaleString();
+                document.getElementById('stat-subscribers').textContent = data.summary.email_subscribers;
+                document.getElementById('stat-shares').textContent = data.summary.social_shares;
+
+            } catch (error) {
+                console.error('Failed to load analytics:', error);
+            }
+        }
+
+        async function loadScheduler() {
+            try {
+                const response = await fetch(`${API_BASE}/api/scheduler`);
+                const data = await response.json();
+
+                const statusEl = document.getElementById('scheduler-status');
+                const nextPostEl = document.getElementById('next-post');
+
+                if (data.active) {
+                    statusEl.textContent = 'Active';
+                    statusEl.className = 'font-medium text-accent-green';
+                    nextPostEl.textContent = formatTime(data.next_run);
+                } else {
+                    statusEl.textContent = 'Paused';
+                    statusEl.className = 'font-medium text-accent-orange';
+                    nextPostEl.textContent = '--';
+                }
+
+            } catch (error) {
+                console.error('Failed to load scheduler:', error);
+            }
+        }
+
+        async function loadSettings() {
+            try {
+                const response = await fetch(`${API_BASE}/api/settings`);
+                const data = await response.json();
+
+                const configStatus = document.getElementById('config-status');
+                const configs = [
+                    { name: 'OpenAI', configured: data.openai_configured },
+                    { name: 'FTP', configured: data.ftp_configured },
+                    { name: 'Twitter', configured: data.twitter_configured },
+                    { name: 'LinkedIn', configured: data.linkedin_configured },
+                    { name: 'Facebook', configured: data.facebook_configured }
+                ];
+
+                configStatus.innerHTML = configs.map(c => `
+                    <div class="flex items-center justify-between">
+                        <span class="text-text-secondary">${c.name}</span>
+                        <span class="w-2 h-2 rounded-full ${c.configured ? 'bg-accent-green' : 'bg-accent-orange'}"></span>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Failed to load settings:', error);
+            }
+        }
+
+        // ============================================
+        // Action Functions
+        // ============================================
+
+        function generatePost() {
+            document.getElementById('generate-modal').classList.remove('hidden');
+            document.getElementById('generate-modal').classList.add('flex');
+        }
+
+        function closeGenerateModal() {
+            document.getElementById('generate-modal').classList.add('hidden');
+            document.getElementById('generate-modal').classList.remove('flex');
+        }
+
+        async function confirmGenerate() {
+            const pillar = document.getElementById('pillar-select').value;
+            const dryRun = document.getElementById('dry-run').checked;
+
+            closeGenerateModal();
+
+            // Show progress modal
+            document.getElementById('progress-modal').classList.remove('hidden');
+            document.getElementById('progress-modal').classList.add('flex');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/generate-post`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pillar, dry_run: dryRun })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'started') {
+                    showToast('Post generation started!', 'info');
+
+                    // Poll for completion
+                    const pollInterval = setInterval(async () => {
+                        const statusRes = await fetch(`${API_BASE}/api/status`);
+                        const statusData = await statusRes.json();
+
+                        if (statusData.bot_status !== 'running') {
+                            clearInterval(pollInterval);
+                            document.getElementById('progress-modal').classList.add('hidden');
+                            document.getElementById('progress-modal').classList.remove('flex');
+
+                            if (statusData.bot_status === 'idle') {
+                                showToast('Post generated successfully!', 'success');
+                            } else {
+                                showToast('Post generation failed', 'error');
+                            }
+
+                            loadAll();
+                        }
+                    }, 3000);
+
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+
+            } catch (error) {
+                document.getElementById('progress-modal').classList.add('hidden');
+                document.getElementById('progress-modal').classList.remove('flex');
+                showToast(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function runHealthCheck() {
+            showToast('Running health check...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/health`);
+                const data = await response.json();
+
+                if (data.all_healthy) {
+                    showToast('All systems healthy!', 'success');
+                } else {
+                    showToast('Some systems have issues', 'warning');
+                }
+
+                loadLogs();
+                loadStatus();
+
+            } catch (error) {
+                showToast('Health check failed', 'error');
+            }
+        }
+
+        async function generateRSS() {
+            showToast('Generating RSS feed...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/generate-rss`, { method: 'POST' });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    showToast('RSS feed updated!', 'success');
+                } else {
+                    throw new Error(data.error);
+                }
+
+                loadLogs();
+
+            } catch (error) {
+                showToast(`RSS error: ${error.message}`, 'error');
+            }
+        }
+
+        function viewAnalytics() {
+            window.open('https://analytics.google.com/', '_blank');
+        }
+
+        async function startScheduler() {
+            try {
+                await fetch(`${API_BASE}/api/scheduler/start`, { method: 'POST' });
+                showToast('Scheduler started!', 'success');
+                loadScheduler();
+                loadLogs();
+            } catch (error) {
+                showToast('Failed to start scheduler', 'error');
+            }
+        }
+
+        async function stopScheduler() {
+            try {
+                await fetch(`${API_BASE}/api/scheduler/stop`, { method: 'POST' });
+                showToast('Scheduler paused', 'info');
+                loadScheduler();
+                loadLogs();
+            } catch (error) {
+                showToast('Failed to stop scheduler', 'error');
+            }
+        }
+
+        // ============================================
+        // Initialize
+        // ============================================
+
+        function loadAll() {
+            loadStatus();
+            loadPosts();
+            loadLogs();
+            loadAnalytics();
+            loadScheduler();
+            loadSettings();
+        }
+
+        // Initial load
+        loadAll();
+
+        // Auto-refresh every 30 seconds
+        setInterval(loadAll, 30000);
+
+        // Close modals on escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeGenerateModal();
+            }
+        });
+    </script>
+</body>
+</html>

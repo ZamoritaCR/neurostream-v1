@@ -1,0 +1,82 @@
+[
+  {
+    "timestamp": "2026-01-31T06:39:33.751226",
+    "overall_status": "up",
+    "checks": 8,
+    "up_count": 8,
+    "results": [
+      {
+        "name": "Homepage",
+        "url": "https://dopamine.watch/",
+        "timestamp": "2026-01-31T06:39:32.505899",
+        "status": "up",
+        "status_code": 200,
+        "load_time": 0.131404,
+        "error": null
+      },
+      {
+        "name": "Blog Homepage",
+        "url": "https://dopamine.watch/blog/",
+        "timestamp": "2026-01-31T06:39:32.809469",
+        "status": "up",
+        "status_code": 200,
+        "load_time": 0.112967,
+        "error": null
+      },
+      {
+        "name": "Blog Post 1",
+        "url": "https://dopamine.watch/blog/posts/adhd-decision-paralysis-science.html",
+        "timestamp": "2026-01-31T06:39:32.925958",
+        "status": "up",
+        "status_code": 200,
+        "load_time": 0.113229,
+        "error": null
+      },
+      {
+        "name": "Blog Post 2",
+        "url": "https://dopamine.watch/blog/posts/netflix-algorithm-not-built-for-adhd.html",
+        "timestamp": "2026-01-31T06:39:33.042314",
+        "status": "up",
+        "status_code": 200,
+        "load_time": 0.122201,
+        "error": null
+      },
+      {
+        "name": "Blog Post 3",
+        "url": "https://dopamine.watch/blog/posts/shows-that-help-anxiety.html",
+        "timestamp": "2026-01-31T06:39:33.167749",
+        "status": "up",
+        "status_code": 200,
+        "load_time": 0.111363,
+        "error": null
+      },
+      {
+        "name": "Sitemap",
+        "url": "https://dopamine.watch/blog/sitemap.xml",
+        "timestamp": "2026-01-31T06:39:33.282933",
+        "status": "up",
+        "status_code": 200,
+        "load_time": 0.114412,
+        "error": null
+      },
+      {
+        "name": "Robots.txt",
+        "url": "https://dopamine.watch/robots.txt",
+        "timestamp": "2026-01-31T06:39:33.406591",
+        "status": "up",
+        "status_code": 200,
+        "load_time": 0.115019,
+        "error": null
+      },
+      {
+        "name": "App",
+        "url": "https://app.dopamine.watch/",
+        "timestamp": "2026-01-31T06:39:33.526492",
+        "status": "up",
+        "status_code": 200,
+        "load_time": 0.141862,
+        "error": null
+      }
+    ]
+  }
+]
