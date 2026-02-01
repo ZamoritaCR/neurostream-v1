@@ -1,0 +1,423 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   DOPAMINE.WATCH DESIGN SYSTEM
+   World-class, mobile-first, premium quality
+   ============================================ */
+
+@layer base {
+  :root {
+    /* CSS Custom Properties for JS access */
+    --color-primary: 107 92 216;
+    --color-secondary: 62 175 161;
+    --color-accent: 244 185 66;
+
+    /* Safe area insets for iOS */
+    --safe-top: env(safe-area-inset-top);
+    --safe-bottom: env(safe-area-inset-bottom);
+    --safe-left: env(safe-area-inset-left);
+    --safe-right: env(safe-area-inset-right);
+  }
+
+  /* Smooth scroll but respect reduced motion */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Better font rendering */
+  body {
+    @apply antialiased;
+    -webkit-tap-highlight-color: transparent;
+    /* Prevent iOS zoom on input focus */
+    touch-action: manipulation;
+  }
+
+  /* Fix iOS viewport height issue */
+  .h-screen-safe {
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .min-h-screen-safe {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  /* Focus visible for accessibility */
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary-500;
+  }
+
+  /* Remove focus ring on click for better UX */
+  *:focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+@layer components {
+  /* ============================================
+     GLASSMORPHISM
+     ============================================ */
+  .glass {
+    @apply bg-white/10 backdrop-blur-xl border border-white/20;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  }
+
+  .glass-dark {
+    @apply bg-black/20 backdrop-blur-xl border border-white/10;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  /* ============================================
+     GRADIENT TEXT
+     ============================================ */
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-500 via-secondary-400 to-accent-400;
+  }
+
+  .gradient-text-primary {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-400 to-primary-600;
+  }
+
+  /* ============================================
+     BUTTONS
+     ============================================ */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2;
+    @apply px-6 py-3 rounded-full font-semibold;
+    @apply transition-all duration-200 ease-out;
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply active:scale-[0.98];
+    /* iOS touch target */
+    min-height: 44px;
+  }
+
+  .btn-primary {
+    @apply btn;
+    @apply bg-gradient-to-r from-primary-500 to-secondary-400;
+    @apply text-white shadow-glow-sm;
+    @apply hover:shadow-glow hover:-translate-y-0.5;
+    @apply focus-visible:ring-primary-500;
+  }
+
+  .btn-secondary {
+    @apply btn;
+    @apply bg-surface-100 dark:bg-dark-card;
+    @apply text-surface-900 dark:text-white;
+    @apply border border-surface-200 dark:border-dark-border;
+    @apply hover:bg-surface-200 dark:hover:bg-dark-hover;
+    @apply focus-visible:ring-surface-400;
+  }
+
+  .btn-ghost {
+    @apply btn;
+    @apply bg-transparent;
+    @apply text-surface-600 dark:text-surface-300;
+    @apply hover:bg-surface-100 dark:hover:bg-dark-hover;
+    @apply focus-visible:ring-surface-400;
+  }
+
+  .btn-icon {
+    @apply inline-flex items-center justify-center;
+    @apply w-11 h-11 rounded-full;
+    @apply transition-all duration-200;
+    @apply hover:bg-surface-100 dark:hover:bg-dark-hover;
+    @apply active:scale-95;
+  }
+
+  /* ============================================
+     CARDS
+     ============================================ */
+  .card {
+    @apply bg-white dark:bg-dark-card;
+    @apply rounded-2xl;
+    @apply border border-surface-200 dark:border-dark-border;
+    @apply shadow-card;
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .card-hover {
+    @apply hover:shadow-card-hover hover:-translate-y-1;
+  }
+
+  .card-interactive {
+    @apply card card-hover cursor-pointer;
+    @apply active:scale-[0.99];
+  }
+
+  /* ============================================
+     INPUTS
+     ============================================ */
+  .input {
+    @apply w-full px-4 py-3;
+    @apply bg-surface-50 dark:bg-dark-card;
+    @apply border border-surface-200 dark:border-dark-border;
+    @apply rounded-xl;
+    @apply text-surface-900 dark:text-white;
+    @apply placeholder:text-surface-400;
+    @apply transition-all duration-200;
+    @apply focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20;
+    @apply focus:outline-none;
+    /* Prevent iOS zoom */
+    font-size: 16px;
+  }
+
+  /* ============================================
+     SKELETON LOADERS
+     ============================================ */
+  .skeleton {
+    @apply bg-surface-200 dark:bg-dark-border;
+    @apply animate-pulse rounded-lg;
+  }
+
+  .skeleton-shimmer {
+    @apply relative overflow-hidden;
+    @apply bg-surface-200 dark:bg-dark-border rounded-lg;
+  }
+
+  .skeleton-shimmer::after {
+    content: '';
+    @apply absolute inset-0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.4),
+      transparent
+    );
+    animation: shimmer 2s infinite;
+  }
+
+  /* ============================================
+     NAVIGATION
+     ============================================ */
+  .nav-item {
+    @apply flex flex-col items-center justify-center gap-1;
+    @apply px-4 py-2 rounded-xl;
+    @apply text-surface-500 dark:text-surface-400;
+    @apply transition-all duration-200;
+    @apply hover:text-primary-500;
+    /* iOS touch target */
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .nav-item-active {
+    @apply text-primary-500 dark:text-primary-400;
+    @apply bg-primary-50 dark:bg-primary-500/10;
+  }
+
+  /* ============================================
+     BOTTOM SHEET (Mobile)
+     ============================================ */
+  .bottom-sheet {
+    @apply fixed inset-x-0 bottom-0 z-50;
+    @apply bg-white dark:bg-dark-card;
+    @apply rounded-t-3xl;
+    @apply shadow-2xl;
+    @apply pb-safe-bottom;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .bottom-sheet.open {
+    transform: translateY(0);
+  }
+
+  .bottom-sheet-handle {
+    @apply w-10 h-1.5 mx-auto mt-3 mb-4;
+    @apply bg-surface-300 dark:bg-surface-600 rounded-full;
+  }
+
+  /* ============================================
+     TOAST NOTIFICATIONS
+     ============================================ */
+  .toast {
+    @apply fixed z-[100];
+    @apply px-4 py-3 rounded-xl;
+    @apply bg-surface-900 dark:bg-white;
+    @apply text-white dark:text-surface-900;
+    @apply shadow-xl;
+    @apply animate-slide-up;
+  }
+
+  .toast-success {
+    @apply bg-emerald-500 text-white;
+  }
+
+  .toast-error {
+    @apply bg-red-500 text-white;
+  }
+
+  /* ============================================
+     MOOD CARDS
+     ============================================ */
+  .mood-card {
+    @apply relative overflow-hidden;
+    @apply p-6 rounded-3xl;
+    @apply flex flex-col items-center justify-center gap-4;
+    @apply transition-all duration-300 ease-out;
+    @apply cursor-pointer;
+    @apply active:scale-[0.97];
+    min-height: 160px;
+  }
+
+  .mood-card-selected {
+    @apply ring-4 ring-primary-500 ring-offset-4;
+    @apply scale-[1.02];
+  }
+
+  /* ============================================
+     CONTENT CARDS
+     ============================================ */
+  .content-card {
+    @apply relative overflow-hidden;
+    @apply bg-white dark:bg-dark-card;
+    @apply rounded-2xl;
+    @apply border border-surface-100 dark:border-dark-border;
+    @apply transition-all duration-300;
+    @apply hover:shadow-xl hover:-translate-y-1;
+  }
+
+  .content-card-image {
+    @apply aspect-[2/3] w-full;
+    @apply bg-surface-100 dark:bg-dark-border;
+    @apply overflow-hidden;
+  }
+
+  /* ============================================
+     CHAT BUBBLES
+     ============================================ */
+  .chat-bubble {
+    @apply max-w-[80%] px-4 py-3 rounded-2xl;
+    @apply animate-scale-in;
+  }
+
+  .chat-bubble-user {
+    @apply bg-gradient-to-r from-primary-500 to-primary-600;
+    @apply text-white;
+    @apply rounded-br-md;
+    @apply ml-auto;
+  }
+
+  .chat-bubble-assistant {
+    @apply bg-surface-100 dark:bg-dark-card;
+    @apply text-surface-900 dark:text-white;
+    @apply rounded-bl-md;
+    @apply mr-auto;
+  }
+
+  /* ============================================
+     SCROLLBAR
+     ============================================ */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--color-primary) / 0.3) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgb(var(--color-primary) / 0.3);
+    border-radius: 3px;
+  }
+}
+
+@layer utilities {
+  /* Safe area utilities */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .px-safe {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Text utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Animation utilities */
+  .animate-delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .animate-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animate-delay-300 {
+    animation-delay: 300ms;
+  }
+
+  /* Gradient border */
+  .gradient-border {
+    position: relative;
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 2px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, #6B5CD8, #3EAFA1);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+}
+
+/* ============================================
+   DARK MODE OVERRIDES
+   ============================================ */
+.dark {
+  color-scheme: dark;
+}
+
+/* ============================================
+   INTER FONT VARIABLE (Optional - for Next.js font optimization)
+   ============================================ */
+@supports (font-variation-settings: normal) {
+  :root {
+    font-synthesis: none;
+  }
+}
