@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY
+const TMDB_API_KEY = process.env.TMDB_API_KEY || process.env.NEXT_PUBLIC_TMDB_API_KEY
+
+// CORS headers for cross-origin requests from landing page
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+}
 
 // Mr.DP system prompt - ADHD-optimized AI assistant
 const SYSTEM_PROMPT = `You are Mr.DP (Mr. Dopamine), a friendly and understanding AI assistant for dopamine.watch - an ADHD-friendly streaming recommendation app.
@@ -13,29 +21,210 @@ Your personality:
 - Uses casual, friendly language (but not overly cheesy)
 
 Your role:
-- Help users find movies, TV shows, and other content based on their mood
-- Understand that users often can't decide what to watch (decision fatigue)
+- Help users find movies, TV shows, podcasts, audiobooks, and music based on their mood
+- Understand that users often can't decide what to watch/listen to (decision fatigue)
 - Offer specific, confident recommendations rather than long lists
 - Ask clarifying questions if needed, but keep it simple
 
 Key guidelines:
 - Keep responses SHORT (2-3 sentences max unless asked for more)
 - Give 1-2 specific recommendations, not overwhelming lists
+- IMPORTANT: Always wrap content titles in double quotes like "Title" so they can be searched
+- When recommending, prefix with content type: [movie] "Title", [tv] "Title", [podcast] "Title", [audiobook] "Title", [music] "Title"
 - Acknowledge the user's feelings before suggesting content
-- If they seem stressed or overwhelmed, suggest calming/comfort content
+- If they seem stressed or overwhelmed, suggest calming/comfort content (podcasts, audiobooks, or chill music are great for this)
 - Be encouraging about their content choices
 - You can use occasional emoji but don't overdo it
 
 Content knowledge:
-- You know popular movies and TV shows
-- You understand mood-to-content matching (sad → comfort shows, bored → action/thriller, anxious → calming content)
-- You can suggest content for different vibes: cozy, exciting, thought-provoking, funny, emotional, etc.
+- You know popular movies, TV shows, podcasts, audiobooks, and music
+- You understand mood-to-content matching:
+  - Sad → comfort shows, uplifting podcasts, feel-good music
+  - Bored → action movies, true crime podcasts, audiobooks
+  - Anxious → calming podcasts, meditation content, ambient music, comfort TV
+  - Need focus → lo-fi music, ambient sounds, focus podcasts
+  - Want to learn → educational podcasts, non-fiction audiobooks
+  - Can't sleep → sleep podcasts, ASMR, ambient audiobooks
+- For podcasts: suggest specific shows (The Daily, Stuff You Should Know, Crime Junkie, etc.)
+- For audiobooks: suggest specific titles (Atomic Habits, Harry Potter, etc.)
+- For music: suggest genres or playlists (lo-fi hip hop, jazz, chill electronic)
 
-Remember: You're helping ADHD brains find content without the doom-scrolling. Be their friendly decision-making assistant!`
+Remember: You're helping ADHD brains find content without the doom-scrolling. Be their friendly decision-making assistant! Offer variety across content types when appropriate.`
+
+// Content types we support
+type ContentType = 'movie' | 'tv' | 'podcast' | 'audiobook' | 'music'
+
+interface ExtractedContent {
+  type: ContentType
+  title: string
+}
+
+// Extract content with type prefixes: [movie] "Title", [podcast] "Title", etc.
+function extractContent(text: string): ExtractedContent[] {
+  const results: ExtractedContent[] = []
+
+  // Pattern: [type] "title" or just "title" (defaults to movie/tv)
+  const typedPattern = /\[(movie|tv|podcast|audiobook|music)\]\s*"([^"]+)"/gi
+  const simplePattern = /"([^"]+)"/g
+
+  // First extract typed content
+  let match
+  const foundTitles = new Set<string>()
+
+  while ((match = typedPattern.exec(text)) !== null) {
+    const type = match[1].toLowerCase() as ContentType
+    const title = match[2]
+    if (!foundTitles.has(title.toLowerCase())) {
+      foundTitles.add(title.toLowerCase())
+      results.push({ type, title })
+    }
+  }
+
+  // Then extract untyped content (treat as movie/tv)
+  while ((match = simplePattern.exec(text)) !== null) {
+    const title = match[1]
+    if (!foundTitles.has(title.toLowerCase())) {
+      foundTitles.add(title.toLowerCase())
+      results.push({ type: 'movie', title }) // Default to movie, TMDB will search multi
+    }
+  }
+
+  return results.slice(0, 4) // Max 4 items
+}
+
+// Search TMDB for movies/TV shows
+async function searchTMDB(query: string): Promise<any | null> {
+  if (!TMDB_API_KEY) return null
+
+  try {
+    const url = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=1`
+    const response = await fetch(url)
+    if (!response.ok) return null
+
+    const data = await response.json()
+    const result = data.results?.[0]
+    if (!result) return null
+
+    // Only return movies and TV shows
+    if (result.media_type !== 'movie' && result.media_type !== 'tv') return null
+
+    return {
+      id: result.id.toString(),
+      type: result.media_type,
+      title: result.title || result.name,
+      posterPath: result.poster_path,
+      rating: result.vote_average,
+      releaseDate: result.release_date || result.first_air_date,
+    }
+  } catch (error) {
+    console.error('TMDB search error:', error)
+    return null
+  }
+}
+
+// Search iTunes for podcasts
+async function searchPodcast(query: string): Promise<any | null> {
+  try {
+    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=podcast&limit=1`
+    const response = await fetch(url)
+    if (!response.ok) return null
+
+    const data = await response.json()
+    const result = data.results?.[0]
+    if (!result) return null
+
+    return {
+      id: `podcast-${result.collectionId}`,
+      type: 'podcast' as const,
+      title: result.collectionName,
+      posterPath: result.artworkUrl600 || result.artworkUrl100,
+      artist: result.artistName,
+      feedUrl: result.feedUrl,
+      trackCount: result.trackCount,
+    }
+  } catch (error) {
+    console.error('Podcast search error:', error)
+    return null
+  }
+}
+
+// Search iTunes for audiobooks
+async function searchAudiobook(query: string): Promise<any | null> {
+  try {
+    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=audiobook&limit=1`
+    const response = await fetch(url)
+    if (!response.ok) return null
+
+    const data = await response.json()
+    const result = data.results?.[0]
+    if (!result) return null
+
+    return {
+      id: `audiobook-${result.collectionId}`,
+      type: 'audiobook' as const,
+      title: result.collectionName,
+      posterPath: result.artworkUrl600 || result.artworkUrl100,
+      artist: result.artistName,
+      description: result.description,
+      previewUrl: result.previewUrl,
+    }
+  } catch (error) {
+    console.error('Audiobook search error:', error)
+    return null
+  }
+}
+
+// Search iTunes for music (albums/songs)
+async function searchMusic(query: string): Promise<any | null> {
+  try {
+    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=album&limit=1`
+    const response = await fetch(url)
+    if (!response.ok) return null
+
+    const data = await response.json()
+    const result = data.results?.[0]
+    if (!result) return null
+
+    return {
+      id: `music-${result.collectionId}`,
+      type: 'music' as const,
+      title: result.collectionName,
+      posterPath: result.artworkUrl600 || result.artworkUrl100,
+      artist: result.artistName,
+      trackCount: result.trackCount,
+      releaseDate: result.releaseDate,
+    }
+  } catch (error) {
+    console.error('Music search error:', error)
+    return null
+  }
+}
+
+// Search for content based on type
+async function searchContent(item: ExtractedContent): Promise<any | null> {
+  switch (item.type) {
+    case 'movie':
+    case 'tv':
+      return searchTMDB(item.title)
+    case 'podcast':
+      return searchPodcast(item.title)
+    case 'audiobook':
+      return searchAudiobook(item.title)
+    case 'music':
+      return searchMusic(item.title)
+    default:
+      return searchTMDB(item.title)
+  }
+}
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
   content: string
+}
+
+// Handle OPTIONS preflight request for CORS
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders })
 }
 
 export async function POST(request: NextRequest) {
@@ -43,7 +232,7 @@ export async function POST(request: NextRequest) {
     if (!OPENAI_API_KEY) {
       return NextResponse.json(
         { error: 'OpenAI API key not configured' },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       )
     }
 
@@ -53,7 +242,7 @@ export async function POST(request: NextRequest) {
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json(
         { error: 'Messages array is required' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
@@ -88,7 +277,7 @@ export async function POST(request: NextRequest) {
       console.error('OpenAI API error:', error)
       return NextResponse.json(
         { error: 'Failed to get response from AI' },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       )
     }
 
@@ -98,19 +287,27 @@ export async function POST(request: NextRequest) {
     if (!assistantMessage) {
       return NextResponse.json(
         { error: 'No response from AI' },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       )
     }
 
+    // Extract content (movies, podcasts, audiobooks, music) and search
+    const extractedContent = extractContent(assistantMessage)
+    const contentPromises = extractedContent.map(item => searchContent(item))
+    const contentResults = await Promise.all(contentPromises)
+    const recommendations = contentResults.filter(Boolean)
+
     return NextResponse.json({
       message: assistantMessage,
+      movies: recommendations, // Keep 'movies' key for backward compatibility
+      recommendations, // Also provide as 'recommendations' for clarity
       usage: data.usage,
-    })
+    }, { headers: corsHeaders })
   } catch (error) {
     console.error('Chat API error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
 }

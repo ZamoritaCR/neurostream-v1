@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/api/', '/auth/'],
     },
-    sitemap: 'https://dopamine.watch/sitemap.xml',
+    sitemap: 'https://app.dopamine.watch/sitemap.xml',
   }
 }

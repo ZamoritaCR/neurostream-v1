@@ -18,10 +18,16 @@ import {
   Sun,
   Moon,
   CloudSun,
+  Headphones,
+  Microphone,
+  MusicNotes,
+  Television,
+  VideoCamera,
 } from '@phosphor-icons/react'
 import { cn, haptic } from '@/lib/utils'
 import { Button, Card, SkeletonContentCard } from '@/components/ui'
 import { getTrending } from '@/lib/tmdb'
+import { useRecommendations } from '@/lib/recommendations-context'
 import type { Content } from '@/types'
 
 // Get time-based greeting
@@ -42,6 +48,7 @@ export default function AppHomePage() {
   const [forYou, setForYou] = useState<Content[]>([])
   const [continueWatching] = useState<Content[]>(continueWatchingPlaceholder)
   const [isLoading, setIsLoading] = useState(true)
+  const { mrDpPicks, setSelectedMovie, setShowMovieModal } = useRecommendations()
 
   useEffect(() => {
     async function fetchContent() {
@@ -150,6 +157,127 @@ export default function AppHomePage() {
               {continueWatching.map((content, index) => (
                 <ContinueWatchingCard key={content.id} content={content} index={index} />
               ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Mr.DP Picks - Shows when chat returns recommendations */}
+      {mrDpPicks.length > 0 && (
+        <section className="mb-8">
+          <div className="px-4 md:px-8 flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Brain size={20} weight="fill" className="text-primary-500" />
+              <h2 className="text-lg font-semibold text-surface-900 dark:text-white">
+                Mr.DP's Picks for You
+              </h2>
+            </div>
+          </div>
+
+          <div className="px-4 md:px-8">
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+              {mrDpPicks.map((item: any, index: number) => {
+                const isAudioContent = ['podcast', 'audiobook', 'music'].includes(item.type)
+                const posterUrl = isAudioContent
+                  ? item.posterPath // iTunes returns full URLs
+                  : item.posterPath
+                    ? `https://image.tmdb.org/t/p/w300${item.posterPath}`
+                    : null
+
+                const handleClick = () => {
+                  haptic('light')
+                  if (item.type === 'movie' || item.type === 'tv') {
+                    setSelectedMovie(item)
+                    setShowMovieModal(true)
+                  } else if (item.type === 'podcast') {
+                    window.open(`https://podcasts.apple.com/search?term=${encodeURIComponent(item.title)}`, '_blank')
+                  } else if (item.type === 'audiobook') {
+                    window.open(`https://www.audible.com/search?keywords=${encodeURIComponent(item.title)}`, '_blank')
+                  } else if (item.type === 'music') {
+                    window.open(`https://music.apple.com/search?term=${encodeURIComponent(item.title)}`, '_blank')
+                  }
+                }
+
+                const getTypeInfo = () => {
+                  switch (item.type) {
+                    case 'tv': return { icon: <Television size={10} weight="fill" />, label: 'TV', color: 'bg-blue-500' }
+                    case 'podcast': return { icon: <Microphone size={10} weight="fill" />, label: 'Podcast', color: 'bg-purple-500' }
+                    case 'audiobook': return { icon: <Headphones size={10} weight="fill" />, label: 'Audiobook', color: 'bg-orange-500' }
+                    case 'music': return { icon: <MusicNotes size={10} weight="fill" />, label: 'Music', color: 'bg-green-500' }
+                    default: return { icon: <VideoCamera size={10} weight="fill" />, label: 'Movie', color: 'bg-primary-500' }
+                  }
+                }
+
+                const typeInfo = getTypeInfo()
+
+                return (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="flex-shrink-0 w-36 cursor-pointer group"
+                    onClick={handleClick}
+                  >
+                    <Card interactive className="p-0 overflow-hidden">
+                      <div className={cn("relative", isAudioContent ? "aspect-square" : "aspect-[2/3]")}>
+                        {posterUrl ? (
+                          <Image
+                            src={posterUrl}
+                            alt={item.title}
+                            fill
+                            className="object-cover"
+                            sizes="144px"
+                            unoptimized={isAudioContent}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-primary-500 to-secondary-400 flex items-center justify-center">
+                            {isAudioContent ? (
+                              <Headphones size={32} weight="fill" className="text-white/50" />
+                            ) : (
+                              <Play size={32} weight="fill" className="text-white/50" />
+                            )}
+                          </div>
+                        )}
+                        {/* Type badge */}
+                        <div className="absolute top-2 left-2">
+                          <span className={cn(
+                            "flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium text-white",
+                            typeInfo.color
+                          )}>
+                            {typeInfo.icon}
+                            {typeInfo.label}
+                          </span>
+                        </div>
+                        {/* Rating (only for movies/TV) */}
+                        {item.rating && !isAudioContent && (
+                          <div className="absolute top-2 right-2">
+                            <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium bg-black/50 backdrop-blur-sm text-white">
+                              <Star size={10} weight="fill" className="text-amber-400" />
+                              {item.rating.toFixed(1)}
+                            </span>
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          {isAudioContent ? (
+                            <Headphones size={24} weight="fill" className="text-white" />
+                          ) : (
+                            <Play size={24} weight="fill" className="text-white" />
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                    <h3 className="mt-2 text-sm font-medium text-surface-900 dark:text-white line-clamp-1">
+                      {item.title}
+                    </h3>
+                    {item.artist && (
+                      <p className="text-xs text-surface-500 dark:text-surface-400 line-clamp-1">
+                        {item.artist}
+                      </p>
+                    )}
+                  </motion.div>
+                )
+              })}
             </div>
           </div>
         </section>

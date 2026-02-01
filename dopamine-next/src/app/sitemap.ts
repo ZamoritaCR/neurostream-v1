@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://dopamine.watch'
+  const baseUrl = 'https://app.dopamine.watch'
 
   return [
     {

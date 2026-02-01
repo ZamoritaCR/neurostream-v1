@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
-import { motion, AnimatePresence, useAnimation } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Brain,
   X,
   Minus,
   ArrowsOutSimple,
@@ -17,16 +16,27 @@ import {
   Fire,
   Crown,
   CaretDown,
+  Brain,
+  Star,
+  Play,
+  Headphones,
+  Microphone,
+  MusicNotes,
+  VideoCamera,
+  Television,
 } from '@phosphor-icons/react'
+import Image from 'next/image'
 import { cn, haptic } from '@/lib/utils'
 import { useAuth } from '@/lib/auth-context'
+import { useRecommendations } from '@/lib/recommendations-context'
+import { MrDpCharacter, type MrDpExpression } from './MrDpCharacter'
 import type { ChatMessage } from '@/types'
 
 // ============================================
 // TYPES
 // ============================================
 type MrDpState = 'minimized' | 'expanded' | 'full'
-type Expression = 'happy' | 'thinking' | 'excited' | 'listening' | 'wink' | 'sleeping' | 'love'
+type AnimationState = 'idle' | 'thinking' | 'speaking' | 'listening' | 'excited'
 
 interface ContextualSuggestion {
   text: string
@@ -91,9 +101,11 @@ const getGreeting = (): string => {
 export function MrDpFloating() {
   const pathname = usePathname()
   const { user, isPremium, mrDpUsesRemaining, decrementMrDpUses } = useAuth()
+  const { setMrDpPicks, setSelectedMovie, setShowMovieModal } = useRecommendations()
 
   const [state, setState] = useState<MrDpState>('minimized')
-  const [expression, setExpression] = useState<Expression>('happy')
+  const [expression, setExpression] = useState<MrDpExpression>('happy')
+  const [animState, setAnimState] = useState<AnimationState>('idle')
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -102,23 +114,20 @@ export function MrDpFloating() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const avatarControls = useAnimation()
 
   const maxFreeChats = 5
   const suggestions = getPageSuggestions(pathname)
 
-  // Idle breathing animation
+  // Update expression based on state
   useEffect(() => {
-    const breathingAnimation = async () => {
-      while (true) {
-        await avatarControls.start({
-          scale: [1, 1.05, 1],
-          transition: { duration: 3, ease: 'easeInOut' },
-        })
-      }
+    if (state === 'minimized') {
+      setExpression('sleeping')
+      setAnimState('idle')
+    } else {
+      setExpression('happy')
+      setAnimState('idle')
     }
-    breathingAnimation()
-  }, [avatarControls])
+  }, [state])
 
   // Show proactive bubble after delay on page change
   useEffect(() => {
@@ -152,6 +161,8 @@ export function MrDpFloating() {
     haptic('light')
     setState('minimized')
     setShowProactiveBubble(false)
+    setExpression('sleeping')
+    setAnimState('idle')
   }
 
   const handleExpand = () => {
@@ -159,6 +170,9 @@ export function MrDpFloating() {
     setState('expanded')
     setShowProactiveBubble(false)
     setHasUnread(false)
+    setExpression('happy')
+    setAnimState('excited')
+    setTimeout(() => setAnimState('idle'), 1500)
   }
 
   const handleOpenFull = () => {
@@ -166,6 +180,12 @@ export function MrDpFloating() {
     setState('full')
     setShowProactiveBubble(false)
     setHasUnread(false)
+    setExpression('excited')
+    setAnimState('excited')
+    setTimeout(() => {
+      setExpression('happy')
+      setAnimState('idle')
+    }, 1500)
 
     // Add greeting if no messages
     if (messages.length === 0) {
@@ -192,6 +212,7 @@ export function MrDpFloating() {
     haptic('light')
     setInputValue('')
     setExpression('listening')
+    setAnimState('listening')
 
     // Add user message
     const userMessage: ChatMessage = {
@@ -208,6 +229,7 @@ export function MrDpFloating() {
     // Call OpenAI API
     setIsTyping(true)
     setExpression('thinking')
+    setAnimState('thinking')
 
     try {
       // Build messages for API (without timestamp for API call)
@@ -233,10 +255,18 @@ export function MrDpFloating() {
         role: 'assistant',
         content: data.message,
         timestamp: new Date(),
+        metadata: data.movies?.length > 0 ? { recommendations: data.movies } : undefined,
       }
 
       setMessages(prev => [...prev, assistantMessage])
+
+      // Update Mr.DP picks for main screen display
+      if (data.movies?.length > 0) {
+        setMrDpPicks(data.movies)
+      }
+
       setExpression('excited')
+      setAnimState('speaking')
     } catch (error) {
       console.error('Chat error:', error)
       // Fallback to a helpful error message
@@ -247,10 +277,13 @@ export function MrDpFloating() {
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, errorMessage])
-      setExpression('happy')
+      setExpression('sad')
     } finally {
       setIsTyping(false)
-      setTimeout(() => setExpression('happy'), 2000)
+      setTimeout(() => {
+        setExpression('happy')
+        setAnimState('idle')
+      }, 2000)
     }
   }
 
@@ -329,35 +362,26 @@ export function MrDpFloating() {
                 )}
               </AnimatePresence>
 
-              {/* FAB Button */}
+              {/* FAB Button - Mr.DP Character */}
               <motion.button
-                animate={avatarControls}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleExpand}
-                className={cn(
-                  'w-14 h-14 rounded-full',
-                  'bg-gradient-to-br from-primary-500 to-secondary-400',
-                  'flex items-center justify-center',
-                  'shadow-glow',
-                  'relative'
-                )}
+                className="relative"
               >
-                <MrDpAvatar expression={expression} size="md" />
+                <MrDpCharacter
+                  expression={expression}
+                  size="lg"
+                  animated={true}
+                  animationState={animState}
+                />
 
                 {/* Unread indicator */}
                 {hasUnread && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center z-20">
                     <span className="text-[10px] text-white font-bold">1</span>
                   </span>
                 )}
-
-                {/* Pulse ring */}
-                <motion.span
-                  className="absolute inset-0 rounded-full bg-primary-500/30"
-                  animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                />
               </motion.button>
             </motion.div>
           )}
@@ -376,7 +400,7 @@ export function MrDpFloating() {
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-surface-100 dark:border-dark-border">
                 <div className="flex items-center gap-3">
-                  <MrDpAvatar expression={expression} size="sm" animated />
+                  <MrDpCharacter expression={expression} size="sm" animated animationState={animState} />
                   <div>
                     <h3 className="font-semibold text-surface-900 dark:text-white text-sm">
                       Mr.DP
@@ -481,7 +505,7 @@ export function MrDpFloating() {
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-surface-100 dark:border-dark-border bg-white dark:bg-dark-bg">
                 <div className="flex items-center gap-3">
-                  <MrDpAvatar expression={expression} size="md" animated />
+                  <MrDpCharacter expression={expression} size="md" animated animationState={animState} />
                   <div>
                     <h3 className="font-semibold text-surface-900 dark:text-white">
                       Mr.DP
@@ -515,6 +539,11 @@ export function MrDpFloating() {
                     message={message}
                     isLatest={index === messages.length - 1}
                     expression={expression}
+                    animState={animState}
+                    onMovieClick={(movie) => {
+                      setSelectedMovie(movie)
+                      setShowMovieModal(true)
+                    }}
                   />
                 ))}
 
@@ -527,13 +556,13 @@ export function MrDpFloating() {
                       exit={{ opacity: 0, y: -10 }}
                       className="flex items-end gap-2"
                     >
-                      <MrDpAvatar expression={expression} size="sm" />
+                      <MrDpCharacter expression={expression} size="sm" animated animationState={animState} />
                       <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-surface-100 dark:bg-dark-card">
                         <div className="flex gap-1">
                           {[0, 1, 2].map((i) => (
                             <motion.div
                               key={i}
-                              className="w-2 h-2 rounded-full bg-surface-400"
+                              className="w-2 h-2 rounded-full bg-primary-500"
                               animate={{ y: [0, -6, 0] }}
                               transition={{
                                 duration: 0.6,
@@ -643,73 +672,82 @@ export function MrDpFloating() {
 }
 
 // ============================================
-// MR.DP AVATAR COMPONENT
-// ============================================
-interface MrDpAvatarProps {
-  expression: Expression
-  size?: 'sm' | 'md' | 'lg'
-  animated?: boolean
-}
-
-function MrDpAvatar({ expression, size = 'md', animated = false }: MrDpAvatarProps) {
-  const sizeClasses = {
-    sm: 'w-8 h-8',
-    md: 'w-10 h-10',
-    lg: 'w-14 h-14',
-  }
-
-  const iconSizes = {
-    sm: 16,
-    md: 20,
-    lg: 28,
-  }
-
-  // Expression-based colors
-  const expressionColors: Record<Expression, string> = {
-    happy: 'from-primary-500 to-secondary-400',
-    thinking: 'from-blue-500 to-primary-500',
-    excited: 'from-orange-500 to-pink-500',
-    listening: 'from-green-500 to-teal-500',
-    wink: 'from-purple-500 to-pink-500',
-    sleeping: 'from-slate-400 to-slate-500',
-    love: 'from-pink-500 to-red-500',
-  }
-
-  return (
-    <motion.div
-      animate={
-        animated
-          ? {
-              scale: expression === 'excited' ? [1, 1.1, 1] : [1, 1.02, 1],
-            }
-          : {}
-      }
-      transition={animated ? { duration: 2, repeat: Infinity } : {}}
-      className={cn(
-        sizeClasses[size],
-        'rounded-full',
-        'bg-gradient-to-br',
-        expressionColors[expression],
-        'flex items-center justify-center',
-        'shadow-glow-sm'
-      )}
-    >
-      <Brain size={iconSizes[size]} weight="fill" className="text-white" />
-    </motion.div>
-  )
-}
-
-// ============================================
 // CHAT BUBBLE COMPONENT
 // ============================================
 interface ChatBubbleProps {
   message: ChatMessage
   isLatest: boolean
-  expression: Expression
+  expression: MrDpExpression
+  animState: AnimationState
+  onMovieClick?: (movie: any) => void
 }
 
-function ChatBubble({ message, isLatest, expression }: ChatBubbleProps) {
+// Get content type icon and label
+function getContentTypeInfo(type: string): { icon: React.ReactNode; label: string; color: string } {
+  switch (type) {
+    case 'tv':
+      return { icon: <Television size={8} weight="fill" />, label: 'TV', color: 'bg-blue-500' }
+    case 'podcast':
+      return { icon: <Microphone size={8} weight="fill" />, label: 'Podcast', color: 'bg-purple-500' }
+    case 'audiobook':
+      return { icon: <Headphones size={8} weight="fill" />, label: 'Audiobook', color: 'bg-orange-500' }
+    case 'music':
+      return { icon: <MusicNotes size={8} weight="fill" />, label: 'Music', color: 'bg-green-500' }
+    default:
+      return { icon: <VideoCamera size={8} weight="fill" />, label: 'Movie', color: 'bg-primary-500' }
+  }
+}
+
+// Get poster URL based on content type
+function getPosterUrl(item: any): string | null {
+  // iTunes/Apple content returns full URLs
+  if (item.type === 'podcast' || item.type === 'audiobook' || item.type === 'music') {
+    return item.posterPath || null
+  }
+  // TMDB content returns relative paths
+  if (item.posterPath) {
+    return `https://image.tmdb.org/t/p/w200${item.posterPath}`
+  }
+  return null
+}
+
+// Handle content click based on type
+function handleContentClick(item: any, onMovieClick?: (movie: any) => void) {
+  haptic('light')
+
+  // For movies and TV, open the modal
+  if (item.type === 'movie' || item.type === 'tv') {
+    if (onMovieClick) {
+      onMovieClick(item)
+    }
+    return
+  }
+
+  // For podcasts, try to open Apple Podcasts search
+  if (item.type === 'podcast') {
+    const searchQuery = encodeURIComponent(item.title)
+    window.open(`https://podcasts.apple.com/search?term=${searchQuery}`, '_blank')
+    return
+  }
+
+  // For audiobooks, try to open Audible search
+  if (item.type === 'audiobook') {
+    const searchQuery = encodeURIComponent(item.title)
+    window.open(`https://www.audible.com/search?keywords=${searchQuery}`, '_blank')
+    return
+  }
+
+  // For music, open Apple Music search
+  if (item.type === 'music') {
+    const searchQuery = encodeURIComponent(item.title + (item.artist ? ' ' + item.artist : ''))
+    window.open(`https://music.apple.com/search?term=${searchQuery}`, '_blank')
+    return
+  }
+}
+
+function ChatBubble({ message, isLatest, expression, animState, onMovieClick }: ChatBubbleProps) {
   const isUser = message.role === 'user'
+  const recommendations = message.metadata?.recommendations
 
   return (
     <motion.div
@@ -720,19 +758,101 @@ function ChatBubble({ message, isLatest, expression }: ChatBubbleProps) {
         isUser ? 'flex-row-reverse' : 'flex-row'
       )}
     >
-      {!isUser && <MrDpAvatar expression={expression} size="sm" />}
+      {!isUser && <MrDpCharacter expression={expression} size="sm" animated={false} />}
 
-      <div
-        className={cn(
-          'max-w-[80%] px-4 py-3 rounded-2xl',
-          isUser
-            ? 'bg-primary-500 text-white rounded-br-md'
-            : 'bg-surface-100 dark:bg-dark-card text-surface-900 dark:text-white rounded-bl-md'
+      <div className="max-w-[85%] space-y-2">
+        <div
+          className={cn(
+            'px-4 py-3 rounded-2xl',
+            isUser
+              ? 'bg-primary-500 text-white rounded-br-md'
+              : 'bg-surface-100 dark:bg-dark-card text-surface-900 dark:text-white rounded-bl-md'
+          )}
+        >
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+            {message.content}
+          </p>
+        </div>
+
+        {/* Content recommendations cards (movies, TV, podcasts, audiobooks, music) */}
+        {recommendations && recommendations.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {recommendations.map((item: any) => {
+              const typeInfo = getContentTypeInfo(item.type)
+              const posterUrl = getPosterUrl(item)
+              const isAudioContent = ['podcast', 'audiobook', 'music'].includes(item.type)
+
+              return (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="flex-shrink-0 w-28 rounded-xl overflow-hidden bg-surface-100 dark:bg-dark-card border border-surface-200 dark:border-dark-border hover:border-primary-500 transition-colors cursor-pointer group"
+                  onClick={() => handleContentClick(item, onMovieClick)}
+                >
+                  <div className={cn("relative", isAudioContent ? "aspect-square" : "aspect-[2/3]")}>
+                    {posterUrl ? (
+                      <Image
+                        src={posterUrl}
+                        alt={item.title}
+                        fill
+                        className="object-cover"
+                        sizes="112px"
+                        unoptimized={isAudioContent} // iTunes URLs don't work with Next.js image optimization
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-primary-500 to-secondary-400 flex items-center justify-center">
+                        {isAudioContent ? (
+                          <Headphones size={24} weight="fill" className="text-white/50" />
+                        ) : (
+                          <Play size={24} weight="fill" className="text-white/50" />
+                        )}
+                      </div>
+                    )}
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      {isAudioContent ? (
+                        <Headphones size={24} weight="fill" className="text-white" />
+                      ) : (
+                        <Play size={24} weight="fill" className="text-white" />
+                      )}
+                    </div>
+                    {/* Rating badge (for movies/TV) */}
+                    {item.rating && !isAudioContent && (
+                      <div className="absolute top-1 right-1">
+                        <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-black/60 text-white">
+                          <Star size={8} weight="fill" className="text-amber-400" />
+                          {item.rating.toFixed(1)}
+                        </span>
+                      </div>
+                    )}
+                    {/* Type badge */}
+                    <div className="absolute top-1 left-1">
+                      <span className={cn(
+                        "flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-white",
+                        typeInfo.color
+                      )}>
+                        {typeInfo.icon}
+                        {typeInfo.label}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-2">
+                    <h4 className="text-xs font-medium text-surface-900 dark:text-white line-clamp-2 leading-tight">
+                      {item.title}
+                    </h4>
+                    {/* Show artist for audio content */}
+                    {item.artist && (
+                      <p className="text-[10px] text-surface-500 dark:text-surface-400 line-clamp-1 mt-0.5">
+                        {item.artist}
+                      </p>
+                    )}
+                  </div>
+                </motion.div>
+              )
+            })}
+          </div>
         )}
-      >
-        <p className="text-sm leading-relaxed whitespace-pre-wrap">
-          {message.content}
-        </p>
       </div>
     </motion.div>
   )

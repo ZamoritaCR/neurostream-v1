@@ -1,8 +1,6 @@
 import type { Content, Movie, TVShow, ContentType } from '@/types'
 
-// TMDB API configuration
-const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY || ''
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3'
+// TMDB Image base URL
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p'
 
 // Image size options
@@ -37,19 +35,27 @@ export function getImageUrl(
   return `${TMDB_IMAGE_BASE}${imageSizes[type][size]}${path}`
 }
 
-// Fetch helper
+// Fetch helper - uses our API route to proxy TMDB requests
 async function tmdbFetch<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
-  const url = new URL(`${TMDB_BASE_URL}${endpoint}`)
-  url.searchParams.append('api_key', TMDB_API_KEY)
+  // Build query string manually to avoid URL constructor issues on client-side
+  const queryParams = new URLSearchParams()
+  queryParams.append('endpoint', endpoint)
 
   Object.entries(params).forEach(([key, value]) => {
-    url.searchParams.append(key, value)
+    queryParams.append(key, value)
   })
 
-  const response = await fetch(url.toString())
+  // For client-side, use relative URL; for server-side, use full URL
+  const baseUrl = typeof window !== 'undefined'
+    ? ''
+    : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000')
+
+  const url = `${baseUrl}/api/tmdb?${queryParams.toString()}`
+  const response = await fetch(url)
 
   if (!response.ok) {
-    throw new Error(`TMDB API error: ${response.status}`)
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.error || `TMDB API error: ${response.status}`)
   }
 
   return response.json()

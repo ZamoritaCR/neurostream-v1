@@ -4,35 +4,14 @@ import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   PaperPlaneTilt,
-  Sparkle,
-  Brain,
-  Lightning,
-  Heart,
-  Smiley,
   Crown,
-  X,
-  DotsThree,
 } from '@phosphor-icons/react'
 import { cn, haptic } from '@/lib/utils'
-import { Button, Input } from '@/components/ui'
+import { Button } from '@/components/ui'
+import { MrDpCharacter, type MrDpExpression } from '@/components/features/MrDpCharacter'
 import type { ChatMessage } from '@/types'
 
-// Mr.DP expressions
-type Expression = 'happy' | 'thinking' | 'excited' | 'listening' | 'wink'
-
-interface MrDpExpression {
-  id: Expression
-  emoji: string
-  label: string
-}
-
-const expressions: MrDpExpression[] = [
-  { id: 'happy', emoji: '😊', label: 'Happy' },
-  { id: 'thinking', emoji: '🤔', label: 'Thinking' },
-  { id: 'excited', emoji: '🤩', label: 'Excited' },
-  { id: 'listening', emoji: '👂', label: 'Listening' },
-  { id: 'wink', emoji: '😉', label: 'Wink' },
-]
+type AnimationState = 'idle' | 'thinking' | 'speaking' | 'listening' | 'excited'
 
 // Quick suggestions
 const quickSuggestions = [
@@ -63,7 +42,8 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
-  const [expression, setExpression] = useState<Expression>('happy')
+  const [expression, setExpression] = useState<MrDpExpression>('happy')
+  const [animState, setAnimState] = useState<AnimationState>('idle')
   const [isPremium, setIsPremium] = useState(false)
   const [chatCount, setChatCount] = useState(3)
   const maxFreeChats = 5
@@ -91,6 +71,7 @@ export default function ChatPage() {
     haptic('light')
     setInputValue('')
     setExpression('listening')
+    setAnimState('listening')
 
     // Add user message
     const userMessage: ChatMessage = {
@@ -104,6 +85,7 @@ export default function ChatPage() {
     // Call OpenAI API
     setIsTyping(true)
     setExpression('thinking')
+    setAnimState('thinking')
 
     try {
       // Build messages for API (without timestamp)
@@ -133,6 +115,7 @@ export default function ChatPage() {
 
       setMessages(prev => [...prev, assistantMessage])
       setExpression('excited')
+      setAnimState('speaking')
       setChatCount(prev => prev + 1)
     } catch (error) {
       console.error('Chat error:', error)
@@ -144,10 +127,13 @@ export default function ChatPage() {
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, errorMessage])
-      setExpression('happy')
+      setExpression('sad')
     } finally {
       setIsTyping(false)
-      setTimeout(() => setExpression('happy'), 2000)
+      setTimeout(() => {
+        setExpression('happy')
+        setAnimState('idle')
+      }, 2000)
     }
   }
 
@@ -164,7 +150,7 @@ export default function ChatPage() {
       {/* Chat header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-surface-100 dark:border-dark-border bg-white/80 dark:bg-dark-bg/80 backdrop-blur-xl">
         <div className="flex items-center gap-3">
-          <MrDpAvatar expression={expression} size="md" />
+          <MrDpCharacter expression={expression} size="md" animated animationState={animState} />
           <div>
             <h1 className="font-semibold text-surface-900 dark:text-white">Mr.DP</h1>
             <p className="text-xs text-surface-500">Your dopamine curator</p>
@@ -195,6 +181,7 @@ export default function ChatPage() {
             key={message.id}
             message={message}
             isLatest={index === messages.length - 1}
+            expression={expression}
           />
         ))}
 
@@ -207,13 +194,13 @@ export default function ChatPage() {
               exit={{ opacity: 0, y: -10 }}
               className="flex items-end gap-2"
             >
-              <MrDpAvatar expression={expression} size="sm" />
+              <MrDpCharacter expression={expression} size="sm" animated animationState={animState} />
               <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-surface-100 dark:bg-dark-card">
                 <div className="flex gap-1">
                   {[0, 1, 2].map((i) => (
                     <motion.div
                       key={i}
-                      className="w-2 h-2 rounded-full bg-surface-400"
+                      className="w-2 h-2 rounded-full bg-primary-500"
                       animate={{
                         y: [0, -6, 0],
                       }}
@@ -338,51 +325,14 @@ export default function ChatPage() {
   )
 }
 
-// Mr.DP Avatar Component
-interface MrDpAvatarProps {
-  expression: Expression
-  size?: 'sm' | 'md' | 'lg'
-}
-
-function MrDpAvatar({ expression, size = 'md' }: MrDpAvatarProps) {
-  const sizeClasses = {
-    sm: 'w-8 h-8',
-    md: 'w-10 h-10',
-    lg: 'w-14 h-14',
-  }
-
-  const iconSizes = {
-    sm: 16,
-    md: 20,
-    lg: 28,
-  }
-
-  return (
-    <motion.div
-      animate={{
-        scale: expression === 'excited' ? [1, 1.1, 1] : 1,
-      }}
-      transition={{ duration: 0.3 }}
-      className={cn(
-        sizeClasses[size],
-        'rounded-full',
-        'bg-gradient-to-br from-primary-500 to-secondary-400',
-        'flex items-center justify-center',
-        'shadow-glow-sm'
-      )}
-    >
-      <Brain size={iconSizes[size]} weight="fill" className="text-white" />
-    </motion.div>
-  )
-}
-
 // Chat Bubble Component
 interface ChatBubbleProps {
   message: ChatMessage
   isLatest: boolean
+  expression: MrDpExpression
 }
 
-function ChatBubble({ message, isLatest }: ChatBubbleProps) {
+function ChatBubble({ message, isLatest, expression }: ChatBubbleProps) {
   const isUser = message.role === 'user'
 
   return (
@@ -394,7 +344,7 @@ function ChatBubble({ message, isLatest }: ChatBubbleProps) {
         isUser ? 'flex-row-reverse' : 'flex-row'
       )}
     >
-      {!isUser && <MrDpAvatar expression="happy" size="sm" />}
+      {!isUser && <MrDpCharacter expression={expression} size="sm" animated={false} />}
 
       <div
         className={cn(

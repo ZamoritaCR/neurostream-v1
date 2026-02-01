@@ -15,11 +15,11 @@ export const metadata: Metadata = {
   keywords: ['ADHD', 'streaming', 'movie recommendations', 'neurodivergent', 'mood-based', 'Netflix', 'entertainment'],
   authors: [{ name: 'dopamine.watch' }],
   creator: 'dopamine.watch',
-  metadataBase: new URL('https://dopamine.watch'),
+  metadataBase: new URL('https://app.dopamine.watch'),
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://dopamine.watch',
+    url: 'https://app.dopamine.watch',
     siteName: 'dopamine.watch',
     title: 'dopamine.watch | Stop Scrolling. Start Watching.',
     description: 'AI-powered streaming recommendations for ADHD brains.',
