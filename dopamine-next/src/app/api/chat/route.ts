@@ -134,7 +134,7 @@ async function searchTMDB(query: string): Promise<any | null> {
   }
 }
 
-// Search iTunes for podcasts
+// Search iTunes for podcasts with platform links
 async function searchPodcast(query: string): Promise<any | null> {
   try {
     const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=podcast&limit=1`
@@ -145,6 +145,7 @@ async function searchPodcast(query: string): Promise<any | null> {
     const result = data.results?.[0]
     if (!result) return null
 
+    const searchQuery = encodeURIComponent(query)
     return {
       id: `podcast-${result.collectionId}`,
       type: 'podcast' as const,
@@ -153,6 +154,13 @@ async function searchPodcast(query: string): Promise<any | null> {
       artist: result.artistName,
       feedUrl: result.feedUrl,
       trackCount: result.trackCount,
+      // Platform links for user choice
+      platforms: {
+        applePodcasts: result.collectionViewUrl || `https://podcasts.apple.com/search?term=${searchQuery}`,
+        spotify: `https://open.spotify.com/search/${searchQuery}/shows`,
+        youtube: `https://www.youtube.com/results?search_query=${searchQuery}+podcast`,
+        googlePodcasts: `https://podcasts.google.com/search/${searchQuery}`,
+      },
     }
   } catch (error) {
     console.error('Podcast search error:', error)
@@ -160,7 +168,7 @@ async function searchPodcast(query: string): Promise<any | null> {
   }
 }
 
-// Search iTunes for audiobooks
+// Search iTunes for audiobooks with platform links (including Audible)
 async function searchAudiobook(query: string): Promise<any | null> {
   try {
     const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=audiobook&limit=1`
@@ -171,6 +179,7 @@ async function searchAudiobook(query: string): Promise<any | null> {
     const result = data.results?.[0]
     if (!result) return null
 
+    const searchQuery = encodeURIComponent(query)
     return {
       id: `audiobook-${result.collectionId}`,
       type: 'audiobook' as const,
@@ -179,6 +188,13 @@ async function searchAudiobook(query: string): Promise<any | null> {
       artist: result.artistName,
       description: result.description,
       previewUrl: result.previewUrl,
+      // Platform links for user choice
+      platforms: {
+        audible: `https://www.audible.com/search?keywords=${searchQuery}`,
+        appleBooks: result.collectionViewUrl || `https://books.apple.com/search?term=${searchQuery}`,
+        spotify: `https://open.spotify.com/search/${searchQuery}/audiobooks`,
+        googlePlayBooks: `https://play.google.com/store/search?q=${searchQuery}&c=audiobooks`,
+      },
     }
   } catch (error) {
     console.error('Audiobook search error:', error)
@@ -186,7 +202,7 @@ async function searchAudiobook(query: string): Promise<any | null> {
   }
 }
 
-// Search iTunes for music (albums/songs)
+// Search iTunes for music (albums/songs) with platform links
 async function searchMusic(query: string): Promise<any | null> {
   try {
     const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=album&limit=1`
@@ -197,6 +213,7 @@ async function searchMusic(query: string): Promise<any | null> {
     const result = data.results?.[0]
     if (!result) return null
 
+    const searchQuery = encodeURIComponent(query)
     return {
       id: `music-${result.collectionId}`,
       type: 'music' as const,
@@ -205,6 +222,13 @@ async function searchMusic(query: string): Promise<any | null> {
       artist: result.artistName,
       trackCount: result.trackCount,
       releaseDate: result.releaseDate,
+      // Platform links for user choice
+      platforms: {
+        spotify: `https://open.spotify.com/search/${searchQuery}`,
+        appleMusic: result.collectionViewUrl || `https://music.apple.com/search?term=${searchQuery}`,
+        youtubeMusic: `https://music.youtube.com/search?q=${searchQuery}`,
+        amazonMusic: `https://music.amazon.com/search/${searchQuery}`,
+      },
     }
   } catch (error) {
     console.error('Music search error:', error)
