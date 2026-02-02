@@ -58,6 +58,35 @@ AFFIRMATIONS = [
     "You are more than your thoughts. You are whole.",
 ]
 
+# STOP Skill (Research: Brain 6, Section 2 - DBT Distress Tolerance)
+# Prevents impulsive reactions during emotional overwhelm
+STOP_SKILL = [
+    {
+        "letter": "S",
+        "title": "Stop",
+        "description": "Don't react. Freeze for a moment.",
+        "emoji": "🛑"
+    },
+    {
+        "letter": "T",
+        "title": "Take a step back",
+        "description": "Remove yourself from the situation. Take a breath.",
+        "emoji": "👣"
+    },
+    {
+        "letter": "O",
+        "title": "Observe",
+        "description": "Notice what's happening inside and around you without judgment.",
+        "emoji": "👁️"
+    },
+    {
+        "letter": "P",
+        "title": "Proceed mindfully",
+        "description": "Think before you act. What will help right now?",
+        "emoji": "🧠"
+    }
+]
+
 
 def render_sos_button():
     """
@@ -208,6 +237,23 @@ def render_sos_overlay():
         st.markdown(f"""
         <div class="grounding-step">
             {emoji} {prompt}
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # STOP Skill (Research: Brain 6, Section 2 - DBT Distress Tolerance)
+    st.markdown("<div class='section-title'>🛑 STOP Skill</div>", unsafe_allow_html=True)
+    st.caption("A DBT technique to pause before reacting")
+
+    for step in STOP_SKILL:
+        st.markdown(f"""
+        <div class="grounding-step" style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 1.5rem;">{step['emoji']}</span>
+            <div>
+                <strong style="color: #a78bfa;">{step['letter']}</strong> - {step['title']}
+                <br><span style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">{step['description']}</span>
+            </div>
         </div>
         """, unsafe_allow_html=True)
 

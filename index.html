@@ -22,9 +22,9 @@
 <!-- Supabase Client -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<!-- Fonts -->
+<!-- Fonts - Lexend for ADHD readability (Research: Brain 4, Section 5 - Shaver-Troup study) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
 /* ============================================
@@ -46,6 +46,43 @@
     --glow-secondary: rgba(62, 175, 161, 0.25);
 }
 
+/* ============================================
+   CALMING THEME - Research: Brain 4, Section 6
+   Blues/greens reduce anxiety and promote calm
+   ============================================ */
+body.calm-theme {
+    --bg-primary: #0A1015;           /* Deep blue-black */
+    --bg-secondary: #0F1820;         /* Dark teal-black */
+    --accent-primary: #5B8FB9;       /* Calm blue - research validated */
+    --accent-secondary: #7CB98F;     /* Soothing green */
+    --accent-tertiary: #8BC4C4;      /* Soft teal */
+    --accent-pink: #90C8E8;          /* Light blue instead of pink */
+    --glow-primary: rgba(91, 143, 185, 0.3);
+    --glow-secondary: rgba(124, 185, 143, 0.25);
+}
+
+body.calm-theme .bg-gradient {
+    background:
+        radial-gradient(at 0% 0%, rgba(91, 143, 185, 0.15) 0%, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(124, 185, 143, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse 50% 30% at 50% 80%, rgba(139, 196, 196, 0.08) 0%, transparent 50%);
+}
+
+/* Theme toggle button style */
+.theme-toggle {
+    background: transparent;
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+    margin-right: 8px;
+}
+.theme-toggle:hover {
+    background: rgba(255,255,255,0.1);
+}
+
 /* ============ RESET & BASE ============ */
 * {
     margin: 0;
@@ -58,7 +95,7 @@ html {
 }
 
 body {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Lexend', system-ui, sans-serif;  /* Brain 4, Section 5: ADHD-optimized font */
     background: var(--bg-primary);
     color: var(--text-primary);
     line-height: 1.6;
@@ -1496,6 +1533,7 @@ footer {
             <a href="https://www.dopamine.watch/index.html" class="active">EN</a>
             <a href="https://www.dopamine.watch/index_es.html">ES</a>
         </div>
+        <button class="theme-toggle" onclick="toggleCalmTheme()" title="Toggle calming colors (Brain 4 research)">🧘</button>
         <button class="nav-btn secondary" onclick="openModal('login')">Log In</button>
         <button class="nav-btn primary" onclick="openModal('signup')">Get Started</button>
     </div>
@@ -2495,6 +2533,44 @@ document.addEventListener('keypress', function(e) {
         else if (signupScreen.classList.contains('active')) handleSignup();
     }
 });
+
+// ============================================
+// CALMING THEME TOGGLE
+// Research: Brain 4, Section 6 - Blues/greens reduce anxiety
+// ============================================
+function toggleCalmTheme() {
+    const body = document.body;
+    const isCalm = body.classList.toggle('calm-theme');
+
+    // Save preference
+    localStorage.setItem('dopamine_calm_theme', isCalm ? 'true' : 'false');
+
+    // Update toggle button
+    const toggleBtn = document.querySelector('.theme-toggle');
+    if (toggleBtn) {
+        toggleBtn.textContent = isCalm ? '💜' : '🧘';
+        toggleBtn.title = isCalm ? 'Switch to vibrant theme' : 'Switch to calming theme (research-backed)';
+    }
+
+    // Show toast
+    showToast(isCalm ? 'Calming theme activated 🧘' : 'Vibrant theme activated 💜');
+}
+
+// Load theme preference on page load
+function loadThemePreference() {
+    const saved = localStorage.getItem('dopamine_calm_theme');
+    if (saved === 'true') {
+        document.body.classList.add('calm-theme');
+        const toggleBtn = document.querySelector('.theme-toggle');
+        if (toggleBtn) {
+            toggleBtn.textContent = '💜';
+            toggleBtn.title = 'Switch to vibrant theme';
+        }
+    }
+}
+
+// Initialize theme on load
+document.addEventListener('DOMContentLoaded', loadThemePreference);
 </script>
 
 </body>

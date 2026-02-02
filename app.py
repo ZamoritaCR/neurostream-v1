@@ -326,7 +326,7 @@ TRANSLATIONS = {
         "error_occurred": "Something went wrong. Please try again.",
         "saved_to_queue": "Added to your queue!",
         "removed_from_queue": "Removed from queue",
-        "streak_broken": "Your streak was broken!",
+        "streak_welcome_back": "Welcome back! Every return is a win.",
         "new_achievement": "New Achievement!",
 
         # Landing Page
@@ -504,7 +504,7 @@ TRANSLATIONS = {
         "error_occurred": "Algo salió mal. Por favor, intenta de nuevo.",
         "saved_to_queue": "¡Agregado a tu lista!",
         "removed_from_queue": "Eliminado de la lista",
-        "streak_broken": "¡Tu racha se rompió!",
+        "streak_welcome_back": "¡Bienvenido de vuelta! Cada regreso es una victoria.",
         "new_achievement": "¡Nuevo Logro!",
 
         # Landing Page

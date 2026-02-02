@@ -182,17 +182,29 @@ def detect_response_expression(response: str, user_message: str) -> str:
 
     return "happy"
 
-def get_fallback_response(message: str) -> str:
-    """Fallback responses when OpenAI is not available"""
+def get_fallback_response(message: str, user_name: str = None) -> str:
+    """Fallback responses when OpenAI is not available.
+
+    Args:
+        message: User's message
+        user_name: User's name for personalized responses (optional)
+    """
     message_lower = message.lower()
 
-    # Greeting
+    # Greeting - personalized when we know the name (Neurodivergent Engine - Session Learning)
     if any(word in message_lower for word in ["hi", "hello", "hey", "sup"]):
-        return random.choice([
-            "Hey! Ready to find something awesome to watch?",
-            "Hi there! What kind of vibe are you feeling today?",
-            "Hey hey! Let's find your next favorite thing!"
-        ])
+        if user_name:
+            return random.choice([
+                f"Hey {user_name}! Ready to find something awesome to watch?",
+                f"Hi {user_name}! What kind of vibe are you feeling today?",
+                f"Hey {user_name}! Let's find your next favorite thing!"
+            ])
+        else:
+            return random.choice([
+                "Hey! Ready to find something awesome to watch?",
+                "Hi there! What kind of vibe are you feeling today?",
+                "Hey hey! Let's find your next favorite thing!"
+            ])
 
     # Help with decision
     if any(word in message_lower for word in ["can't decide", "help", "pick", "choose", "recommend"]):
@@ -261,46 +273,82 @@ def get_season(month: int) -> str:
     else:
         return "fall"
 
-def get_contextual_greeting() -> Tuple[str, str]:
-    """Get a contextual greeting and expression based on time/day"""
+def get_contextual_greeting(user_name: str = None) -> Tuple[str, str]:
+    """Get a contextual greeting and expression based on time/day.
+
+    Research: Neurodivergent Engine, Session Learning - Greet by name naturally
+    Personalization makes the experience feel warm and human, not robotic.
+
+    Args:
+        user_name: User's name for personalized greeting (optional)
+    """
     context = get_contextual_state()
 
-    greetings = {
-        "morning": [
-            ("Good morning! Ready for some dopamine?", "happy"),
-            ("Rise and shine! What's the vibe today?", "excited"),
-            ("Morning! Coffee and content time?", "wink")
-        ],
-        "afternoon": [
-            ("Hey there! Afternoon pick-me-up?", "happy"),
-            ("Good afternoon! Need a brain break?", "thinking"),
-            ("Afternoon vibes! What sounds good?", "happy")
-        ],
-        "evening": [
-            ("Evening! Time to unwind?", "happy"),
-            ("Hey! Ready to chill tonight?", "wink"),
-            ("Good evening! Let's find something great", "excited")
-        ],
-        "night": [
-            ("Late night crew! Can't sleep?", "sleepy"),
-            ("Night owl mode activated!", "wink"),
-            ("Hey night owl! Something to wind down?", "sleepy")
-        ]
-    }
+    # Personalized greetings when we know the user's name
+    if user_name:
+        personalized_greetings = {
+            "morning": [
+                (f"Good morning, {user_name}! Ready for some dopamine?", "happy"),
+                (f"Rise and shine, {user_name}! What's the vibe today?", "excited"),
+                (f"Morning, {user_name}! Coffee and content time?", "wink")
+            ],
+            "afternoon": [
+                (f"Hey {user_name}! Afternoon pick-me-up?", "happy"),
+                (f"Good afternoon, {user_name}! Need a brain break?", "thinking"),
+                (f"{user_name}! Afternoon vibes - what sounds good?", "happy")
+            ],
+            "evening": [
+                (f"Evening, {user_name}! Time to unwind?", "happy"),
+                (f"Hey {user_name}! Ready to chill tonight?", "wink"),
+                (f"Good evening, {user_name}! Let's find something great", "excited")
+            ],
+            "night": [
+                (f"Late night, {user_name}! Can't sleep?", "sleepy"),
+                (f"{user_name}! Night owl mode activated!", "wink"),
+                (f"Hey {user_name}! Something to wind down?", "sleepy")
+            ]
+        }
+        greetings = personalized_greetings
+    else:
+        # Generic greetings when no name available
+        greetings = {
+            "morning": [
+                ("Good morning! Ready for some dopamine?", "happy"),
+                ("Rise and shine! What's the vibe today?", "excited"),
+                ("Morning! Coffee and content time?", "wink")
+            ],
+            "afternoon": [
+                ("Hey there! Afternoon pick-me-up?", "happy"),
+                ("Good afternoon! Need a brain break?", "thinking"),
+                ("Afternoon vibes! What sounds good?", "happy")
+            ],
+            "evening": [
+                ("Evening! Time to unwind?", "happy"),
+                ("Hey! Ready to chill tonight?", "wink"),
+                ("Good evening! Let's find something great", "excited")
+            ],
+            "night": [
+                ("Late night crew! Can't sleep?", "sleepy"),
+                ("Night owl mode activated!", "wink"),
+                ("Hey night owl! Something to wind down?", "sleepy")
+            ]
+        }
 
     # Weekend bonus
     if context["is_weekend"]:
+        name_part = f", {user_name}" if user_name else ""
         weekend_greetings = [
-            ("Weekend vibes! Binge time?", "excited"),
-            ("It's the weekend! Movie marathon?", "happy"),
-            ("Weekend mode! What are we watching?", "wink")
+            (f"Weekend vibes{name_part}! Binge time?", "excited"),
+            (f"It's the weekend{name_part}! Movie marathon?", "happy"),
+            (f"Weekend mode{name_part}! What are we watching?", "wink")
         ]
         greetings[context["time_of_day"]].extend(weekend_greetings)
 
     # Friday special
     if context["day_of_week"] == "Friday":
+        name_part = f", {user_name}" if user_name else ""
         greetings[context["time_of_day"]].append(
-            ("FRIDAY! Let's celebrate with something good!", "excited")
+            (f"FRIDAY{name_part}! Let's celebrate with something good!", "excited")
         )
 
     return random.choice(greetings[context["time_of_day"]])
@@ -987,8 +1035,9 @@ def render_mr_dp_chat_interface():
     # Initialize chat history
     if "mr_dp_chat_history" not in st.session_state:
         st.session_state.mr_dp_chat_history = []
-        # Add greeting
-        greeting, expression = get_contextual_greeting()
+        # Add personalized greeting (Research: Neurodivergent Engine - Session Learning)
+        user_name = st.session_state.get("user", {}).get("name", "")
+        greeting, expression = get_contextual_greeting(user_name if user_name else None)
         st.session_state.mr_dp_chat_history.append({
             "role": "assistant",
             "content": greeting,

@@ -223,6 +223,10 @@ def calculate_level(total_points: int) -> Dict:
 # 2. STREAK SYSTEM
 # --------------------------------------------------
 
+# Grace period for streaks (Brain 5, Section 4 - prevents shame spirals)
+# Research: ADHD executive dysfunction means missing a day is not a moral failure
+STREAK_GRACE_PERIOD_DAYS = 3
+
 STREAK_MILESTONES: Dict[int, Dict] = {
     7: {
         "title": "Week Warrior",
@@ -261,12 +265,18 @@ class UserStreak:
     streak_started: Optional[date] = None
     total_active_days: int = 0
 
-    def is_streak_active(self) -> bool:
-        """Check if streak is still active (activity today or yesterday)."""
+    def is_streak_active(self, grace_period: int = None) -> bool:
+        """Check if streak is still active (within grace period).
+
+        Research: Brain 5, Section 4 - Grace periods prevent shame spirals
+        ADHD users need flexibility; missing one day shouldn't break progress.
+        """
         if not self.last_activity_date:
             return False
+        if grace_period is None:
+            grace_period = STREAK_GRACE_PERIOD_DAYS
         today = date.today()
-        return (today - self.last_activity_date).days <= 1
+        return (today - self.last_activity_date).days <= grace_period
 
 
 def _get_streak_storage() -> Dict[str, UserStreak]:
@@ -284,19 +294,31 @@ def get_user_streak(user_id: str) -> UserStreak:
     return storage[user_id]
 
 
-def update_streak(user_id: str) -> Dict:
+def update_streak(user_id: str, grace_period: int = None) -> Dict:
     """
-    Update user's streak on activity.
+    Update user's streak on activity with grace period support.
+
+    Research: Brain 5, Section 4 - Grace periods prevent shame spirals
+    ADHD executive dysfunction means missing days is not a moral failure.
+    Users can return within the grace period without losing their streak.
+
+    Args:
+        user_id: User identifier
+        grace_period: Days of grace before streak resets (default: STREAK_GRACE_PERIOD_DAYS)
 
     Returns:
         Dictionary with streak info and milestone status
     """
+    if grace_period is None:
+        grace_period = STREAK_GRACE_PERIOD_DAYS
+
     streak = get_user_streak(user_id)
     today = date.today()
 
     milestone = None
-    streak_broken = False
+    returning_after_break = False  # Renamed from streak_broken - more positive framing
     new_streak = False
+    days_since_activity = None
 
     # First activity ever
     if streak.last_activity_date is None:
@@ -311,27 +333,30 @@ def update_streak(user_id: str) -> Dict:
     elif streak.last_activity_date == today:
         pass
 
-    # Consecutive day - extend streak
-    elif streak.last_activity_date == today - timedelta(days=1):
-        streak.current_streak += 1
-        streak.total_active_days += 1
-        streak.last_activity_date = today
-
-        if streak.current_streak > streak.longest_streak:
-            streak.longest_streak = streak.current_streak
-
-        # Check milestones
-        if streak.current_streak in STREAK_MILESTONES:
-            milestone = STREAK_MILESTONES[streak.current_streak]
-
-    # Streak broken - reset
     else:
-        streak_broken = streak.current_streak > 0
-        streak.current_streak = 1
-        streak.streak_started = today
-        streak.total_active_days += 1
-        streak.last_activity_date = today
-        new_streak = True
+        days_since_activity = (today - streak.last_activity_date).days
+
+        # Within grace period - continue streak! (Research: Brain 5, Section 4)
+        if days_since_activity <= grace_period:
+            streak.current_streak += 1
+            streak.total_active_days += 1
+            streak.last_activity_date = today
+
+            if streak.current_streak > streak.longest_streak:
+                streak.longest_streak = streak.current_streak
+
+            # Check milestones
+            if streak.current_streak in STREAK_MILESTONES:
+                milestone = STREAK_MILESTONES[streak.current_streak]
+
+        # Beyond grace period - reset (but celebrate the return!)
+        else:
+            returning_after_break = streak.current_streak > 0
+            streak.current_streak = 1
+            streak.streak_started = today
+            streak.total_active_days += 1
+            streak.last_activity_date = today
+            new_streak = True
 
     return {
         "current_streak": streak.current_streak,
@@ -339,41 +364,59 @@ def update_streak(user_id: str) -> Dict:
         "streak_started": streak.streak_started.isoformat() if streak.streak_started else None,
         "total_active_days": streak.total_active_days,
         "milestone": milestone,
-        "streak_broken": streak_broken,
+        "streak_broken": returning_after_break,  # Keep key for backwards compat
+        "returning_user": returning_after_break,  # New positive key
         "new_streak": new_streak,
-        "is_active": streak.is_streak_active()
+        "is_active": streak.is_streak_active(grace_period),
+        "grace_period_days": grace_period
     }
 
 
-def get_streak_summary(user_id: str) -> Dict:
-    """Get user's streak summary."""
+def get_streak_summary(user_id: str, grace_period: int = None) -> Dict:
+    """Get user's streak summary with grace period info.
+
+    Research: Brain 5, Section 4 - Users should see how much grace time remains
+    This creates awareness without shame or pressure.
+    """
+    if grace_period is None:
+        grace_period = STREAK_GRACE_PERIOD_DAYS
+
     streak = get_user_streak(user_id)
 
-    days_remaining = None
+    grace_days_remaining = None
     if streak.last_activity_date:
         today = date.today()
-        if streak.last_activity_date == today:
-            days_remaining = 1
-        elif streak.last_activity_date == today - timedelta(days=1):
-            days_remaining = 0  # Must log today!
+        days_since = (today - streak.last_activity_date).days
+        if days_since <= grace_period:
+            grace_days_remaining = grace_period - days_since
 
     return {
         "user_id": user_id,
         "current_streak": streak.current_streak,
         "longest_streak": streak.longest_streak,
         "total_active_days": streak.total_active_days,
-        "is_active": streak.is_streak_active(),
-        "days_until_break": days_remaining
+        "is_active": streak.is_streak_active(grace_period),
+        "grace_days_remaining": grace_days_remaining,
+        "grace_period_days": grace_period
     }
 
 
-def check_streak_at_risk(user_id: str) -> bool:
-    """Check if user's streak is at risk of breaking."""
+def check_streak_at_risk(user_id: str, grace_period: int = None) -> bool:
+    """Check if user's streak is approaching end of grace period.
+
+    Research: Brain 5, Section 4 - Gentle reminder, not guilt-inducing alert
+    Returns True when on the last day of grace period (time to come back!)
+    """
+    if grace_period is None:
+        grace_period = STREAK_GRACE_PERIOD_DAYS
+
     streak = get_user_streak(user_id)
     if not streak.last_activity_date or streak.current_streak == 0:
         return False
     today = date.today()
-    return streak.last_activity_date == today - timedelta(days=1)
+    days_since = (today - streak.last_activity_date).days
+    # At risk = on the last day of grace period
+    return days_since == grace_period
 
 
 def get_streak_leaderboard(limit: int = 10) -> List[Dict]:
@@ -771,9 +814,56 @@ def get_recent_achievements(user_id: str, limit: int = 5) -> List[Dict]:
 # 4. STREAMLIT UI COMPONENTS
 # --------------------------------------------------
 
-def render_leaderboard_widget(leaderboard_type: str = "points"):
-    """Render a leaderboard widget."""
+# Leaderboard Preference (Research: Brain 5, Section 7 - RSD triggers)
+# Social comparison can trigger Rejection Sensitive Dysphoria in ADHD users
+# Leaderboards are OPT-IN by default to protect emotional wellbeing
+
+def get_leaderboard_preference(user_id: str) -> bool:
+    """Check if user has opted into seeing leaderboards.
+
+    Research: Brain 5, Section 7 - Social comparison is an RSD trigger
+    Default is OFF to protect users from unwanted comparison stress.
+    """
+    if 'leaderboard_preferences' not in st.session_state:
+        st.session_state.leaderboard_preferences = {}
+    # Default to False (opt-in required)
+    return st.session_state.leaderboard_preferences.get(user_id, False)
+
+
+def set_leaderboard_preference(user_id: str, show_leaderboard: bool):
+    """Set user's leaderboard visibility preference."""
+    if 'leaderboard_preferences' not in st.session_state:
+        st.session_state.leaderboard_preferences = {}
+    st.session_state.leaderboard_preferences[user_id] = show_leaderboard
+
+
+def render_leaderboard_widget(leaderboard_type: str = "points", user_id: str = None):
+    """Render a leaderboard widget (opt-in only).
+
+    Research: Brain 5, Section 7 - Social comparison triggers RSD
+    Users must explicitly enable leaderboards to see them.
+    """
+    # Check if user has opted into leaderboards
+    if user_id and not get_leaderboard_preference(user_id):
+        st.markdown("""
+        <div style="padding: 16px; background: rgba(168, 85, 247, 0.05); border-radius: 12px; text-align: center;">
+            <p style="color: rgba(255,255,255,0.7); margin-bottom: 12px;">
+                Leaderboards are hidden by default to keep things chill.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("Show Leaderboard", key=f"enable_lb_{leaderboard_type}"):
+            set_leaderboard_preference(user_id, True)
+            st.rerun()
+        return
+
     st.markdown("### 🏆 Leaderboard")
+
+    # Add option to hide
+    if user_id:
+        if st.button("Hide Leaderboard", key=f"hide_lb_{leaderboard_type}", help="Social comparison isn't for everyone - and that's okay!"):
+            set_leaderboard_preference(user_id, False)
+            st.rerun()
 
     if leaderboard_type == "points":
         data = get_leaderboard(10)
