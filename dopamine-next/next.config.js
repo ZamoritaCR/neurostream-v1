@@ -30,11 +30,27 @@ const nextConfig = {
         hostname: '*.supabase.co',
         pathname: '/storage/**',
       },
+      // iTunes artwork for podcasts/audiobooks
+      {
+        protocol: 'https',
+        hostname: 'is1-ssl.mzstatic.com',
+        pathname: '/**',
+      },
     ],
   },
   // Enable experimental features for better performance
   experimental: {
     optimizePackageImports: ['@phosphor-icons/react', 'framer-motion'],
+  },
+  // Redirect root to /home since landing page is at www.dopamine.watch
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/home',
+        permanent: true,
+      },
+    ]
   },
 }
 
