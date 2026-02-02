@@ -186,15 +186,29 @@ export default function AppHomePage() {
 
                 const handleClick = () => {
                   haptic('light')
+                  const searchQuery = encodeURIComponent(item.title + (item.artist ? ' ' + item.artist : ''))
+
                   if (item.type === 'movie' || item.type === 'tv') {
                     setSelectedMovie(item)
                     setShowMovieModal(true)
                   } else if (item.type === 'podcast') {
-                    window.open(`https://podcasts.apple.com/search?term=${encodeURIComponent(item.title)}`, '_blank')
+                    // Prefer Spotify for podcasts
+                    const url = item.platforms?.spotify ||
+                                item.platforms?.applePodcasts ||
+                                `https://open.spotify.com/search/${searchQuery}/shows`
+                    window.open(url, '_blank')
                   } else if (item.type === 'audiobook') {
-                    window.open(`https://www.audible.com/search?keywords=${encodeURIComponent(item.title)}`, '_blank')
+                    // Prefer Audible for audiobooks
+                    const url = item.platforms?.audible ||
+                                item.platforms?.appleBooks ||
+                                `https://www.audible.com/search?keywords=${searchQuery}`
+                    window.open(url, '_blank')
                   } else if (item.type === 'music') {
-                    window.open(`https://music.apple.com/search?term=${encodeURIComponent(item.title)}`, '_blank')
+                    // Prefer Spotify for music
+                    const url = item.platforms?.spotify ||
+                                item.platforms?.appleMusic ||
+                                `https://open.spotify.com/search/${searchQuery}`
+                    window.open(url, '_blank')
                   }
                 }
 

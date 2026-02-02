@@ -24,6 +24,25 @@ interface StreamingProvider {
   logo_path: string
 }
 
+// Provider URLs for direct access - opens the streaming service
+const PROVIDER_URLS: Record<number, string> = {
+  8: 'https://www.netflix.com', // Netflix
+  9: 'https://www.amazon.com/gp/video', // Amazon Prime Video
+  337: 'https://www.disneyplus.com', // Disney+
+  384: 'https://www.max.com', // Max (HBO)
+  15: 'https://www.hulu.com', // Hulu
+  531: 'https://www.paramountplus.com', // Paramount+
+  386: 'https://www.peacocktv.com', // Peacock
+  350: 'https://tv.apple.com', // Apple TV+
+  283: 'https://www.crunchyroll.com', // Crunchyroll
+  2: 'https://tv.apple.com', // Apple TV
+  3: 'https://play.google.com/store/movies', // Google Play Movies
+  192: 'https://www.youtube.com', // YouTube
+  10: 'https://www.amazon.com/gp/video', // Amazon Video
+  1899: 'https://www.max.com', // Max
+  387: 'https://www.peacocktv.com', // Peacock Premium
+}
+
 interface MovieDetails {
   id: string
   type: 'movie' | 'tv'
@@ -192,26 +211,40 @@ export function MovieDetailsModal({ movie, isOpen, onClose }: MovieDetailsModalP
               </div>
             ) : streamingProviders.length > 0 ? (
               <div className="flex flex-wrap gap-3">
-                {streamingProviders.map(provider => (
-                  <div
-                    key={provider.provider_id}
-                    className="flex flex-col items-center gap-1"
-                    title={provider.provider_name}
-                  >
-                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-surface-100 dark:bg-dark-hover">
-                      <Image
-                        src={`https://image.tmdb.org/t/p/w92${provider.logo_path}`}
-                        alt={provider.provider_name}
-                        width={48}
-                        height={48}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <span className="text-[10px] text-surface-500 text-center max-w-[60px] truncate">
-                      {provider.provider_name}
-                    </span>
-                  </div>
-                ))}
+                {streamingProviders.map(provider => {
+                  const providerUrl = PROVIDER_URLS[provider.provider_id]
+                  const handleProviderClick = () => {
+                    haptic('light')
+                    if (providerUrl) {
+                      window.open(providerUrl, '_blank')
+                    } else {
+                      // Fallback to JustWatch search for unknown providers
+                      openJustWatch()
+                    }
+                  }
+
+                  return (
+                    <button
+                      key={provider.provider_id}
+                      onClick={handleProviderClick}
+                      className="flex flex-col items-center gap-1 group cursor-pointer"
+                      title={`Open ${provider.provider_name}`}
+                    >
+                      <div className="w-12 h-12 rounded-xl overflow-hidden bg-surface-100 dark:bg-dark-hover ring-2 ring-transparent group-hover:ring-primary-500 transition-all">
+                        <Image
+                          src={`https://image.tmdb.org/t/p/w92${provider.logo_path}`}
+                          alt={provider.provider_name}
+                          width={48}
+                          height={48}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <span className="text-[10px] text-surface-500 group-hover:text-primary-500 text-center max-w-[60px] truncate transition-colors">
+                        {provider.provider_name}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
             ) : (
               <p className="text-sm text-surface-500">

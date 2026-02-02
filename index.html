@@ -1951,9 +1951,9 @@ function onLoginSuccess(user) {
     localStorage.setItem('dopamine_user', JSON.stringify(user));
     closeModal();
 
-    // Always redirect to the Next.js app
+    // Always redirect to the Next.js app profile page
     console.log('✅ Logged in:', user.name);
-    window.location.href = APP_URL + '/home';
+    window.location.href = APP_URL + '/profile';
 }
 
 // Update UI for logged-in state

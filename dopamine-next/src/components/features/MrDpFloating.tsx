@@ -711,11 +711,11 @@ function getPosterUrl(item: any): string | null {
   return null
 }
 
-// Handle content click based on type
+// Handle content click based on type - opens streaming service
 function handleContentClick(item: any, onMovieClick?: (movie: any) => void) {
   haptic('light')
 
-  // For movies and TV, open the modal
+  // For movies and TV, open the modal (which shows streaming providers)
   if (item.type === 'movie' || item.type === 'tv') {
     if (onMovieClick) {
       onMovieClick(item)
@@ -723,24 +723,33 @@ function handleContentClick(item: any, onMovieClick?: (movie: any) => void) {
     return
   }
 
-  // For podcasts, try to open Apple Podcasts search
+  // Use platform links from API if available, otherwise fallback to search URLs
+  const searchQuery = encodeURIComponent(item.title + (item.artist ? ' ' + item.artist : ''))
+
+  // For podcasts - prefer Spotify, fallback to Apple Podcasts
   if (item.type === 'podcast') {
-    const searchQuery = encodeURIComponent(item.title)
-    window.open(`https://podcasts.apple.com/search?term=${searchQuery}`, '_blank')
+    const url = item.platforms?.spotify ||
+                item.platforms?.applePodcasts ||
+                `https://open.spotify.com/search/${searchQuery}/shows`
+    window.open(url, '_blank')
     return
   }
 
-  // For audiobooks, try to open Audible search
+  // For audiobooks - prefer Audible (most popular), fallback to Apple Books
   if (item.type === 'audiobook') {
-    const searchQuery = encodeURIComponent(item.title)
-    window.open(`https://www.audible.com/search?keywords=${searchQuery}`, '_blank')
+    const url = item.platforms?.audible ||
+                item.platforms?.appleBooks ||
+                `https://www.audible.com/search?keywords=${searchQuery}`
+    window.open(url, '_blank')
     return
   }
 
-  // For music, open Apple Music search
+  // For music - prefer Spotify (most popular), fallback to Apple Music
   if (item.type === 'music') {
-    const searchQuery = encodeURIComponent(item.title + (item.artist ? ' ' + item.artist : ''))
-    window.open(`https://music.apple.com/search?term=${searchQuery}`, '_blank')
+    const url = item.platforms?.spotify ||
+                item.platforms?.appleMusic ||
+                `https://open.spotify.com/search/${searchQuery}`
+    window.open(url, '_blank')
     return
   }
 }

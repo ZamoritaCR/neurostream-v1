@@ -60,6 +60,14 @@ export default function QuickHitPage() {
     setIsInQueue(!isInQueue)
   }
 
+  const watchNow = () => {
+    if (!currentContent) return
+    haptic('medium')
+    // Open JustWatch to find where to stream this content
+    const searchQuery = encodeURIComponent(currentContent.title)
+    window.open(`https://www.justwatch.com/us/search?q=${searchQuery}`, '_blank')
+  }
+
   const TypeIcon = currentContent?.type === 'tv' ? Television : VideoCamera
 
   return (
@@ -307,6 +315,7 @@ export default function QuickHitPage() {
                     <Button
                       className="flex-1"
                       icon={<Play size={20} weight="fill" />}
+                      onClick={watchNow}
                     >
                       Watch Now
                     </Button>
