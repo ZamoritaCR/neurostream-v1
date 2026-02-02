@@ -6783,6 +6783,143 @@ section[data-testid="stSidebar"] .stTextArea textarea {
     color: white;
 }
 
+/* Video Preview - Play button overlay on posters */
+.movie-poster-container {
+    position: relative;
+    cursor: pointer;
+}
+.movie-poster-container::after {
+    content: '▶';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    width: 60px;
+    height: 60px;
+    background: rgba(139, 92, 246, 0.9);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+    opacity: 0;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.5);
+    padding-left: 4px;
+}
+.movie-poster-container:hover::after {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+.movie-poster-container:hover .movie-poster {
+    filter: brightness(0.7);
+}
+
+/* Video Preview Modal */
+.video-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease;
+}
+.video-modal-overlay.active {
+    display: flex;
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.video-modal-content {
+    position: relative;
+    width: 90%;
+    max-width: 900px;
+    background: var(--bg-secondary);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6);
+    animation: slideUp 0.3s ease;
+}
+@keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+.video-modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 10001;
+    transition: all 0.2s;
+}
+.video-modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+.video-modal-player {
+    width: 100%;
+    aspect-ratio: 16/9;
+}
+.video-modal-player iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+.video-modal-info {
+    padding: 24px;
+    background: var(--bg-secondary);
+}
+.video-modal-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+.video-modal-meta {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+.video-modal-rating {
+    color: #ffd700;
+}
+.video-modal-overview {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+.no-trailer-notice {
+    padding: 60px 24px;
+    text-align: center;
+}
+.no-trailer-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+.no-trailer-text {
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+}
+.no-trailer-providers {
+    margin-top: 20px;
+}
+
 .service-btn {
     display: flex;
     align-items: center;
@@ -8502,41 +8639,162 @@ def render_stats_bar():
     </div>
     """, unsafe_allow_html=True)
 
-def render_movie_card(item, show_providers=True):
+def render_video_modal_container():
+    """
+    Render the video preview modal container and JavaScript handler.
+    Call this ONCE at the start of the page render.
+    Research: Brain 4 - Reduce decision fatigue by showing previews in-place
+    """
+    modal_html = '''
+    <div id="videoModalOverlay" class="video-modal-overlay" onclick="if(event.target===this)closeVideoModal()">
+        <div class="video-modal-content">
+            <button class="video-modal-close" onclick="closeVideoModal()">&times;</button>
+            <div id="videoModalBody"></div>
+        </div>
+    </div>
+
+    <script>
+    function openVideoModal(trailerKey, title, year, rating, overview, poster, providers) {
+        const overlay = document.getElementById('videoModalOverlay');
+        const body = document.getElementById('videoModalBody');
+
+        if (trailerKey && trailerKey !== 'null' && trailerKey !== '') {
+            // Has trailer - show embedded YouTube player
+            body.innerHTML = `
+                <div class="video-modal-player">
+                    <iframe
+                        src="https://www.youtube.com/embed/${trailerKey}?autoplay=1&rel=0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen>
+                    </iframe>
+                </div>
+                <div class="video-modal-info">
+                    <div class="video-modal-title">${title}</div>
+                    <div class="video-modal-meta">
+                        <span>${year}</span>
+                        ${rating > 0 ? `<span class="video-modal-rating">⭐ ${rating.toFixed(1)}</span>` : ''}
+                    </div>
+                    <p class="video-modal-overview">${overview || 'No description available.'}</p>
+                </div>
+            `;
+        } else {
+            // No trailer - show movie info with poster
+            let providersHtml = '';
+            if (providers && providers.length > 0) {
+                providersHtml = '<div class="no-trailer-providers"><strong>Available on:</strong> ' + providers + '</div>';
+            }
+            body.innerHTML = `
+                <div class="no-trailer-notice">
+                    <div style="display:flex; gap:24px; align-items:flex-start; text-align:left;">
+                        <img src="${poster}" style="width:150px; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,0.4);">
+                        <div>
+                            <div class="video-modal-title">${title}</div>
+                            <div class="video-modal-meta">
+                                <span>${year}</span>
+                                ${rating > 0 ? `<span class="video-modal-rating">⭐ ${rating.toFixed(1)}</span>` : ''}
+                            </div>
+                            <p class="video-modal-overview" style="margin-top:12px;">${overview || 'No description available.'}</p>
+                            ${providersHtml}
+                            <div style="margin-top:20px; padding:16px; background:rgba(139,92,246,0.1); border-radius:12px; border:1px solid rgba(139,92,246,0.2);">
+                                <div style="font-size:0.9rem; color:rgba(255,255,255,0.7);">
+                                    📺 No preview available for this title.<br>
+                                    <span style="color:rgba(255,255,255,0.5); font-size:0.85rem;">Use the streaming buttons below the poster to watch!</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeVideoModal() {
+        const overlay = document.getElementById('videoModalOverlay');
+        const body = document.getElementById('videoModalBody');
+        overlay.classList.remove('active');
+        body.innerHTML = '';
+        document.body.style.overflow = '';
+    }
+
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeVideoModal();
+    });
+    </script>
+    '''
+    st.markdown(modal_html, unsafe_allow_html=True)
+
+def render_movie_card(item, show_providers=True, enable_preview=True):
+    """
+    Render a movie card with optional video preview functionality.
+    Research: Brain 4 - Reduce decision fatigue by showing previews in-place
+
+    Args:
+        item: Movie/show data dict
+        show_providers: Whether to show streaming provider buttons
+        enable_preview: Whether to enable click-to-preview (default True)
+    """
     title = item.get("title", "")
     year = item.get("release_date", "")[:4]
     rating = item.get("vote_average", 0)
-    poster = item.get("poster")
+    poster = item.get("poster", "")
     tmdb_id = item.get("id")
     media_type = item.get("type", "movie")
-    
+    overview = item.get("overview", "")[:300] + "..." if len(item.get("overview", "")) > 300 else item.get("overview", "")
+
+    # Fetch trailer key if preview enabled
+    trailer_key = ""
+    if enable_preview and tmdb_id:
+        trailer_key = get_movie_trailer(tmdb_id, media_type) or ""
+
     providers_html = ""
+    provider_names = ""
     if show_providers:
         providers, tmdb_watch_link = get_movie_providers(tmdb_id, media_type)
         if providers:
             icons = ""
+            provider_names_list = []
             for p in providers[:6]:
                 name = p.get("provider_name", "")
                 logo = p.get("logo_path")
                 availability = p.get("availability", "stream")
                 if not logo:
                     continue
+                provider_names_list.append(name)
                 link = get_movie_deep_link(name, title, tmdb_id, media_type)
                 if not link:
                     continue
                 # Add availability indicator
                 avail_icon = "✓" if availability == "stream" else "$"
-                icons += f"<a href='{safe(link)}' target='_blank' class='provider-btn' title='{safe(name)} ({availability})'><img src='{TMDB_LOGO_URL}{logo}' class='provider-icon'><span class='avail-badge'>{avail_icon}</span></a>"
+                icons += f"<a href='{safe(link)}' target='_blank' class='provider-btn' title='{safe(name)} ({availability})' onclick='event.stopPropagation()'><img src='{TMDB_LOGO_URL}{logo}' class='provider-icon'><span class='avail-badge'>{avail_icon}</span></a>"
             if icons:
                 # Add "All Options" link to TMDB watch page
-                all_link = f"<a href='{tmdb_watch_link}' target='_blank' class='provider-btn all-options' title='See all watch options'>🔗</a>" if tmdb_watch_link else ""
+                all_link = f"<a href='{tmdb_watch_link}' target='_blank' class='provider-btn all-options' title='See all watch options' onclick='event.stopPropagation()'>🔗</a>" if tmdb_watch_link else ""
                 providers_html = f"<div class='provider-grid'>{icons}{all_link}</div>"
-    
+            provider_names = ", ".join(provider_names_list[:4])
+
     rating_html = f"<div class='movie-rating'>⭐ {rating:.1f}</div>" if rating > 0 else ""
-    
+
+    # Escape strings for JavaScript
+    safe_title = safe(title).replace("'", "\\'").replace('"', '\\"')
+    safe_overview = safe(overview).replace("'", "\\'").replace('"', '\\"').replace('\n', ' ')
+    safe_poster = safe(poster)
+    safe_providers = provider_names.replace("'", "\\'")
+
+    # Create clickable poster container with play button overlay
+    if enable_preview:
+        poster_html = f'''<div class="movie-poster-container" onclick="openVideoModal('{trailer_key}', '{safe_title}', '{year}', {rating}, '{safe_overview}', '{safe_poster}', '{safe_providers}')">
+            <img src="{safe_poster}" class="movie-poster" loading="lazy" onerror="this.style.background='#1a1a2e'">
+        </div>'''
+    else:
+        poster_html = f'<img src="{safe_poster}" class="movie-poster" loading="lazy" onerror="this.style.background=\'#1a1a2e\'">'
+
     st.markdown(f"""
     <div class="movie-card">
-        <img src="{safe(poster)}" class="movie-poster" loading="lazy" onerror="this.style.background='#1a1a2e'">
+        {poster_html}
         <div class="movie-info">
             <div class="movie-title">{safe(title)}</div>
             <div class="movie-year">{year}</div>
@@ -9704,6 +9962,9 @@ def render_main():
             st.rerun()
 
     render_stats_bar()
+
+    # Video Preview Modal Container (for in-app trailer playback)
+    render_video_modal_container()
 
     # PWA Install Banner (Mobile)
     render_install_app_banner()
