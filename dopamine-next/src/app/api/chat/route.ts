@@ -71,18 +71,58 @@ interface ExtractedContent {
   title: string
 }
 
+// Detect content type from context around the title
+function detectTypeFromContext(text: string, title: string): ContentType {
+  const lowerText = text.toLowerCase()
+  const titleIndex = lowerText.indexOf(title.toLowerCase())
+
+  // Get surrounding context (100 chars before and after)
+  const start = Math.max(0, titleIndex - 100)
+  const end = Math.min(text.length, titleIndex + title.length + 100)
+  const context = lowerText.slice(start, end)
+
+  // Music indicators: "by Artist", "listen to", "song", "album", "music", "track"
+  if (/\bby\s+[a-z]/i.test(context) ||
+      /listen(ing)?\s+to/i.test(context) ||
+      /\b(music|song|album|track|playlist|artist|band)\b/i.test(context)) {
+    return 'music'
+  }
+
+  // Podcast indicators
+  if (/\b(podcast|episode|show|series)\b/i.test(context) &&
+      !/\b(tv|television)\s+(show|series)\b/i.test(context)) {
+    return 'podcast'
+  }
+
+  // Audiobook indicators
+  if (/\b(audiobook|audio\s*book|narrat|listen.*book)\b/i.test(context)) {
+    return 'audiobook'
+  }
+
+  // TV show indicators
+  if (/\b(tv|television|series|season|episode)\b/i.test(context)) {
+    return 'tv'
+  }
+
+  // Default to movie
+  return 'movie'
+}
+
 // Extract content with type prefixes: [movie] "Title", [podcast] "Title", etc.
+// Also detects type from context when prefix is missing
 function extractContent(text: string): ExtractedContent[] {
   const results: ExtractedContent[] = []
 
-  // Pattern: [type] "title" or just "title" (defaults to movie/tv)
+  // Pattern: [type] "title" or just "title"
   const typedPattern = /\[(movie|tv|podcast|audiobook|music)\]\s*"([^"]+)"/gi
   const simplePattern = /"([^"]+)"/g
+  // Also match "Title" by Artist pattern for music
+  const musicByArtistPattern = /"([^"]+)"\s+by\s+([^.!?,]+)/gi
 
-  // First extract typed content
   let match
   const foundTitles = new Set<string>()
 
+  // First extract explicitly typed content
   while ((match = typedPattern.exec(text)) !== null) {
     const type = match[1].toLowerCase() as ContentType
     const title = match[2]
@@ -92,12 +132,24 @@ function extractContent(text: string): ExtractedContent[] {
     }
   }
 
-  // Then extract untyped content (treat as movie/tv)
+  // Extract "Title" by Artist pattern as music
+  while ((match = musicByArtistPattern.exec(text)) !== null) {
+    const title = match[1]
+    const artist = match[2].trim()
+    const fullTitle = `${title} ${artist}`.trim()
+    if (!foundTitles.has(title.toLowerCase())) {
+      foundTitles.add(title.toLowerCase())
+      results.push({ type: 'music', title: fullTitle })
+    }
+  }
+
+  // Then extract untyped content and detect type from context
   while ((match = simplePattern.exec(text)) !== null) {
     const title = match[1]
     if (!foundTitles.has(title.toLowerCase())) {
       foundTitles.add(title.toLowerCase())
-      results.push({ type: 'movie', title }) // Default to movie, TMDB will search multi
+      const detectedType = detectTypeFromContext(text, title)
+      results.push({ type: detectedType, title })
     }
   }
 
