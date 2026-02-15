@@ -1,6 +1,25 @@
+# Streamlit
 .streamlit/secrets.toml
-*.env
+.streamlit/
 __pycache__/
 *.pyc
+
+# Environment files
+*.env
+.env.local
+
+# Platform (Next.js)
+platform/node_modules/
+platform/.next/
+platform/.env.local
+
+# Reference projects (don't commit old code to new repo)
+reference/
+
+# OS files
 .DS_Store
-.streamlit/
+.AppleDouble
+.LSOverride
+
+# Keep MASTER_BRAIN.md tracked
+!MASTER_BRAIN.md

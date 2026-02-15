@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0f0f1a;
+  --foreground: #e0e0ec;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: #667EEA;
+  --color-primary-hover: #5A67D8;
+  --color-secondary: #7CB98F;
+  --color-secondary-hover: #6BA580;
+  --color-accent: #4ecdc4;
+  --color-surface: #1a1a2e;
+  --color-surface-hover: #222240;
+  --color-border: #2a2a45;
+  --color-muted: #7a7a95;
+  --font-sans: var(--font-lexend);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-lexend), sans-serif;
+}
+
+/* Reduced motion support - Brain 4, Section 6 ADHD accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
