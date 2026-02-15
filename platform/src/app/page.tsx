@@ -132,9 +132,30 @@ export default function Home() {
               GitHub
             </a>
           </div>
+          <div className="flex justify-center gap-6 mb-4">
+            <a
+              href="/terms"
+              className="text-muted hover:text-foreground text-sm"
+            >
+              Terms of Service
+            </a>
+            <a
+              href="/privacy"
+              className="text-muted hover:text-foreground text-sm"
+            >
+              Privacy Policy
+            </a>
+          </div>
           <p className="text-muted">
             &copy; 2026 dopamine.watch - Built for neurodivergent minds
           </p>
+          <div className="mt-4 pt-4 border-t border-border">
+            <p className="text-xs text-muted">
+              <strong>Not medical advice.</strong> For crisis support: 988 (US
+              Suicide &amp; Crisis Lifeline) | Always consult healthcare
+              providers for medical decisions.
+            </p>
+          </div>
         </div>
       </footer>
     </main>

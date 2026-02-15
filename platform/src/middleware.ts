@@ -4,6 +4,11 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Allow auth callback route through
+  if (pathname.startsWith("/auth/callback")) {
+    return NextResponse.next();
+  }
+
   // Only protect admin routes
   if (!pathname.startsWith("/admin")) {
     return NextResponse.next();
@@ -54,5 +59,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/auth/callback"],
 };

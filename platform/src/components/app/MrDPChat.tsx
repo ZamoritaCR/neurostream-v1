@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { usePresenceStore } from "@/stores/presence-store";
+import { usePathname } from "next/navigation";
 
 interface Message {
   role: "user" | "assistant";
@@ -29,30 +31,93 @@ const expressionEmojis: Record<string, string> = {
   cool: "\u{1F60E}",
   focused: "\u{1F3AF}",
   sleeping: "\u{1F634}",
+  concerned: "\u{1F61F}",
 };
 
-export function MrDPChat({ context }: MrDPChatProps) {
+export function MrDPChat({ context: propContext }: MrDPChatProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content:
-        "Hey there! \u{1F49C} I'm Mr.DP, your friendly dopamine molecule. How are you feeling today?",
-      expression: "happy",
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [currentExpression, setCurrentExpression] = useState("happy");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  const hasInitialized = useRef(false);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const { currentState, getTimeSinceLastMeal, shouldShowFoodReminder } =
+    usePresenceStore();
+
+  // Contextual greeting based on presence state + page + health
+  // Research: Brain 1 (emotional dysregulation), Brain 6 (DBT/CBT)
+  const getContextualGreeting = () => {
+    const timeSinceMeal = getTimeSinceLastMeal();
+    const hoursWithoutFood = timeSinceMeal
+      ? Math.floor(timeSinceMeal / (1000 * 60 * 60))
+      : 0;
+
+    if (hoursWithoutFood >= 4) {
+      return (
+        "Hey! I noticed it's been " +
+        hoursWithoutFood +
+        " hours since you ate. Want me to suggest something quick?"
+      );
+    }
+
+    if (currentState === "hyperfocus") {
+      return "I see you're in hyperfocus mode. I'll keep it quiet. Just here if you need me!";
+    }
+
+    if (currentState === "low_bandwidth") {
+      return "Hey. I'm here if you need me. Take it easy.";
+    }
+
+    if (pathname === "/food") {
+      return "Looking for meal ideas? I can help you find something that matches your energy level!";
+    }
+
+    if (pathname === "/chat") {
+      return "Chatting with friends? I'm here if you need a break or want to talk!";
+    }
+
+    if (pathname === "/watch") {
+      return "Finding something to watch? Let me know if you need help deciding!";
+    }
+
+    return "Hey there! I'm Mr.DP. How are you feeling today?";
   };
 
+  const getInitialExpression = () => {
+    const timeSinceMeal = getTimeSinceLastMeal();
+    const hoursWithoutFood = timeSinceMeal
+      ? Math.floor(timeSinceMeal / (1000 * 60 * 60))
+      : 0;
+
+    if (hoursWithoutFood >= 4) return "concerned";
+    if (currentState === "hyperfocus") return "focused";
+    if (currentState === "low_bandwidth") return "listening";
+    return "happy";
+  };
+
+  // Initialize greeting once
   useEffect(() => {
-    scrollToBottom();
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      const expression = getInitialExpression();
+      setCurrentExpression(expression);
+      setMessages([
+        {
+          role: "assistant",
+          content: getContextualGreeting(),
+          expression,
+        },
+      ]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const sendMessage = async () => {
@@ -64,6 +129,15 @@ export function MrDPChat({ context }: MrDPChatProps) {
     setLoading(true);
 
     try {
+      const timeSinceMeal = getTimeSinceLastMeal();
+      const fullContext = {
+        ...propContext,
+        presenceState: currentState,
+        currentPage: pathname,
+        timeSinceMeal,
+        shouldRemindFood: shouldShowFoodReminder(),
+      };
+
       const response = await fetch("/api/mr-dp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -72,7 +146,7 @@ export function MrDPChat({ context }: MrDPChatProps) {
             role: m.role,
             content: m.content,
           })),
-          context,
+          context: fullContext,
         }),
       });
 
@@ -93,8 +167,7 @@ export function MrDPChat({ context }: MrDPChatProps) {
         ...prev,
         {
           role: "assistant",
-          content:
-            "Oops, I got a bit confused there. Can you try again? \u{1F49C}",
+          content: "Oops, I got a bit confused there. Can you try again?",
           expression: "confused",
         },
       ]);
@@ -109,6 +182,27 @@ export function MrDPChat({ context }: MrDPChatProps) {
       sendMessage();
     }
   };
+
+  // Proactive suggestion badge (food reminder, break suggestion)
+  // Research: Brain 1, Section 3 — ADHD hyperfocus causes skipped meals
+  const getProactiveSuggestion = () => {
+    const timeSinceMeal = getTimeSinceLastMeal();
+    const hoursWithoutFood = timeSinceMeal
+      ? Math.floor(timeSinceMeal / (1000 * 60 * 60))
+      : 0;
+
+    if (hoursWithoutFood >= 3 && pathname !== "/food") {
+      return { text: "Get meal suggestion", href: "/food" };
+    }
+
+    if (currentState === "hyperfocus" && pathname !== "/chat") {
+      return { text: "Take a chat break?", href: "/chat" };
+    }
+
+    return null;
+  };
+
+  const proactiveSuggestion = getProactiveSuggestion();
 
   return (
     <>
@@ -137,6 +231,16 @@ export function MrDPChat({ context }: MrDPChatProps) {
         )}
       </button>
 
+      {/* Proactive Suggestion Badge */}
+      {!isOpen && proactiveSuggestion && (
+        <a
+          href={proactiveSuggestion.href}
+          className="fixed bottom-24 right-6 px-4 py-2 bg-surface border border-primary/50 rounded-full shadow-lg hover:shadow-xl hover:border-primary transition-all text-sm z-40"
+        >
+          {proactiveSuggestion.text}
+        </a>
+      )}
+
       {/* Chat Window */}
       {isOpen && (
         <div className="fixed bottom-24 right-6 w-96 h-[500px] bg-surface border border-border rounded-lg shadow-2xl flex flex-col z-50">
@@ -149,7 +253,9 @@ export function MrDPChat({ context }: MrDPChatProps) {
               <div>
                 <h3 className="font-bold">Mr.DP</h3>
                 <p className="text-xs text-muted">
-                  Your friendly dopamine molecule
+                  {currentState === "hyperfocus"
+                    ? "Monitoring your wellbeing"
+                    : "Your dopamine companion"}
                 </p>
               </div>
             </div>

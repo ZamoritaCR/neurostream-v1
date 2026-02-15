@@ -8,6 +8,7 @@ import { useEffect } from "react";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: "~" },
+  { href: "/admin/claude", label: "Talk to Claude", icon: "AI" },
   { href: "/admin/content", label: "Content Creator", icon: "C" },
   { href: "/admin/intelligence", label: "User Intelligence", icon: "I" },
   { href: "/admin/engagement", label: "Engagement", icon: "E" },
