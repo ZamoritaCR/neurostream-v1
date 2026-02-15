@@ -44,7 +44,7 @@ export async function middleware(request: NextRequest) {
   // Check if user is admin (update with your admin email)
   const ADMIN_EMAILS = [
     "johan@focuschat.com",
-    // Add more admin emails here
+    "johanzamora@gmail.com",
   ];
 
   const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);

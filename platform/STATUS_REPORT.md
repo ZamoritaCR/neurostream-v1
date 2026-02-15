@@ -188,7 +188,8 @@ src/types/database.ts
 | Production URL | https://dopamine-platform.vercel.app |
 | Account | zamoritacr / johan-zamoras-projects |
 | Git remote | origin/main |
-| Last commit | feat: Add unified Next.js platform (Phases 1A-1M) |
+| Last commit | c6a7fd3 feat: Add OAuth, security hardening, legal compliance, and admin upgrades |
+| Deploy status | LIVE - verified 200 on all public routes |
 
 ## 8. Security
 
@@ -229,11 +230,29 @@ All features trace to brain research:
 - Food planner → Brain 1, Section 3 + Brain 5, Section 4
 - Privacy-first design → Brain 4, Section 10 (user-controlled data)
 
-## 10. Overall Status
+## 10. Production Verification
+
+Security headers confirmed live via `curl -I`:
+- [x] `Content-Security-Policy` — full CSP with Supabase, OpenAI, Anthropic, TMDB
+- [x] `Strict-Transport-Security` — 2-year max-age + preload
+- [x] `X-Frame-Options: DENY`
+- [x] `X-Content-Type-Options: nosniff`
+- [x] `Referrer-Policy: strict-origin-when-cross-origin`
+- [x] `Permissions-Policy` — camera, mic, geo, FLoC blocked
+
+Route verification (all returning expected status):
+- [x] `/` — 200
+- [x] `/terms` — 200
+- [x] `/privacy` — 200
+- [x] `/auth` — 200
+- [x] `/admin/claude` — 307 redirect (protected, correct)
+
+## 11. Overall Status
 
 **Features complete: 27/27**
 **Build: PASSING (0 errors, 26 routes)**
-**Ready for deployment: YES**
+**Deployed: YES — https://dopamine-platform.vercel.app**
+**Security headers: VERIFIED in production**
 **Blockers: NONE**
 
 ### Manual Steps Pending

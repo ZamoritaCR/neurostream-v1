@@ -24,6 +24,32 @@ function AuthForm() {
     }
   }, [user, loading, router, searchParams]);
 
+  // Handle hash-based OAuth tokens (from callback)
+  useEffect(() => {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get("access_token");
+    const refreshToken = hashParams.get("refresh_token");
+
+    if (accessToken && refreshToken) {
+      setAuthLoading(true);
+      supabase.auth
+        .setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        })
+        .then(({ data, error: sessionError }) => {
+          if (sessionError) {
+            console.error("Session error:", sessionError.message);
+            setError("Authentication failed. Please try again.");
+            setAuthLoading(false);
+          } else if (data.session) {
+            window.location.hash = "";
+            router.push("/watch");
+          }
+        });
+    }
+  }, [router]);
+
   const handleGoogleSignIn = async () => {
     setAuthLoading(true);
     setError("");
@@ -33,10 +59,6 @@ function AuthForm() {
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: "offline",
-            prompt: "consent",
-          },
         },
       });
 
@@ -108,10 +130,13 @@ function AuthForm() {
     }
   };
 
-  if (loading) {
+  if (loading || (authLoading && !email)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+        <div className="text-center">
+          <div className="w-3 h-3 bg-primary rounded-full animate-pulse mx-auto mb-4" />
+          <p className="text-sm text-muted">Signing you in...</p>
+        </div>
       </div>
     );
   }
